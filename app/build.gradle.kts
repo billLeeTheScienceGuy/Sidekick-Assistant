@@ -19,6 +19,15 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { compose = true }
+    buildTypes {
+        create("benchmark") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".benchmark"
+            matchingFallbacks += "debug"
+            externalNativeBuild { cmake { arguments += "-DSIDEKICK_BENCHMARK=ON" } }
+        }
+    }
+    testBuildType = if (providers.gradleProperty("speechBenchmark").isPresent) "benchmark" else "debug"
     externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
     androidResources { noCompress += "bin" }
     sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")

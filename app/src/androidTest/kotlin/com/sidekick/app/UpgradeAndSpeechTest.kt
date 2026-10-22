@@ -47,4 +47,23 @@ class UpgradeAndSpeechTest {
         val result = withTimeout(30_000) { app.speech.transcribe(WavAudio.decode(bytes)) }
         assertTrue(result.lowercase().contains("country"))
     }
+
+    @Test fun retainedModelSurvivesCancellationAndCanBeReleased() = runBlocking {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val app = instrumentation.targetContext.applicationContext as SidekickApplication
+        val bytes = instrumentation.context.assets.open("jfk.wav").use { it.readBytes() }
+        try {
+            val first = WavAudio.decode(bytes)
+            assertTrue(app.speech.transcribe(first, 4, true).lowercase().contains("country"))
+            assertTrue(first.all { it == 0f })
+            val cancelled = WavAudio.decode(bytes)
+            val job = launch { app.speech.transcribe(cancelled, 4, true) }
+            delay(150)
+            withTimeout(10_000) { job.cancelAndJoin() }
+            assertTrue(cancelled.all { it == 0f })
+            assertTrue(app.speech.transcribe(WavAudio.decode(bytes), 4, true).lowercase().contains("country"))
+            app.speech.release()
+            assertTrue(app.speech.transcribe(WavAudio.decode(bytes)).lowercase().contains("country"))
+        } finally { withContext(NonCancellable) { app.speech.release() }; bytes.fill(0) }
+    }
 }

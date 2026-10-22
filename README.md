@@ -63,4 +63,10 @@ docs/MODELS.md       Free model candidates, licenses, sources and integration re
 
 ## Next milestone
 
+Live-transcription engine benchmarks now include a successful 16-minute paced run on
+Pixel 7a and exploratory shorter-window/Silero measurements. See
+[measurements and limitations](docs/STREAMING_BENCHMARK.md). These benchmarks use a
+separate app package and public test audio; continuous microphone capture is not yet
+connected to the UI. Battery drain and representative speech accuracy remain unmeasured.
+
 Collect real Pixel 7a microphone, accuracy, latency and reminder feedback using [TRY_IT.md](docs/TRY_IT.md). Then add Silero VAD and benchmark Qwen3-0.6B extraction against the rules baseline. Keep speaker identity, consent and calendar integration separate from model predictions. The APK includes MIT license notices for Whisper and whisper.cpp in `assets/licenses/`.

@@ -1,0 +1,7 @@
+--------- beginning of main
+10-22 13:46:59.214 21614 21627 I SidekickVadBenchmark: {"audioSeconds":1,"speech":false,"loadMs":3.407674,"meanMs":9.791601549999998,"maxMs":10.026611,"speechFrameFraction":0,"frames":32}
+10-22 13:46:59.422 21614 21627 I SidekickVadBenchmark: {"audioSeconds":1,"speech":true,"loadMs":5.290121,"meanMs":9.98516645,"maxMs":11.226115,"speechFrameFraction":0.6875,"frames":32}
+10-22 13:47:00.398 21614 21627 I SidekickVadBenchmark: {"audioSeconds":5,"speech":false,"loadMs":1.012126,"meanMs":48.16984660000001,"maxMs":52.259725,"speechFrameFraction":0,"frames":157}
+10-22 13:47:01.366 21614 21627 I SidekickVadBenchmark: {"audioSeconds":5,"speech":true,"loadMs":1.772867,"meanMs":47.877170850000006,"maxMs":48.995117,"speechFrameFraction":0.48407643312101906,"frames":157}
+10-22 13:47:03.285 21614 21627 I SidekickVadBenchmark: {"audioSeconds":10,"speech":false,"loadMs":1.767782,"meanMs":95.69843950000002,"maxMs":97.587647,"speechFrameFraction":0,"frames":313}
+10-22 13:47:05.205 21614 21627 I SidekickVadBenchmark: {"audioSeconds":10,"speech":true,"loadMs":4.1403,"meanMs":95.62289425000003,"maxMs":97.00529,"speechFrameFraction":0.6389776357827478,"frames":313}

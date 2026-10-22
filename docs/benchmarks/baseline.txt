@@ -1,0 +1,10 @@
+--------- beginning of main
+10-22 13:27:15.516 10161 10225 I SidekickBenchmark: {"round":0,"audioSeconds":3,"elapsedMs":5422,"rtf":1.8073333333333332,"pssKb":97896,"thermalStatus":0,"text":"And so am I fellow Americans."}
+10-22 13:27:20.664 10161 10225 I SidekickBenchmark: {"round":0,"audioSeconds":5,"elapsedMs":5120,"rtf":1.024,"pssKb":98483,"thermalStatus":0,"text":"And so my fellow Americans ask not"}
+10-22 13:27:26.066 10161 10225 I SidekickBenchmark: {"round":0,"audioSeconds":10,"elapsedMs":5379,"rtf":0.5379,"pssKb":99603,"thermalStatus":0,"text":"And so my fellow Americans ask not what your country can do for you. Ask what you can do for your country."}
+10-22 13:27:31.232 10161 10225 I SidekickBenchmark: {"round":1,"audioSeconds":3,"elapsedMs":5145,"rtf":1.715,"pssKb":97205,"thermalStatus":0,"text":"And so am I fellow Americans."}
+10-22 13:27:36.363 10161 10225 I SidekickBenchmark: {"round":1,"audioSeconds":5,"elapsedMs":5110,"rtf":1.022,"pssKb":97545,"thermalStatus":0,"text":"And so my fellow Americans ask not"}
+10-22 13:27:41.775 10161 10225 I SidekickBenchmark: {"round":1,"audioSeconds":10,"elapsedMs":5391,"rtf":0.5391,"pssKb":98687,"thermalStatus":0,"text":"And so my fellow Americans ask not what your country can do for you. Ask what you can do for your country."}
+10-22 13:27:46.919 10161 10225 I SidekickBenchmark: {"round":2,"audioSeconds":3,"elapsedMs":5125,"rtf":1.7083333333333333,"pssKb":98247,"thermalStatus":0,"text":"And so am I fellow Americans."}
+10-22 13:27:52.078 10161 10225 I SidekickBenchmark: {"round":2,"audioSeconds":5,"elapsedMs":5137,"rtf":1.0274,"pssKb":98751,"thermalStatus":0,"text":"And so my fellow Americans ask not"}
+10-22 13:27:57.490 10161 10225 I SidekickBenchmark: {"round":2,"audioSeconds":10,"elapsedMs":5391,"rtf":0.5391,"pssKb":99867,"thermalStatus":0,"text":"And so my fellow Americans ask not what your country can do for you. Ask what you can do for your country."}
