@@ -1,0 +1,16 @@
+.gradle/
+.kotlin/
+.idea/
+.deps/
+**/.cxx/
+app/src/main/assets/models/
+**/build/
+local.properties
+*.iml
+*.jks
+*.keystore
+models/
+*.gguf
+*.onnx
+*.bin
+!gradle/wrapper/gradle-wrapper.jar

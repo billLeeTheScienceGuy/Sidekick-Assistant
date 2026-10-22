@@ -1,0 +1,63 @@
+plugins {
+    id("com.android.application")
+    kotlin("android")
+    kotlin("plugin.compose")
+    id("com.google.devtools.ksp")
+}
+android {
+    namespace = "com.sidekick.app"
+    compileSdk = 35
+    ndkVersion = "27.0.12077973"
+    defaultConfig {
+        applicationId = "com.sidekick.app"
+        minSdk = 26
+        targetSdk = 35
+        versionCode = 2
+        versionName = "0.2.0"
+        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+        externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    buildFeatures { compose = true }
+    externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
+    androidResources { noCompress += "bin" }
+    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+kotlin { jvmToolchain(17) }
+ksp { arg("room.schemaLocation", "$projectDir/schemas") }
+val verifySpeechModel by tasks.registering {
+    val modelFile = layout.projectDirectory.file("src/main/assets/models/ggml-tiny.en.bin")
+    inputs.file(modelFile)
+    doLast {
+        val model = modelFile.asFile
+        check(model.isFile && model.length() == 77_704_715L) {
+            "Missing or incomplete speech model. Run scripts/prepare-speech.ps1 (or scripts/prepare_speech.py) before building."
+        }
+    }
+}
+tasks.named("preBuild") { dependsOn(verifySpeechModel) }
+dependencies {
+    implementation(project(":core"))
+    implementation(platform("androidx.compose:compose-bom:2025.04.01"))
+    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.room:room-runtime:2.7.1")
+    implementation("androidx.room:room-ktx:2.7.1")
+    ksp("androidx.room:room-compiler:2.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2025.04.01"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    // Android 17 removed the reflective InputManager API used by older Espresso.
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation("androidx.room:room-testing:2.7.1")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+}
