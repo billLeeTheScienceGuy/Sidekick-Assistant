@@ -55,9 +55,11 @@ class ReminderTest {
         val due = System.currentTimeMillis() + 120_000
         try {
             db.commitments().insertAll(listOf(CommitmentEntity(id, "Initial", "Test fixture", 0, "America/Chicago", "Test")))
-            coordinator.save(id, "Updated", due, "America/Chicago")
+            coordinator.save(id, "Updated", due, "America/Chicago", activityStartAt = due + 3_600_000, activityEndAt = due + 7_200_000)
             assertEquals("Updated", db.commitments().get(id)!!.title)
             assertEquals(due, db.commitments().get(id)!!.dueAt)
+            assertEquals(due + 3_600_000, db.commitments().get(id)!!.activityStartAt)
+            assertEquals(due + 7_200_000, db.commitments().get(id)!!.activityEndAt)
             coordinator.mark(id, "DONE")
             assertNull(db.commitments().get(id)!!.dueAt)
             coordinator.deliver(id, due)

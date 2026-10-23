@@ -12,7 +12,7 @@ class RuleIntentExtractor : IntentExtractor {
 
     override fun extract(transcript: Transcript): List<ProposedCommitment> {
         if (!transcript.processingAllowed || transcript.speaker != Speaker.USER) return emptyList()
-        return transcript.text.split(Regex("(?<=[.!?])\\s+|\\n+"))
+        return Sentences.split(transcript.text)
             .map(String::trim).filter(String::isNotEmpty).mapNotNull { original ->
                 if (original.endsWith("?")) return@mapNotNull null
                 val evidence = original.trimEnd('.', '!')

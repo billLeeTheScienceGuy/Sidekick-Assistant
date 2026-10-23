@@ -12,8 +12,8 @@ android {
         applicationId = "com.sidekick.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "0.4.1"
+        versionCode = 17
+        versionName = "0.10.0"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -31,6 +31,7 @@ android {
     externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
     androidResources { noCompress += "bin" }
     sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/language-fixtures"))
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -41,9 +42,19 @@ ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 val verifySpeechModel by tasks.registering {
     val modelFile = layout.projectDirectory.file("src/main/assets/models/ggml-tiny.en.bin")
     val vadFile = layout.projectDirectory.file("src/main/assets/models/ggml-silero-v5.1.2.bin")
+    val multilingualFile = layout.projectDirectory.file("src/main/assets/models/ggml-tiny.bin")
+    val speakerFile = layout.projectDirectory.file("src/main/assets/models/voxceleb_resnet34_LM.onnx")
     inputs.file(modelFile)
     inputs.file(vadFile)
+    inputs.file(multilingualFile)
+    inputs.file(speakerFile)
     doLast {
+        check(multilingualFile.asFile.isFile && multilingualFile.asFile.length() == 77_691_713L) {
+            "Run python scripts/prepare_speech.py to prepare multilingual transcription."
+        }
+        check(speakerFile.asFile.isFile && speakerFile.asFile.length() == 26_530_550L) {
+            "Run python scripts/prepare_speaker.py to prepare the speaker model and Android runtime."
+        }
         val model = modelFile.asFile
         check(model.isFile && model.length() == 77_704_715L) {
             "Missing or incomplete speech model. Run scripts/prepare-speech.ps1 (or scripts/prepare_speech.py) before building."
@@ -55,6 +66,7 @@ val verifySpeechModel by tasks.registering {
 }
 tasks.named("preBuild") { dependsOn(verifySpeechModel) }
 dependencies {
+    implementation(files("libs/sherpa-onnx-1.13.3.aar"))
     implementation(project(":core"))
     implementation(platform("androidx.compose:compose-bom:2025.04.01"))
     implementation("androidx.activity:activity-compose:1.10.1")

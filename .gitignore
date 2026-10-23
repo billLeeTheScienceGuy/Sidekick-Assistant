@@ -12,5 +12,6 @@ local.properties
 models/
 *.gguf
 *.onnx
+app/libs/*.aar
 *.bin
 !gradle/wrapper/gradle-wrapper.jar

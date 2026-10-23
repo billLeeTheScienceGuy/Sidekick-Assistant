@@ -19,6 +19,12 @@ data class ProposedCommitment(
     val capturedAt: Instant,
     val zoneId: ZoneId,
     val needsReview: String,
+    val activityStartAt: Instant? = null,
+    val activityEndAt: Instant? = null,
+    val informational: Boolean = false,
+    val placeName: String? = null,
+    val placeAddress: String? = null,
+    val sourceKey: String? = null,
 )
 
 /** Implementations must not return invented transcripts when a model is absent. */

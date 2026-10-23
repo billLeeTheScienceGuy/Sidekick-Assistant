@@ -5,6 +5,6 @@ object NativeSpeech {
     init { System.loadLibrary("sidekick_speech") }
     external fun prepare()
     external fun cancel()
-    external fun transcribe(path: String, pcm: FloatArray, threads: Int = 2, retainModel: Boolean = false, audioContext: Int = 0): ByteArray
+    external fun transcribe(path: String, pcm: FloatArray, threads: Int = 2, retainModel: Boolean = false, audioContext: Int = 0, language: String = "en"): ByteArray
     external fun release()
 }

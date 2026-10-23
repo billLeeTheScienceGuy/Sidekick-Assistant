@@ -93,7 +93,7 @@ class IntentEngine(private val context: Context) {
             val seen = modelProposals.map { it.evidence.trimEnd('.', '!').lowercase() }.toSet()
             val supported = RuleIntentExtractor().extract(source).filter { it.evidence.trimEnd('.', '!').lowercase() !in seen }
                 .map { it.copy(needsReview = "Explicit future plan detected by rules. Review the action and time before saving.") }
-            modelProposals + supported
+            ActivityTiming.merge(source, modelProposals + supported)
         }
     }
 

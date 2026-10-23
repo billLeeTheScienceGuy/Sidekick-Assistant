@@ -29,3 +29,16 @@ if not vad.exists() or digest(vad) != vad_hash:
         raise RuntimeError("Speech detector checksum mismatch")
     temporary.replace(vad)
 print("Verified speech detector ready for APK packaging.")
+
+multilingual = target.with_name("ggml-tiny.bin")
+multilingual_hash = "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21"
+if not multilingual.exists() or digest(multilingual) != multilingual_hash:
+    temporary = multilingual.with_suffix(".download")
+    try:
+        urllib.request.urlretrieve("https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.bin", temporary)
+        if digest(temporary) != multilingual_hash:
+            raise RuntimeError("Multilingual speech model checksum mismatch")
+        temporary.replace(multilingual)
+    finally:
+        temporary.unlink(missing_ok=True)
+print("Verified multilingual speech model ready for APK packaging.")

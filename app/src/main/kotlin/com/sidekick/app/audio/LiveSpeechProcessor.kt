@@ -5,22 +5,28 @@ import com.sidekick.app.speech.NativeVad
 import com.sidekick.core.SpeechSegmenter
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import java.util.concurrent.atomic.AtomicInteger
 
 /** Capture/VAD feeds a bounded queue while one worker transcribes concurrently. */
 class LiveSpeechProcessor(
     private val speech: SpeechEngine,
+    private val inspect: (FloatArray) -> Boolean = { true },
     private val onText: suspend (String, Long, Long) -> Unit,
 ) {
     private val segmenter = SpeechSegmenter(80_000, 4_096, 12_288, 3_072, overlapSamples = 8_192)
     private val queue = Channel<SpeechSegmenter.Segment>(2, onUndeliveredElement = { it.samples.fill(0f) })
     private val history = FloatArray(16_384)
     private var historySize = 0
+    private val transcriptions = AtomicInteger()
+    val transcriptionCount: Int get() = transcriptions.get()
 
     suspend fun consume() {
         try {
             for (chunk in queue) {
                 val start = android.os.SystemClock.elapsedRealtime()
                 try {
+                    if (!inspect(chunk.samples)) continue
+                    transcriptions.incrementAndGet()
                     val text = try { withTimeout(30_000) { speech.transcribe(chunk.samples, 2, true, 512) } }
                         catch (_: TimeoutCancellationException) { error("Transcription timed out. Listening stopped; review text captured so far.") }
                     onText(text, chunk.startSample, android.os.SystemClock.elapsedRealtime() - start)
@@ -30,7 +36,7 @@ class LiveSpeechProcessor(
     }
 
     /** At most 4096 new samples; VAD sees a rolling context to avoid per-frame state resets. */
-    fun accept(samples: FloatArray) {
+    fun accept(samples: FloatArray): Boolean {
         require(samples.size in 1..4096)
         val keep = minOf(historySize, history.size - samples.size)
         history.copyInto(history, 0, historySize - keep, historySize)
@@ -41,13 +47,16 @@ class LiveSpeechProcessor(
         val context = history.copyOf(historySize).copyOf(paddedSize)
         val probabilities = try { NativeVad.probabilities(context) } finally { context.fill(0f) }
         val offset = historySize - samples.size
+        var detected = false
         for (index in samples.indices step 512) {
             val frame = samples.copyOfRange(index, minOf(index + 512, samples.size))
             try {
                 val speaking = probabilities[(offset + index) / 512] >= .5f
+                detected = detected || speaking
                 segmenter.accept(frame, speaking).forEach(::enqueue)
             } finally { frame.fill(0f) }
         }
+        return detected
     }
 
     private fun enqueue(chunk: SpeechSegmenter.Segment) {

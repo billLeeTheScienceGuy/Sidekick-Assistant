@@ -16,6 +16,12 @@ data class CommitmentEntity(
     val state: String = "PROPOSED",
     val dueAt: Long? = null,
     val deliveredAt: Long? = null,
+    val activityStartAt: Long? = null,
+    val activityEndAt: Long? = null,
+    @ColumnInfo(defaultValue = "0") val informational: Boolean = false,
+    val placeName: String? = null,
+    val placeAddress: String? = null,
+    val sourceKey: String? = null,
 )
 
 @Dao
@@ -32,10 +38,24 @@ interface CommitmentDao {
     @Query("DELETE FROM commitments") suspend fun deleteAll()
 }
 
-@Database(entities = [CommitmentEntity::class], version = 2, exportSchema = true)
+@Database(entities = [CommitmentEntity::class], version = 4, exportSchema = true)
 abstract class MemoryDatabase : RoomDatabase() {
     abstract fun commitments(): CommitmentDao
     companion object {
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE commitments ADD COLUMN informational INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE commitments ADD COLUMN placeName TEXT")
+                db.execSQL("ALTER TABLE commitments ADD COLUMN placeAddress TEXT")
+                db.execSQL("ALTER TABLE commitments ADD COLUMN sourceKey TEXT")
+            }
+        }
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE commitments ADD COLUMN activityStartAt INTEGER")
+                db.execSQL("ALTER TABLE commitments ADD COLUMN activityEndAt INTEGER")
+            }
+        }
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE commitments ADD COLUMN dueAt INTEGER")

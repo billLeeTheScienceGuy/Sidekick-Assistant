@@ -20,5 +20,6 @@ jobs:
         with:
           python-version: '3.12'
       - run: python scripts/prepare_speech.py
+      - run: python scripts/prepare_speaker.py
       - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
       - run: bash ./gradlew :core:test :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug

@@ -28,10 +28,18 @@ Java_com_sidekick_app_speech_NativeSpeech_release(JNIEnv *, jobject) {
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL
-Java_com_sidekick_app_speech_NativeSpeech_transcribe(JNIEnv *env, jobject, jstring path, jfloatArray pcm, jint threads, jboolean retain_model, jint audio_context) {
+Java_com_sidekick_app_speech_NativeSpeech_transcribe(JNIEnv *env, jobject, jstring path, jfloatArray pcm, jint threads, jboolean retain_model, jint audio_context, jstring language) {
     std::lock_guard<std::mutex> lock(inference_mutex);
     try {
         if (threads < 1 || threads > 4) { fail(env, "Invalid speech thread count."); return nullptr; }
+        const char *raw_language = env->GetStringUTFChars(language, nullptr);
+        if (!raw_language) return nullptr;
+        std::string language_code(raw_language);
+        env->ReleaseStringUTFChars(language, raw_language);
+        if (language_code != "auto" && language_code != "en" && language_code != "ko" && language_code != "zh" &&
+            language_code != "fr" && language_code != "de" && language_code != "ru") {
+            fail(env, "Unsupported speech language."); return nullptr;
+        }
         const auto count = env->GetArrayLength(pcm);
         if (audio_context < 0 || audio_context > 1500 || (audio_context && count > audio_context * 320)) {
             fail(env, "Audio exceeds the configured encoder window."); return nullptr;
@@ -63,7 +71,7 @@ Java_com_sidekick_app_speech_NativeSpeech_transcribe(JNIEnv *env, jobject, jstri
         auto p = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
         p.n_threads = threads;
         p.audio_ctx = audio_context;
-        p.language = "en";
+        p.language = language_code == "auto" ? nullptr : language_code.c_str();
         p.translate = false;
         p.no_context = true;
         p.print_progress = false;

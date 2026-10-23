@@ -1,5 +1,6 @@
 $ErrorActionPreference = 'Stop'
 & (Join-Path $PSScriptRoot 'prepare-vad.ps1')
+& (Join-Path $PSScriptRoot 'prepare-multilingual.ps1')
 $root = Split-Path -Parent $PSScriptRoot
 $destination = Join-Path $root 'app/src/main/assets/models'
 New-Item -ItemType Directory -Force $destination | Out-Null

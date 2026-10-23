@@ -14,6 +14,8 @@ import com.sidekick.app.MainActivity
 import com.sidekick.app.SidekickApplication
 import com.sidekick.app.speech.NativeVad
 import com.sidekick.app.speech.VadModel
+import com.sidekick.app.speaker.SpeakerEngine
+import com.sidekick.core.Speaker
 import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.*
@@ -25,6 +27,11 @@ import kotlin.math.sqrt
 data class ListeningState(
     val recording: Boolean = false, val processing: Boolean = false, val level: Float = 0f,
     val seconds: Int = 0, val chunks: Int = 0, val lastLatencyMs: Long = 0,
+    val speechActive: Boolean = false,
+    val enrolling: Boolean = false, val voiceSamples: Int = 0,
+    val voiceStatus: String = "Speaker unassigned",
+    val userVoiceChunks: Int = 0, val otherVoiceChunks: Int = 0, val unknownVoiceChunks: Int = 0,
+    val voiceDiagnostics: List<String> = emptyList(),
     val note: String = "Microphone is off",
 )
 
@@ -34,6 +41,7 @@ class ListeningService : Service() {
     private var capture: Job? = null
     @Volatile private var finish = false
     @Volatile private var discard = false
+    private var enrollment = false
     private val app get() = application as SidekickApplication
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -49,12 +57,13 @@ class ListeningService : Service() {
             stopSelf(); return START_NOT_STICKY
         }
         finish = false; discard = false
+        enrollment = intent.getBooleanExtra(ENROLL, false)
         try {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
                 NotificationChannel(CHANNEL, "Listening and transcription", NotificationManager.IMPORTANCE_LOW))
             if (Build.VERSION.SDK_INT >= 30) startForeground(1, notification(true), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
             else startForeground(1, notification(true))
-            mutableState.value = ListeningState(processing = true, note = "Preparing local speech detection…")
+            mutableState.value = ListeningState(processing = true, enrolling = enrollment, note = "Preparing local speech detection…")
             capture = scope.launch { runSession() }
         } catch (_: Exception) {
             mutableState.value = ListeningState(note = "Android could not start listening. Open the app and try again.")
@@ -80,6 +89,8 @@ class ListeningService : Service() {
         var recorder: AudioRecord? = null
         var processor: LiveSpeechProcessor? = null
         val raw = ShortArray(4096)
+        val speaker = SpeakerEngine(this, app.voiceProfile)
+        val enrollmentSamples = mutableListOf<FloatArray>()
         val wake = getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SideKick:LiveNotes")
         wake.setReferenceCounted(false)
         try {
@@ -95,11 +106,35 @@ class ListeningService : Service() {
             val started = Instant.now()
             val zone = ZoneId.systemDefault()
             val startedClock = SystemClock.elapsedRealtime()
-            app.temporary.beginSession()
+            if (!enrollment) app.temporary.beginSession()
             coroutineScope {
-                val pipeline = LiveSpeechProcessor(app.speech) { text, startSample, latency ->
+                var identified = Speaker.UNKNOWN
+                val pipeline = LiveSpeechProcessor(app.speech, inspect = { samples ->
+                    if (enrollment) {
+                        if (!discard && enrollmentSamples.size < 3 && samples.size >= 48_000) {
+                            enrollmentSamples += speaker.embedding(samples)
+                            mutableState.update { it.copy(voiceSamples = enrollmentSamples.size, note = "Voice setup: ${enrollmentSamples.size}/3 samples") }
+                            if (enrollmentSamples.size == 3) {
+                                finish = true
+                            }
+                        }
+                        false
+                    } else {
+                        identified = speaker.identify(samples)
+                        mutableState.update { it.copy(userVoiceChunks = it.userVoiceChunks + if (identified == Speaker.USER) 1 else 0,
+                            voiceDiagnostics = (it.voiceDiagnostics + speaker.lastDiagnostic).takeLast(20),
+                            otherVoiceChunks = it.otherVoiceChunks + if (identified == Speaker.OTHER) 1 else 0,
+                            unknownVoiceChunks = it.unknownVoiceChunks + if (identified == Speaker.UNKNOWN) 1 else 0,
+                            voiceStatus = when (identified) {
+                            Speaker.USER -> "Likely your voice"
+                            Speaker.OTHER -> "Another voice · information only"
+                            Speaker.UNKNOWN -> "Speaker unassigned · information only"
+                        }) }
+                        true
+                    }
+                }) { text, startSample, latency ->
                     ensureActive()
-                    if (!discard) app.temporary.appendLive(text, started.plusMillis(startSample * 1000 / 16000), zone)
+                    if (!discard) app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified)
                     mutableState.update { it.copy(chunks = it.chunks + 1, lastLatencyMs = latency,
                         note = if (it.recording) "Listening · live text is ready for review" else "Finishing remaining speech…") }
                 }
@@ -112,6 +147,7 @@ class ListeningService : Service() {
                 var renewAt = SystemClock.elapsedRealtime() + 5 * 60_000L
                 while (!finish) {
                     ensureActive()
+                    if (enrollment && SystemClock.elapsedRealtime() - startedClock >= 45_000) { finish = true; break }
                     if (SystemClock.elapsedRealtime() >= renewAt) {
                         wake.acquire(10 * 60_000L)
                         renewAt = SystemClock.elapsedRealtime() + 5 * 60_000L
@@ -125,9 +161,9 @@ class ListeningService : Service() {
                     if (filled == raw.size) {
                         val samples = FloatArray(filled) { raw[it] / 32768f }
                         val level = sqrt(samples.sumOf { it.toDouble() * it } / samples.size).toFloat()
-                        try { pipeline.accept(samples) } finally { samples.fill(0f); raw.fill(0) }
+                        val detected = try { pipeline.accept(samples) } finally { samples.fill(0f); raw.fill(0) }
                         filled = 0
-                        mutableState.update { it.copy(level = level, seconds = ((SystemClock.elapsedRealtime() - startedClock) / 1000).toInt()) }
+                        mutableState.update { it.copy(level = level, speechActive = detected, seconds = ((SystemClock.elapsedRealtime() - startedClock) / 1000).toInt()) }
                     }
                     delay(10)
                 }
@@ -142,8 +178,13 @@ class ListeningService : Service() {
                 pipeline.finish()
                 worker.join()
             }
+            currentCoroutineContext().ensureActive()
+            if (enrollment && !discard && enrollmentSamples.size == 3) app.voiceProfile.save(enrollmentSamples)
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
-                note = if (it.chunks == 0) "No speech detected. Try speaking closer to the microphone." else "Session finished. Review and approve commitments below.") }
+                note = if (enrollment) {
+                    if (enrollmentSamples.size == 3) "Voice setup complete. Your local voice profile is ready."
+                    else "Voice setup incomplete. Speak in longer phrases and try again; any previous profile is unchanged."
+                } else if (it.chunks == 0) "No speech detected. Try speaking closer to the microphone." else "Session finished. Review and approve commitments below.") }
         } catch (e: CancellationException) {
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
                 note = if (discard) "Session discarded" else "Listening interrupted. Review text captured so far.") }
@@ -153,10 +194,10 @@ class ListeningService : Service() {
                 note = e.message ?: "Listening failed. Review the text captured so far, then try again.") }
         } finally {
             runCatching { recorder?.stop() }; recorder?.release()
-            processor?.close(); raw.fill(0)
+            processor?.close(); raw.fill(0); speaker.close(); enrollmentSamples.forEach { it.fill(0f) }
             NativeVad.close()
             if (wake.isHeld) wake.release()
-            if (discard) app.temporary.discardSession()
+            if (discard && !enrollment) app.temporary.discardSession()
             stopSelf()
         }
     }
@@ -167,6 +208,7 @@ class ListeningService : Service() {
         private const val CHANNEL = "listening"
         const val FINISH = "com.sidekick.FINISH"
         const val CANCEL = "com.sidekick.CANCEL"
+        const val ENROLL = "com.sidekick.ENROLL"
         private val mutableState = MutableStateFlow(ListeningState())
         val state = mutableState.asStateFlow()
     }

@@ -33,15 +33,23 @@ class ReminderCoordinator(private val context: Context, private val dao: Commitm
     }
     private fun cancel(item: CommitmentEntity) { alarms.cancel(pending(item)); manager.cancel(item.id, 10) }
 
-    suspend fun save(id: String, title: String, dueAt: Long?, zoneId: String, proposal: CommitmentEntity? = null) = gate.withLock {
+    suspend fun save(id: String, title: String, dueAt: Long?, zoneId: String, proposal: CommitmentEntity? = null,
+        activityStartAt: Long? = null, activityEndAt: Long? = null, informational: Boolean? = null,
+        placeName: String? = null, placeAddress: String? = null) = gate.withLock {
         require(title.isNotBlank() && title.length <= 500) { "Enter a title of 1–500 characters." }
+        if (activityStartAt != null && activityEndAt != null) com.sidekick.core.CalendarOverlap.validate(activityStartAt, activityEndAt)
         if (dueAt != null) {
             require(dueAt > System.currentTimeMillis()) { "Choose a future reminder time." }
             require(notificationsAllowed()) { "Enable SideKick notifications in Android settings before scheduling." }
         }
         val old = dao.get(id)
         val source = old ?: proposal?.takeIf { it.id == id } ?: error("This commitment was deleted.")
+        require((placeName?.length ?: 0) <= 200 && (placeAddress?.length ?: 0) <= 500) { "Use a shorter place name or address." }
         val updated = source.copy(title = title.trim(), state = "ACCEPTED", dueAt = dueAt, zoneId = zoneId,
+            activityStartAt = activityStartAt, activityEndAt = activityEndAt,
+            informational = informational ?: source.informational,
+            placeName = (placeName ?: source.placeName)?.trim()?.ifBlank { null },
+            placeAddress = (placeAddress ?: source.placeAddress)?.trim()?.ifBlank { null },
             deliveredAt = null, reviewNote = if (dueAt == null) "Saved without a reminder." else "Reminder requested. Android may delay delivery to save battery.")
         old?.let(::cancel)
         try { if (old == null) dao.insertAll(listOf(updated)) else dao.update(updated); arm(updated) }

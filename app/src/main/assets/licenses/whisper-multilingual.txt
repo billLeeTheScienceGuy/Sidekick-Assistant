@@ -1,0 +1,7 @@
+OpenAI Whisper tiny, multilingual model, MIT License (see whisper-MIT.txt).
+Converted GGML weights by Georgi Gerganov / whisper.cpp contributors.
+Source: https://huggingface.co/ggerganov/whisper.cpp
+Revision: 5359861c739e955e79d9a303bcbc70fb988958b1
+File: ggml-tiny.bin, 77,691,713 bytes
+SHA-256: be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21
+Used without weight modifications; selected language controls transcription, not translation.

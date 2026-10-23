@@ -21,6 +21,8 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val liveText = container.temporary.text
     val smartReady = container.intent.ready
+    val guidance = container.guidance.mode
+    fun setGuidance(mode: GuidanceMode) = container.guidance.setMode(mode)
     val message = MutableStateFlow("Record your voice or type your own words.")
     val busy = MutableStateFlow(false)
     val transcript = MutableStateFlow("")
@@ -105,23 +107,35 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         container.temporary.add(CommitmentEntity(UUID.randomUUID().toString(), "New commitment", "Manually added",
             Instant.now().toEpochMilli(), ZoneId.systemDefault().id, "Temporary proposal. Edit and approve to save."))
     }
-    fun save(id: String, title: String, time: String, zoneId: String, onSaved: () -> Unit) {
+    fun analyzeSharedText(text: String) = mutate {
+        if (!container.guidance.sharedMessages.value) { message.value = "Shared-message analysis is disabled in Settings."; return@mutate }
+        val input = Transcript(text.take(6000), Instant.now(), ZoneId.systemDefault(), Speaker.OTHER, true)
+        val proposals = withContext(Dispatchers.Default) { ActivityTiming.extract(input, informationalOnly = true) }
+            .map { it.copy(sourceKey = "shared", needsReview = "Shared message: attendance is unconfirmed. " + it.needsReview) }
+        val count = container.temporary.addProposals(proposals)
+        message.value = "$count shared-message suggestion(s) ready for review. Nothing was saved automatically."
+    }
+    fun save(id: String, title: String, time: String, zoneId: String, activityStart: String = "", activityEnd: String = "",
+        informational: Boolean? = null, placeName: String? = null, placeAddress: String? = null, onSaved: () -> Unit) {
         editError.value = null
         viewModelScope.launch {
             try {
                 val due = if (time.isBlank()) null else TimeResolver.parseEditor(time, ZoneId.of(zoneId)).toEpochMilli()
                 val proposal = container.temporary.drafts.value.find { it.id == id }
-                container.reminders.save(id, title, due, zoneId, proposal)
-                container.temporary.remove(id)
+                val start = if (activityStart.isBlank()) null else TimeResolver.parseEditor(activityStart, ZoneId.of(zoneId)).toEpochMilli()
+                val end = if (activityEnd.isBlank()) null else TimeResolver.parseEditor(activityEnd, ZoneId.of(zoneId)).toEpochMilli()
+                val target = container.temporary.updateTarget(id) ?: id
+                container.reminders.save(target, title, due, zoneId, proposal, start, end, informational, placeName, placeAddress)
+                dao.get(target)?.let { container.temporary.approve(id, it) }
                 onSaved()
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { editError.value = e.message ?: "Could not save. Check the title and date/time." }
         }
     }
-    fun dismiss(id: String) = mutate { container.temporary.remove(id); container.reminders.mark(id, "DISMISSED") }
-    fun done(id: String) = mutate { container.reminders.mark(id, "DONE") }
-    fun delete(id: String) = mutate { container.temporary.remove(id); container.reminders.delete(id) }
-    fun deleteAll() = mutate { container.temporary.discard(); container.reminders.deleteAll() }
+    fun dismiss(id: String) = mutate { container.temporary.dismiss(id); container.reminders.mark(id, "DISMISSED") }
+    fun done(id: String) = mutate { container.reminders.mark(id, "DONE"); container.temporary.retire(id) }
+    fun delete(id: String) = mutate { container.temporary.dismiss(id); container.reminders.delete(id); container.temporary.retire(id) }
+    fun deleteAll() = mutate { container.messageInbox.clear(); container.temporary.discard(); container.reminders.deleteAll() }
     fun reopen() { editError.value = null }
     fun notificationPermissionChanged() { viewModelScope.launch { runCatching { container.reminders.restore() } } }
     private fun mutate(action: suspend () -> Unit) {

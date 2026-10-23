@@ -11,12 +11,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -26,12 +28,23 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sidekick.app.audio.ListeningService
 import com.sidekick.app.data.CommitmentEntity
 import com.sidekick.core.TimeResolver
+import com.sidekick.core.Planner
+import com.sidekick.core.PlannerEntry
+import com.sidekick.core.PlannerView
 import java.time.Instant
 import java.time.ZoneId
 
 class MainActivity : ComponentActivity() {
+    private var sharedText by mutableStateOf<String?>(null)
+    private fun receiveShare(incoming: Intent?) {
+        if (incoming?.action == Intent.ACTION_SEND && incoming.type == "text/plain")
+            sharedText = runCatching { incoming.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.take(6000) }.getOrNull()?.takeIf { it.isNotBlank() }
+        intent?.removeExtra(Intent.EXTRA_TEXT)
+    }
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); receiveShare(intent) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        receiveShare(intent)
         setContent {
             MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF176B58), background = Color(0xFFF6F8F5))) { SidekickScreen() }
         }
@@ -47,12 +60,24 @@ class MainActivity : ComponentActivity() {
         val liveText by model.liveText.collectAsStateWithLifecycle()
         val smartReady by model.smartReady.collectAsStateWithLifecycle()
         val editError by model.editError.collectAsStateWithLifecycle()
+        val guidance by model.guidance.collectAsStateWithLifecycle()
+        val speechLanguage by (application as SidekickApplication).guidance.speechLanguage.collectAsStateWithLifecycle()
+        var settingsOpen by remember { mutableStateOf(false) }
         var consent by remember { mutableStateOf(false) }
         var micDialog by remember { mutableStateOf(false) }
+        var showVoiceDiagnostics by remember { mutableStateOf(false) }
         var deleteDialog by remember { mutableStateOf(false) }
         var edit by remember { mutableStateOf<CommitmentEntity?>(null) }
         var error by remember { mutableStateOf<String?>(null) }
         var awaitingLiveNotifications by remember { mutableStateOf(false) }
+        var plannerOpen by rememberSaveable { mutableStateOf(false) }
+        var selectedView by rememberSaveable { mutableStateOf(PlannerView.REVIEW) }
+        var search by rememberSaveable { mutableStateOf("") }
+        val references = entries.map { PlannerEntry(it.id, it.state, it.dueAt, it.capturedAt) }
+        val byId = entries.associateBy { it.id }
+        val shownEntries = if (plannerOpen) Planner.select(references, selectedView).mapNotNull { byId[it.id] }
+            .filter { search.isBlank() || it.title.contains(search.trim(), true) || it.evidence.contains(search.trim(), true) }
+            else entries
 
         fun serviceAction(action: String) {
             try { startService(Intent(this@MainActivity, ListeningService::class.java).setAction(action)) }
@@ -91,14 +116,32 @@ class MainActivity : ComponentActivity() {
                 item {
                     Text("SideKick", style = MaterialTheme.typography.headlineLarge)
                     Text("A little less to remember", style = MaterialTheme.typography.titleMedium)
+                    TextButton(onClick = { settingsOpen = true }, modifier = Modifier.testTag("settings")) { Text("Settings") }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        FilterChip(selected = !plannerOpen, onClick = { plannerOpen = false }, label = { Text("Capture") })
+                        FilterChip(selected = plannerOpen, onClick = { plannerOpen = true }, label = { Text("Planner") }, modifier = Modifier.testTag("planner-tab"))
+                    }
                 }
-                item {
+                if (plannerOpen && (listening.recording || listening.processing)) item {
+                    Text(listening.note)
+                    if (listening.recording) Button(onClick = { serviceAction(ListeningService.FINISH) }) { Text("Finish listening") }
+                    TextButton(onClick = { serviceAction(ListeningService.CANCEL) }) { Text("Discard session") }
+                }
+                if (!plannerOpen) item {
                     Card {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text("Live notes", style = MaterialTheme.typography.titleLarge)
-                            Text("Speech detection · English · on-device transcription")
+                            Text("Speech detection · ${speechLanguage.label} · on-device transcription")
+                            if (speechLanguage != com.sidekick.core.SpeechLanguage.ENGLISH) Text("Multilingual transcription. Event and date detection currently understands English.", style = MaterialTheme.typography.bodySmall)
                             Text(listening.note)
+                            if (listening.chunks > 0) Text("Voice chunks: likely you ${listening.userVoiceChunks} · other ${listening.otherVoiceChunks} · unassigned ${listening.unknownVoiceChunks}", style = MaterialTheme.typography.bodySmall)
+                            if (listening.voiceDiagnostics.isNotEmpty()) {
+                                TextButton(onClick = { showVoiceDiagnostics = !showVoiceDiagnostics }) { Text(if (showVoiceDiagnostics) "Hide voice diagnostics" else "Voice diagnostics") }
+                                if (showVoiceDiagnostics) listening.voiceDiagnostics.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+                            }
                             if (listening.recording) {
+                                Text(if (listening.speechActive) "Speech detected" else "Waiting for speech · microphone stays on")
+                                Text(listening.voiceStatus)
                                 LinearProgressIndicator(progress = { (listening.level * 5).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                                 Text("${listening.seconds / 60}m ${listening.seconds % 60}s · ${listening.chunks} speech chunks")
                                 Button(onClick = { serviceAction(ListeningService.FINISH) }) { Text("Finish listening") }
@@ -115,12 +158,12 @@ class MainActivity : ComponentActivity() {
                                 Text(liveText.takeLast(3000), modifier = Modifier.testTag("live-text"))
                                 TextButton(onClick = { model.setTranscript(liveText.takeLast(if (smartReady) 4000 else 6000), Instant.now()); consent = false }) { Text("Copy recent text for editing") }
                             }
-                            Text("Listening continues through pauses until you finish. Recent text is temporary; older text leaves this view after commitment detection. Review proposals below. Only approved commitments are saved. Speaker recognition is not enabled.", style = MaterialTheme.typography.bodySmall)
+                            Text("Listening continues through pauses until you finish. Recent text is temporary; only approved items are saved. Set up your voice in Settings for personal plans. Other or uncertain voices produce information-only suggestions. Voice matches can be wrong.", style = MaterialTheme.typography.bodySmall)
                             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                         }
                     }
                 }
-                item {
+                if (!plannerOpen) item {
                     Card {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text("Edit or type notes", style = MaterialTheme.typography.titleLarge)
@@ -141,6 +184,10 @@ class MainActivity : ComponentActivity() {
                             Button(onClick = model::analyze, enabled = consent && transcript.isNotBlank() && !busy && !listening.recording && !listening.processing) {
                                 Text(if (busy) "Analyzing…" else "Find commitments")
                             }
+                            TextButton(onClick = { model.analyzeSharedText(transcript); consent = false },
+                                enabled = transcript.isNotBlank() && !busy && !listening.recording && !listening.processing) {
+                                Text("Analyze as message text")
+                            }
                             Text(if (smartReady) "After listening finishes, copy recent text here and confirm it is yours. Smart analysis handles up to 4,000 characters. Live suggestions still use basic rules. Model suggestions can be wrong; review every result."
                                 else "Commitment detection uses simple English rules until the optional Qwen model is imported. Review every result.", style = MaterialTheme.typography.bodySmall)
                             Text(message, style = MaterialTheme.typography.bodySmall)
@@ -149,21 +196,54 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 item {
-                    Text("Your memory · ${entries.size}", style = MaterialTheme.typography.titleLarge)
-                    Text("Review and accept a commitment. Add a time only if you want a reminder.")
-                    TextButton(onClick = model::addManual) { Text("Add a commitment manually") }
+                    Text(if (plannerOpen) "Your planner" else "Your memory · ${entries.size}", style = MaterialTheme.typography.titleLarge)
+                    Text("Review suggestions before saving. Manual entry, activity times and reminders are optional.")
+                    if (plannerOpen) {
+                        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            PlannerView.entries.forEach { view ->
+                                val label = when (view) {
+                                    PlannerView.REVIEW -> "Review"
+                                    PlannerView.REMINDERS -> "Reminders"
+                                    PlannerView.UNSCHEDULED -> "No reminder"
+                                    PlannerView.HISTORY -> "History"
+                                    PlannerView.ALL -> "All"
+                                }
+                                FilterChip(selected = selectedView == view, onClick = { selectedView = view },
+                                    label = { Text("$label (${Planner.select(references, view).size})") }, modifier = Modifier.testTag("filter-${view.name}"))
+                            }
+                        }
+                        OutlinedTextField(value = search, onValueChange = { search = it }, label = { Text("Search commitments") },
+                            singleLine = true, modifier = Modifier.fillMaxWidth().testTag("planner-search"))
+                    }
+                    TextButton(onClick = { model.addManual(); selectedView = PlannerView.REVIEW; search = "" }) { Text("Add a commitment manually") }
                 }
-                if (entries.isEmpty()) item { Text("No commitments yet. Try the example above.") }
-                items(entries, key = { it.id }) { entry ->
+                if (shownEntries.isEmpty()) item { Text(if (plannerOpen) "No commitments in this view." else "No commitments yet. Try the example above.") }
+                items(shownEntries, key = { it.id }) { entry ->
                     Card {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(entry.title, style = MaterialTheme.typography.titleMedium)
                             Text("“${entry.evidence}”")
                             Text(entry.state.lowercase().replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.primary)
-                            entry.dueAt?.let { Text("Reminder: ${TimeResolver.format(Instant.ofEpochMilli(it), ZoneId.of(entry.zoneId))} · ${entry.zoneId}") }
+                            entry.dueAt?.let {
+                                Text("Reminder: ${TimeResolver.format(Instant.ofEpochMilli(it), ZoneId.of(entry.zoneId))} · ${entry.zoneId}")
+                                if (entry.state == "ACCEPTED" && it < System.currentTimeMillis())
+                                    Text("Reminder time has passed. Mark done or choose another time.", color = MaterialTheme.colorScheme.error)
+                            }
+                            if (entry.activityStartAt != null || entry.activityEndAt != null) {
+                                fun activityTime(value: Long?) = value?.let { TimeResolver.format(Instant.ofEpochMilli(it), ZoneId.of(entry.zoneId)) } ?: "Unknown"
+                                Text("Activity: ${activityTime(entry.activityStartAt)} – ${activityTime(entry.activityEndAt)}")
+                            }
+                            if (entry.informational) Text("Information only · not blocking your calendar")
+                            if (entry.sourceKey != null) Text("From an incoming message · attendance unconfirmed")
+                            entry.placeName?.let { Text("Place: $it") }
+                            entry.placeAddress?.let { Text(it) }
                             Text(entry.reviewNote, style = MaterialTheme.typography.bodySmall)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(onClick = { openEditor(entry) }) { Text(if (entry.state == "PROPOSED") "Review & accept" else "Edit") }
+                                Button(onClick = { openEditor(entry) }) { Text(when (entry.state) {
+                                    "PROPOSED" -> "Review & accept"
+                                    "DONE", "DISMISSED" -> "Reopen"
+                                    else -> "Edit"
+                                }) }
                                 if (entry.state == "PROPOSED") TextButton(onClick = { model.dismiss(entry.id) }) { Text("Dismiss") }
                                 if (entry.state == "ACCEPTED") TextButton(onClick = { model.done(entry.id) }) { Text("Done") }
                             }
@@ -174,12 +254,12 @@ class MainActivity : ComponentActivity() {
                 item {
                     if (entries.isNotEmpty()) TextButton(onClick = { deleteDialog = true }) { Text("Delete all saved memory") }
                     TextButton(onClick = { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }) { Text("Notification settings") }
-                    Text("No cloud connection. Reminders may be delayed by Android battery saving. Raw audio is never saved.", style = MaterialTheme.typography.bodySmall)
+                    Text("Speech and intent run on this phone. Optional place lookup uses an online provider. Reminders may be delayed by battery saving. Raw audio is never saved.", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
-        if (micDialog) AlertDialog(onDismissRequest = { micDialog = false }, title = { Text("Start your own live notes?") },
-            text = { Text("Use only your own speech where others agree to microphone use. SideKick will transcribe speech and propose commitments for review while listening, including with the screen off. Audio stays in memory and is discarded after processing. Text and unapproved proposals are temporary; only commitments you approve are saved. Tap Finish or Discard in the notification to stop.") },
+        if (micDialog) AlertDialog(onDismissRequest = { micDialog = false }, title = { Text("Start live notes?") },
+            text = { Text("Start when everyone included has agreed to live transcription. Stop if someone joins without agreeing or withdraws consent. Voice matching does not verify consent. Listening continues with the screen off. Audio is discarded after processing; text and suggestions are temporary. Only items you approve are saved. Not saving audio does not remove consent requirements. Use Finish or Discard in the notification to stop.") },
             confirmButton = { TextButton(onClick = {
                 micDialog = false
                 if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -189,8 +269,19 @@ class MainActivity : ComponentActivity() {
             dismissButton = { TextButton(onClick = { micDialog = false }) { Text("Cancel") } })
         edit?.let { item ->
             key(item.id) {
-                Editor(item, editError, onClose = { edit = null }, onSave = { title, time, zone -> model.save(item.id, title, time, zone) { edit = null } })
+                Editor(item, entries, editError, askAboutEnd = guidance == GuidanceMode.ASK,
+                    onClose = { edit = null }, onSave = { title, time, zone, start, end, info, place, address -> model.save(item.id, title, time, zone, start, end, info, place, address) { edit = null } })
             }
+        }
+        if (settingsOpen) AppSettingsDialog((application as SidekickApplication).guidance) { settingsOpen = false }
+        sharedText?.let { text ->
+            val sharing by (application as SidekickApplication).guidance.sharedMessages.collectAsStateWithLifecycle()
+            AlertDialog(onDismissRequest = { sharedText = null }, title = { Text("Shared message") },
+                text = { Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(if (sharing) "Analyze selected text for information-only activity suggestions? Sender plans are not assumed to be yours. No message is saved automatically." else "Shared-message analysis is off. Enable it in Settings to analyze this text.")
+                    Text(text.take(2000))
+                } }, confirmButton = { TextButton(enabled = sharing, onClick = { model.analyzeSharedText(text); sharedText = null; plannerOpen = true; selectedView = PlannerView.REVIEW; search = "" }) { Text("Find activity suggestions") } },
+                dismissButton = { TextButton(onClick = { sharedText = null }) { Text("Discard") } })
         }
         if (deleteDialog) AlertDialog(onDismissRequest = { deleteDialog = false }, title = { Text("Delete all saved memory?") },
             text = { Text("All commitments and their reminders will be removed.") },
@@ -200,23 +291,46 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun Editor(item: CommitmentEntity, error: String?, onClose: () -> Unit, onSave: (String, String, String) -> Unit) {
+private fun Editor(item: CommitmentEntity, entries: List<CommitmentEntity>, error: String?, askAboutEnd: Boolean, onClose: () -> Unit, onSave: (String, String, String, String, String, Boolean, String, String) -> Unit) {
     var title by remember { mutableStateOf(item.title) }
+    var informational by remember { mutableStateOf(item.informational) }
+    var placeName by remember { mutableStateOf(item.placeName.orEmpty()) }
+    var placeAddress by remember { mutableStateOf(item.placeAddress.orEmpty()) }
     val zone = remember { ZoneId.of(item.zoneId) }
     val suggested = remember { item.dueAt?.let(Instant::ofEpochMilli) ?: TimeResolver.suggest(item.evidence, Instant.ofEpochMilli(item.capturedAt), zone) }
     var time by remember { mutableStateOf(suggested?.let { TimeResolver.format(it, zone) } ?: "") }
+    var activityStart by remember { mutableStateOf(item.activityStartAt?.let { TimeResolver.format(Instant.ofEpochMilli(it), zone) } ?: "") }
+    var activityEnd by remember { mutableStateOf(item.activityEndAt?.let { TimeResolver.format(Instant.ofEpochMilli(it), zone) } ?: "") }
+    val due = runCatching { TimeResolver.parseEditor(time, zone).toEpochMilli() }.getOrNull()
+    val clashes = due?.let { proposed ->
+        val ids = Planner.sameReminderMinute(entries.map { PlannerEntry(it.id, it.state, it.dueAt, it.capturedAt) }, item.id, proposed).toSet()
+        entries.filter { it.id in ids }.map { it.title }
+    }.orEmpty()
     AlertDialog(onDismissRequest = onClose, title = { Text("Review commitment") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(value = title, onValueChange = { if (it.length <= 500) title = it }, label = { Text("What will you do?") }, modifier = Modifier.testTag("edit-title"))
-                OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text("Reminder: yyyy-MM-dd HH:mm") }, modifier = Modifier.testTag("edit-time"))
-                Text("Timezone: ${zone.id}. Check suggested times; leave blank for no reminder.")
+                OutlinedTextField(value = title, onValueChange = { if (it.length <= 500) title = it }, label = { Text(if (informational) "Event or note" else "What will you do?") }, modifier = Modifier.testTag("edit-title"))
                 Row {
-                    TextButton(onClick = { time = TimeResolver.format(Instant.now().plusSeconds(120), zone) }) { Text("In 2 minutes") }
-                    TextButton(onClick = { time = "" }) { Text("No reminder") }
+                    Checkbox(informational, { informational = it }, modifier = Modifier.testTag("event-informational"))
+                    Text("For information only; I’m not planning to attend.", Modifier.padding(top = 12.dp))
                 }
+                DateTimeChoice("Reminder", time, zone, "edit-time", "pick-reminder", onChange = { time = it })
+                Text("Timezone: ${zone.id}. Check suggested times; choose No reminder to clear it.")
+                if (!informational && clashes.isNotEmpty()) Text("Other reminders in this minute: ${clashes.take(3).joinToString()}. This does not check event durations or your calendar.")
+                Column(Modifier.fillMaxWidth()) {
+                    TextButton(onClick = { time = TimeResolver.format(Instant.now().plusSeconds(120), zone) }, modifier = Modifier.fillMaxWidth()) { Text("In 2 minutes", maxLines = 1) }
+                    TextButton(onClick = { time = TimeResolver.format(Instant.now().plusSeconds(3600), zone) }, modifier = Modifier.fillMaxWidth()) { Text("In 1 hour", maxLines = 1) }
+                    TextButton(onClick = { time = "" }, modifier = Modifier.fillMaxWidth()) { Text("No reminder", maxLines = 1) }
+                }
+                CalendarSection(activityStart, activityEnd, zone, informational = informational, askAboutEnd = askAboutEnd &&
+                    (activityStart.isNotBlank() || com.sidekick.core.ActivityTiming.looksLikeActivity(item.title)),
+                    onStart = { activityStart = it }, onEnd = { activityEnd = it })
+                PlaceSection(placeName, placeAddress, onName = {
+                    if (!placeName.trim().equals(it.trim(), true)) placeAddress = ""
+                    placeName = it
+                }, onAddress = { placeAddress = it })
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
-        }, confirmButton = { TextButton(onClick = { onSave(title, time, zone.id) }, enabled = title.isNotBlank()) { Text("Save & accept") } },
+        }, confirmButton = { TextButton(onClick = { onSave(title, time, zone.id, activityStart, activityEnd, informational, placeName, placeAddress) }, enabled = title.isNotBlank()) { Text("Save & accept") } },
         dismissButton = { TextButton(onClick = onClose) { Text("Cancel") } })
 }
