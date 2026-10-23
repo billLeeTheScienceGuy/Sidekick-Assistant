@@ -44,22 +44,16 @@ class MainActivity : ComponentActivity() {
         val busy by model.busy.collectAsStateWithLifecycle()
         val transcript by model.transcript.collectAsStateWithLifecycle()
         val listening by ListeningService.state.collectAsStateWithLifecycle()
+        val liveText by model.liveText.collectAsStateWithLifecycle()
+        val smartReady by model.smartReady.collectAsStateWithLifecycle()
         val editError by model.editError.collectAsStateWithLifecycle()
         var consent by remember { mutableStateOf(false) }
         var micDialog by remember { mutableStateOf(false) }
         var deleteDialog by remember { mutableStateOf(false) }
         var edit by remember { mutableStateOf<CommitmentEntity?>(null) }
         var error by remember { mutableStateOf<String?>(null) }
+        var awaitingLiveNotifications by remember { mutableStateOf(false) }
 
-        LaunchedEffect(listening.resultId, listening.transcript) {
-            val text = listening.transcript
-            val id = listening.resultId
-            if (text != null && id != null) {
-                model.setTranscript(text, Instant.ofEpochMilli(listening.capturedAt), ZoneId.of(listening.zoneId))
-                consent = false
-                ListeningService.consumeTranscript(id)
-            }
-        }
         fun serviceAction(action: String) {
             try { startService(Intent(this@MainActivity, ListeningService::class.java).setAction(action)) }
             catch (e: Exception) { error = "Could not update the recording session." }
@@ -72,11 +66,18 @@ class MainActivity : ComponentActivity() {
             if (granted) startRecording() else error = "Microphone permission was denied. You can still type."
         }
         val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (!granted) error = "Notifications are disabled. You can save commitments without reminders."
+            if (awaitingLiveNotifications) {
+                awaitingLiveNotifications = false
+                if (granted) microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+                else error = "Enable notifications for listening controls, then try again."
+            } else if (!granted) error = "Notifications are disabled. You can save commitments without reminders."
             else model.notificationPermissionChanged()
         }
         val wavPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri?.let { consent = false; model.importWav(it) }
+        }
+        val modelPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            uri?.let(model::importIntentModel)
         }
         fun openEditor(item: CommitmentEntity) {
             model.reopen(); edit = item
@@ -94,21 +95,27 @@ class MainActivity : ComponentActivity() {
                 item {
                     Card {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text("Say it. Remember it.", style = MaterialTheme.typography.titleLarge)
-                            Text("Whisper tiny.en · English · on-device transcription")
+                            Text("Live notes", style = MaterialTheme.typography.titleLarge)
+                            Text("Speech detection · English · on-device transcription")
                             Text(listening.note)
                             if (listening.recording) {
                                 LinearProgressIndicator(progress = { (listening.level * 5).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
-                                Text("${listening.seconds} / 30 seconds")
-                                Button(onClick = { serviceAction(ListeningService.FINISH) }) { Text("Finish & transcribe") }
+                                Text("${listening.seconds / 60}m ${listening.seconds % 60}s · ${listening.chunks} speech chunks")
+                                Button(onClick = { serviceAction(ListeningService.FINISH) }) { Text("Finish listening") }
                             } else if (listening.processing) LinearProgressIndicator(Modifier.fillMaxWidth())
-                            else Button(onClick = { micDialog = true }, enabled = !busy) { Text("Record my voice") }
+                            else Button(onClick = { micDialog = true }, enabled = !busy) { Text("Start live notes") }
                             if (!listening.recording && !listening.processing) {
                                 TextButton(onClick = { wavPicker.launch(arrayOf("audio/wav", "audio/x-wav", "audio/wave")) }, enabled = !busy) { Text("Import my WAV recording") }
                             }
                             if (listening.recording || listening.processing)
-                                TextButton(onClick = { serviceAction(ListeningService.CANCEL) }) { Text("Discard recording") }
-                            Text("Record your own voice for up to 30 seconds. Audio is discarded after transcription. Speaker recognition is not enabled.", style = MaterialTheme.typography.bodySmall)
+                                TextButton(onClick = { serviceAction(ListeningService.CANCEL) }) { Text("Discard session") }
+                            if (listening.lastLatencyMs > 0) Text("Last chunk processed in ${listening.lastLatencyMs / 1000.0}s", style = MaterialTheme.typography.bodySmall)
+                            if (liveText.isNotBlank()) {
+                                Text("Recent live text", style = MaterialTheme.typography.titleMedium)
+                                Text(liveText.takeLast(3000), modifier = Modifier.testTag("live-text"))
+                                TextButton(onClick = { model.setTranscript(liveText.takeLast(if (smartReady) 4000 else 6000), Instant.now()); consent = false }) { Text("Copy recent text for editing") }
+                            }
+                            Text("Listening continues through pauses until you finish. Recent text is temporary; older text leaves this view after commitment detection. Review proposals below. Only approved commitments are saved. Speaker recognition is not enabled.", style = MaterialTheme.typography.bodySmall)
                             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                         }
                     }
@@ -116,7 +123,11 @@ class MainActivity : ComponentActivity() {
                 item {
                     Card {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text("Review your words", style = MaterialTheme.typography.titleLarge)
+                            Text("Edit or type notes", style = MaterialTheme.typography.titleLarge)
+                            Text(if (smartReady) "Smart analysis · Qwen3-0.6B · installed" else "Basic rules · smart model not installed", style = MaterialTheme.typography.bodySmall)
+                            TextButton(onClick = { modelPicker.launch(arrayOf("*/*")) }, enabled = !busy && !listening.recording && !listening.processing) {
+                                Text(if (smartReady) "Replace local intent model" else "Import local intent model (484 MB)")
+                            }
                             OutlinedTextField(value = transcript, onValueChange = { model.setTranscript(it) },
                                 label = { Text("Transcript or typed words") }, modifier = Modifier.fillMaxWidth().testTag("transcript"), minLines = 3)
                             Row {
@@ -127,12 +138,13 @@ class MainActivity : ComponentActivity() {
                                 Checkbox(checked = consent, onCheckedChange = { consent = it }, modifier = Modifier.testTag("consent"))
                                 Text("These are my words. Save matching commitments on this device.", Modifier.padding(top = 10.dp))
                             }
-                            Button(onClick = model::analyze, enabled = consent && transcript.isNotBlank() && !busy) {
+                            Button(onClick = model::analyze, enabled = consent && transcript.isNotBlank() && !busy && !listening.recording && !listening.processing) {
                                 Text(if (busy) "Analyzing…" else "Find commitments")
                             }
-                            Text("Commitment detection currently uses simple English rules. Review every result.", style = MaterialTheme.typography.bodySmall)
+                            Text(if (smartReady) "After listening finishes, copy recent text here and confirm it is yours. Smart analysis handles up to 4,000 characters. Live suggestions still use basic rules. Model suggestions can be wrong; review every result."
+                                else "Commitment detection uses simple English rules until the optional Qwen model is imported. Review every result.", style = MaterialTheme.typography.bodySmall)
                             Text(message, style = MaterialTheme.typography.bodySmall)
-                            if (busy) TextButton(onClick = model::cancelImport) { Text("Cancel audio import") }
+                            if (busy) TextButton(onClick = model::cancelImport) { Text("Cancel current operation") }
                         }
                     }
                 }
@@ -166,9 +178,14 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        if (micDialog) AlertDialog(onDismissRequest = { micDialog = false }, title = { Text("Record your voice?") },
-            text = { Text("Record only your own voice in a setting where others agree to microphone use. Your current text will be replaced by the transcript. Processing happens on this device.") },
-            confirmButton = { TextButton(onClick = { micDialog = false; microphonePermission.launch(Manifest.permission.RECORD_AUDIO) }) { Text("Start recording") } },
+        if (micDialog) AlertDialog(onDismissRequest = { micDialog = false }, title = { Text("Start your own live notes?") },
+            text = { Text("Use only your own speech where others agree to microphone use. SideKick will transcribe speech and propose commitments for review while listening, including with the screen off. Audio stays in memory and is discarded after processing. Text and unapproved proposals are temporary; only commitments you approve are saved. Tap Finish or Discard in the notification to stop.") },
+            confirmButton = { TextButton(onClick = {
+                micDialog = false
+                if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    awaitingLiveNotifications = true; notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+            }) { Text("Start listening") } },
             dismissButton = { TextButton(onClick = { micDialog = false }) { Text("Cancel") } })
         edit?.let { item ->
             key(item.id) {

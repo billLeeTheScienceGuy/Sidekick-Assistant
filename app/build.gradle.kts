@@ -12,8 +12,8 @@ android {
         applicationId = "com.sidekick.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 5
+        versionName = "0.4.1"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -40,11 +40,16 @@ kotlin { jvmToolchain(17) }
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 val verifySpeechModel by tasks.registering {
     val modelFile = layout.projectDirectory.file("src/main/assets/models/ggml-tiny.en.bin")
+    val vadFile = layout.projectDirectory.file("src/main/assets/models/ggml-silero-v5.1.2.bin")
     inputs.file(modelFile)
+    inputs.file(vadFile)
     doLast {
         val model = modelFile.asFile
         check(model.isFile && model.length() == 77_704_715L) {
             "Missing or incomplete speech model. Run scripts/prepare-speech.ps1 (or scripts/prepare_speech.py) before building."
+        }
+        check(vadFile.asFile.isFile && vadFile.asFile.length() == 885_098L) {
+            "Missing speech detector. Run scripts/prepare-speech.ps1 or scripts/prepare_speech.py."
         }
     }
 }

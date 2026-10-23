@@ -33,18 +33,25 @@ class ReminderCoordinator(private val context: Context, private val dao: Commitm
     }
     private fun cancel(item: CommitmentEntity) { alarms.cancel(pending(item)); manager.cancel(item.id, 10) }
 
-    suspend fun save(id: String, title: String, dueAt: Long?, zoneId: String) = gate.withLock {
+    suspend fun save(id: String, title: String, dueAt: Long?, zoneId: String, proposal: CommitmentEntity? = null) = gate.withLock {
         require(title.isNotBlank() && title.length <= 500) { "Enter a title of 1–500 characters." }
         if (dueAt != null) {
             require(dueAt > System.currentTimeMillis()) { "Choose a future reminder time." }
             require(notificationsAllowed()) { "Enable SideKick notifications in Android settings before scheduling." }
         }
-        val old = dao.get(id) ?: error("This commitment was deleted.")
-        val updated = old.copy(title = title.trim(), state = "ACCEPTED", dueAt = dueAt, zoneId = zoneId,
+        val old = dao.get(id)
+        val source = old ?: proposal?.takeIf { it.id == id } ?: error("This commitment was deleted.")
+        val updated = source.copy(title = title.trim(), state = "ACCEPTED", dueAt = dueAt, zoneId = zoneId,
             deliveredAt = null, reviewNote = if (dueAt == null) "Saved without a reminder." else "Reminder requested. Android may delay delivery to save battery.")
-        cancel(old)
-        try { dao.update(updated); arm(updated) }
-        catch (e: Exception) { dao.update(old); arm(old); throw e }
+        old?.let(::cancel)
+        try { if (old == null) dao.insertAll(listOf(updated)) else dao.update(updated); arm(updated) }
+        catch (e: Exception) {
+            withContext(NonCancellable) {
+                cancel(updated)
+                if (old == null) dao.delete(id) else { dao.update(old); arm(old) }
+            }
+            throw e
+        }
     }
     suspend fun mark(id: String, state: String) = gate.withLock {
         require(state in setOf("DISMISSED", "DONE"))

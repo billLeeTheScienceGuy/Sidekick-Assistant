@@ -19,3 +19,13 @@ else:
         raise RuntimeError("Model checksum mismatch; download not installed")
     temporary.replace(target)
     print("Verified speech model ready for APK packaging.")
+
+vad = target.with_name("ggml-silero-v5.1.2.bin")
+vad_hash = "29940d98d42b91fbd05ce489f3ecf7c72f0a42f027e4875919a28fb4c04ea2cf"
+if not vad.exists() or digest(vad) != vad_hash:
+    temporary = vad.with_suffix(".download")
+    urllib.request.urlretrieve("https://huggingface.co/ggml-org/whisper-vad/resolve/9ffd54a1e1ee413ddf265af9913beaf518d1639b/ggml-silero-v5.1.2.bin", temporary)
+    if digest(temporary) != vad_hash:
+        raise RuntimeError("Speech detector checksum mismatch")
+    temporary.replace(vad)
+print("Verified speech detector ready for APK packaging.")

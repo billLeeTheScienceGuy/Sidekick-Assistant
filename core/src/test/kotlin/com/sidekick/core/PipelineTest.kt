@@ -16,6 +16,27 @@ class PipelineTest {
         assertEquals(source.zoneId, item.zoneId)
         assertEquals("I'll call Emma tomorrow at five", item.evidence)
     }
+    @Test fun `recognizes future attendance travel and visiting beyond explicit promises`() {
+        val examples = mapOf(
+            "I will be going to Louie's birthday tomorrow" to "Go to Louie's birthday tomorrow",
+            "I'll attend the concert tomorrow." to "Attend the concert tomorrow",
+            "I plan to visit Emma next week." to "Visit Emma next week",
+            "I'm attending Maya's wedding tomorrow." to "Attend Maya's wedding tomorrow",
+            "I will be driving to Chicago tomorrow." to "Drive to Chicago tomorrow",
+        )
+        examples.forEach { (text, expected) ->
+            val result = pipeline.process(input(text)).single()
+            assertEquals(expected, result.title)
+            assertEquals(text.trimEnd('.'), result.evidence)
+        }
+    }
+    @Test fun `future events are not assumed to be personal plans`() {
+        listOf("Louie's birthday is tomorrow.", "I went to Louie's birthday yesterday.",
+            "I will not be going to Louie's birthday tomorrow.", "Maybe I will be going to Louie's birthday tomorrow.",
+            "I will be going to Louie's birthday tomorrow if I can.", "Emma will attend the birthday tomorrow.",
+            "I'm visiting Emma.", "I will be tired tomorrow.")
+            .forEach { assertTrue(pipeline.process(input(it)).isEmpty(), it) }
+    }
     @Test fun `rejects completed hypothetical quoted and third party speech`() {
         listOf("I already called Emma.", "Maybe I'll call Emma.", "I'll call Emma if I can.",
             "I will not call Emma.", "She said I'll call Emma.", "\"I'll call Emma\"", "Emma will call.")

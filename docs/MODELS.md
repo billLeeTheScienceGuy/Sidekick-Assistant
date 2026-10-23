@@ -1,10 +1,15 @@
 # Free on-device model shortlist
 
-Researched 2026-10-21; implementation updated 2026-10-22. No inference subscription is needed. Build/download connectivity is different from runtime connectivity. Version 0.2 packages verified Whisper tiny.en weights and their MIT license. Other models remain candidates and are not included.
+Researched 2026-10-21; implementation updated 2026-10-22. No inference subscription is needed. Build/download connectivity is different from runtime connectivity. Version 0.3 packages verified Whisper tiny.en and Silero v5.1.2 GGML weights with MIT notices. Other models remain candidates.
+
+Version 0.4 integrates optional Qwen3-0.6B Q4_K_M through llama.cpp b6000. This model
+is installed separately, never bundled in the APK. See INTENT_MODEL.md for its exact
+hash, license, import instructions, limits and validation. Live audio still uses rules;
+Qwen runs on user-requested text after listening stops.
 
 | Stage | Initial choice | Alternative / rationale | License and source |
 |---|---|---|---|
-| Speech detection | Silero VAD, ONNX | Small CPU gate; detects speech, not identity. Benchmark noise and false triggers. | MIT: https://github.com/snakers4/silero-vad |
+| Speech detection | Silero VAD v5.1.2, GGML through whisper.cpp | Integrated CPU gate; detects speech, not identity. Noise/false-trigger testing remains necessary. | MIT: https://github.com/snakers4/silero-vad |
 | English transcription | Whisper tiny.en via whisper.cpp | Compare base.en before selecting quality default. tiny is 39M parameters; base is 74M. Smaller downloads do not imply a particular peak RAM. | Upstream Whisper code/weights MIT: https://github.com/openai/whisper ; runtime MIT: https://github.com/ggml-org/whisper.cpp |
 | Intent extraction | Qwen3-0.6B, GGUF Q4, non-thinking | Compare Qwen3-1.7B Q4 on difficult promises. Small models may miss context; every result remains a proposal. | Apache-2.0 model cards: https://huggingface.co/Qwen/Qwen3-0.6B and https://huggingface.co/Qwen/Qwen3-1.7B |
 | LLM runtime | llama.cpp Android/JNI | GGUF, quantization and schema-constrained generation; same core runtime can support offline evaluation on desktop. | MIT: https://github.com/ggml-org/llama.cpp ; Android: https://github.com/ggml-org/llama.cpp/blob/master/docs/android.md |
@@ -21,7 +26,7 @@ Do not rely on Android's generic SpeechRecognizer for all-day offline processing
 
 ## Model integration contract
 
-For every installed artifact record upstream URL, exact revision, SHA-256, size, license, format, sample rate/context limit, and runtime compatibility. Version 0.2 downloads the model on the developer computer with a checksum-verifying script and bundles it in the APK; first inference verifies/copies it into no-backup app storage. It never downloads weights on the phone. Model contexts are freed after inference and native cancellation is cooperative. There is no cloud fallback.
+For every installed artifact record upstream URL, exact revision, SHA-256, size, license, format, sample rate/context limit, and runtime compatibility. Preparation scripts download models on the developer computer and verify checksums; first use verifies/copies them into no-backup app storage. There are no model downloads on the phone. Version 0.3 retains Whisper during a listening session and releases it when the session ends; one-shot imports release it after inference. Cancellation is cooperative. See STREAMING_BENCHMARK.md for pinned Silero provenance, measurements and limits. There is no cloud fallback.
 
 For extraction require structured output with source evidence, actor, action, raw time phrase, and unresolved fields. Disable Qwen thinking for latency, cap output tokens, and validate model output in code. Preserve source text and timestamps rather than inventing certainty. Do not treat source transcripts as instructions to execute tools.
 

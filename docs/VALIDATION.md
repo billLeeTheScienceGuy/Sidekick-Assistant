@@ -1,5 +1,31 @@
 # Version 0.2 validation
 
+## Version 0.4 local intent update
+
+Qwen3-0.6B Q4_K_M is now an optional separately imported model. On the physical Pixel,
+real-model extraction found an action outside the rules vocabulary; validation rejected
+quoted/conditional fixtures, cancellation/recovery passed, and a bad replacement import
+left the old model intact. The VAD/Whisper pipeline and approval-only storage tests also
+passed in the same process. Three targeted instrumentation tests passed in 52.295 s.
+See INTENT_MODEL.md for model provenance, limits and the single cold timing observation.
+Corrections, general accuracy, peak model RAM and user experience remain to be evaluated.
+
+## Version 0.3 prototype update
+
+Continuous live notes now connects Silero VAD, five-second overlapping chunks and
+concurrent Whisper processing to the microphone foreground service. Only accepted
+commitments are persisted; recent text and new proposals are temporary. Earlier
+persisted proposals from version 0.2 remain available until the user deletes them.
+
+Targeted tests passed on the physical Pixel 7a without activating the microphone:
+two live-pipeline tests (real paced VAD/Whisper plus silence rejection, and approval-only
+storage), two foundation/UI tests and two reminder tests. Core coverage adds boundary
+overlap, overlap-only suppression and exact text-overlap handling. Benchmark and normal
+build/lint checks pass. These checks do not establish microphone accuracy, screen-off
+capture or unplugged battery use; those are the next required user tests in TRY_IT.md.
+
+The original results below describe version 0.2.
+
 Verified 2026-10-22 with JDK 17, Gradle 8.12, AGP 8.9.2, SDK 35, NDK 27.0.12077973 and CMake 3.22.1. Physical test device: Pixel 7a, Android 17, ARM64.
 
 ## Passed

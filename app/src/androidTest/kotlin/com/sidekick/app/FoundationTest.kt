@@ -25,7 +25,7 @@ class FoundationTest {
         compose.onNodeWithTag("consent").performScrollTo().performClick()
         compose.onNodeWithText("Find commitments").performScrollTo().performClick()
         compose.waitUntil(10_000) {
-            compose.onAllNodesWithText("2 proposal(s) saved for review. Nothing has been scheduled.")
+            compose.onAllNodesWithText("2 temporary proposal(s) ready for review. Approve to save.")
                 .fetchSemanticsNodes().isNotEmpty()
         }
         // The text flow works without asking for microphone access.

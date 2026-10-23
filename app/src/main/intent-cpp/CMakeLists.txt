@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(sidekick_intent LANGUAGES C CXX)
+include(FetchContent)
+set(CMAKE_CXX_STANDARD 17)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
+set(LLAMA_CURL OFF CACHE BOOL "" FORCE)
+set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
+set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
+set(GGML_CPU_ALL_VARIANTS OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(llama
+    URL https://codeload.github.com/ggml-org/llama.cpp/zip/4762ad7316dcdec20016ab5985fb46a27902204d
+    URL_HASH SHA256=4832501f61c82c88acce0222b19c754b3d58b69e0c082d511f6e201222a46083)
+FetchContent_MakeAvailable(llama)
+add_library(sidekick_intent SHARED intent.cpp)
+target_link_libraries(sidekick_intent PRIVATE llama android log)
+# Keep this runtime's GGML symbols separate from whisper.cpp's pinned GGML version.
+target_link_options(sidekick_intent PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,--exclude-libs,ALL" "-Wl,-Bsymbolic")

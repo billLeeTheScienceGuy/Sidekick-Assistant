@@ -16,7 +16,11 @@ import kotlinx.coroutines.flow.*
 class MemoryViewModel(application: Application) : AndroidViewModel(application) {
     private val container = application as SidekickApplication
     private val dao = container.database.commitments()
-    val items = dao.observe().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val items = combine(dao.observe(), container.temporary.drafts) { saved, drafts ->
+        drafts.filter { draft -> saved.none { it.id == draft.id } } + saved
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val liveText = container.temporary.text
+    val smartReady = container.intent.ready
     val message = MutableStateFlow("Record your voice or type your own words.")
     val busy = MutableStateFlow(false)
     val transcript = MutableStateFlow("")
@@ -24,6 +28,17 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     private var capturedZone = ZoneId.systemDefault()
     val editError = MutableStateFlow<String?>(null)
     private var importJob: Job? = null
+
+    fun importIntentModel(uri: Uri) {
+        if (busy.value) return
+        busy.value = true; message.value = "Verifying and installing the local Qwen model…"
+        importJob = viewModelScope.launch {
+            try { container.intent.importModel(uri); message.value = "Qwen installed. Find commitments now uses local smart analysis." }
+            catch (e: CancellationException) { message.value = "Model import cancelled."; throw e }
+            catch (e: Exception) { message.value = e.message ?: "Model import failed." }
+            finally { busy.value = false }
+        }
+    }
 
     fun importWav(uri: Uri) {
         if (busy.value) return
@@ -66,50 +81,47 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         }
         transcript.value = text
     }
-    fun clearTranscript() { transcript.value = "" }
+    fun clearTranscript() { transcript.value = ""; container.temporary.clearText() }
 
     fun analyze() {
         if (busy.value) return
         val input = Transcript(transcript.value.trim(), capturedAt, capturedZone, Speaker.USER, true)
         busy.value = true
-        viewModelScope.launch {
+        importJob = viewModelScope.launch {
             try {
-                val proposals = withContext(Dispatchers.Default) { container.pipeline.process(input) }
-                val existing = dao.all().map { it.evidence.lowercase() to it.capturedAt }.toSet()
-                val fresh = proposals.filter { (it.evidence.lowercase() to it.capturedAt.toEpochMilli()) !in existing }
-                dao.insertAll(fresh.map {
-                    CommitmentEntity(UUID.randomUUID().toString(), it.title, it.evidence, it.capturedAt.toEpochMilli(),
-                        it.zoneId.id, "Review the wording and reminder time before accepting.")
-                })
-                message.value = when {
-                    fresh.isNotEmpty() -> "${fresh.size} proposal(s) saved for review. Nothing has been scheduled."
-                    proposals.isNotEmpty() -> "These proposals are already in your memory."
-                    else -> "No simple promise found. You can add a commitment manually below."
-                }
-            } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { message.value = "Could not analyze or save. Try again." }
+                val count = if (smartReady.value) {
+                    val proposals = withTimeout(90_000) { container.intent.extract(input) }
+                    container.temporary.addProposals(proposals)
+                } else withContext(Dispatchers.Default) { container.temporary.propose(input) }
+                message.value = if (count > 0) "$count temporary proposal(s) ready for review. Approve to save."
+                    else "No new validated commitment found. Review existing proposals or add one manually."
+            } catch (_: TimeoutCancellationException) { message.value = "Local analysis timed out. Try a shorter note." }
+            catch (e: CancellationException) { message.value = "Analysis cancelled."; throw e }
+            catch (e: Exception) { message.value = e.message ?: "Could not analyze. Try a shorter note." }
             finally { busy.value = false }
         }
     }
     fun addManual() = mutate {
-        dao.insertAll(listOf(CommitmentEntity(UUID.randomUUID().toString(), "New commitment", "Manually added",
-            Instant.now().toEpochMilli(), ZoneId.systemDefault().id, "Edit the title and optional reminder time.")))
+        container.temporary.add(CommitmentEntity(UUID.randomUUID().toString(), "New commitment", "Manually added",
+            Instant.now().toEpochMilli(), ZoneId.systemDefault().id, "Temporary proposal. Edit and approve to save."))
     }
     fun save(id: String, title: String, time: String, zoneId: String, onSaved: () -> Unit) {
         editError.value = null
         viewModelScope.launch {
             try {
                 val due = if (time.isBlank()) null else TimeResolver.parseEditor(time, ZoneId.of(zoneId)).toEpochMilli()
-                container.reminders.save(id, title, due, zoneId)
+                val proposal = container.temporary.drafts.value.find { it.id == id }
+                container.reminders.save(id, title, due, zoneId, proposal)
+                container.temporary.remove(id)
                 onSaved()
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { editError.value = e.message ?: "Could not save. Check the title and date/time." }
         }
     }
-    fun dismiss(id: String) = mutate { container.reminders.mark(id, "DISMISSED") }
+    fun dismiss(id: String) = mutate { container.temporary.remove(id); container.reminders.mark(id, "DISMISSED") }
     fun done(id: String) = mutate { container.reminders.mark(id, "DONE") }
-    fun delete(id: String) = mutate { container.reminders.delete(id) }
-    fun deleteAll() = mutate { container.reminders.deleteAll() }
+    fun delete(id: String) = mutate { container.temporary.remove(id); container.reminders.delete(id) }
+    fun deleteAll() = mutate { container.temporary.discard(); container.reminders.deleteAll() }
     fun reopen() { editError.value = null }
     fun notificationPermissionChanged() { viewModelScope.launch { runCatching { container.reminders.restore() } } }
     private fun mutate(action: suspend () -> Unit) {

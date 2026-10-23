@@ -166,9 +166,10 @@ coverage. Production behavior for overload remains a product decision.
   thermal and lifecycle tests. USB-powered inference measurements do not establish these.
 - Speaker matching before treating other people's speech as the user's commitments.
 
-The ordinary recording UI remains at version 0.2 behavior while this benchmark establishes
-the next implementation's performance budget. Cached inference is opt-in; ordinary
-recording still uses two threads and releases the context after each transcription.
+These measurements were collected before the live UI was connected. Version 0.3 now
+uses the two-thread, 512-position candidate in its continuous pipeline with Silero,
+boundary overlap and a bounded queue. Real microphone accuracy and unplugged battery
+impact remain separate validation requirements; benchmark timings do not prove those.
 
 Build validation: normal and benchmark APKs and test APKs build; 22 core tests pass;
 both lint variants report zero errors and 11 warnings. Optional device benchmarks are

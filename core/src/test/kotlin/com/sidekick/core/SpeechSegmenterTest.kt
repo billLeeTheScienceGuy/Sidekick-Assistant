@@ -3,6 +3,16 @@ package com.sidekick.core
 import kotlin.test.*
 
 class SpeechSegmenterTest {
+    @Test fun `overlap preserves boundary audio without emitting an overlap-only tail`() {
+        val segmenter = SpeechSegmenter(4, 0, 2, 1, overlapSamples = 2)
+        val first = segmenter.accept(floatArrayOf(.1f, .2f, .3f, .4f), true).single()
+        val second = segmenter.accept(floatArrayOf(.5f, .6f), true).single()
+        assertEquals(0L, first.startSample)
+        assertEquals(2L, second.startSample)
+        assertContentEquals(floatArrayOf(.3f, .4f, .5f, .6f), second.samples)
+        assertTrue(segmenter.accept(floatArrayOf(0f, 0f), false).isEmpty())
+        assertNull(segmenter.finish())
+    }
     @Test fun `short tail of ongoing speech is not mistaken for isolated noise`() {
         val segmenter = SpeechSegmenter(4, 0, 2, 3)
         assertEquals(4, segmenter.accept(FloatArray(4) { .1f }, true).single().samples.size)
