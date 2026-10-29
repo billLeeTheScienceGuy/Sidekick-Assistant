@@ -3,12 +3,18 @@ package com.sidekick.core
 import kotlin.test.*
 
 class VoiceMatchTest {
+    @Test fun `a turn needs agreement across every speaker window`() {
+        assertEquals(Speaker.USER, VoiceMatch.identifyTurn(axis(0), listOf(axis(0), axis(0), axis(0))))
+        assertEquals(Speaker.UNKNOWN, VoiceMatch.identifyTurn(axis(0), listOf(axis(0), axis(0), axis(1))))
+        assertEquals(Speaker.OTHER, VoiceMatch.identifyTurn(axis(0), listOf(axis(1), axis(1), axis(1))))
+        assertEquals(Speaker.UNKNOWN, VoiceMatch.identifyTurn(axis(0), listOf(axis(0))))
+    }
     @Test fun `short phrases need strong current evidence and a fresh anchor`() {
         assertEquals(Speaker.USER, VoiceMatch.classifyShortScores(.85f, .84f, 2100, 15_000))
         assertEquals(Speaker.UNKNOWN, VoiceMatch.classifyShortScores(.79f, .95f, 2100, 100))
         assertEquals(Speaker.UNKNOWN, VoiceMatch.classifyShortScores(.95f, .79f, 2100, 100))
         assertEquals(Speaker.UNKNOWN, VoiceMatch.classifyShortScores(.95f, .95f, 1499, 100))
-        assertEquals(Speaker.UNKNOWN, VoiceMatch.classifyShortScores(.95f, .95f, 2100, 30_001))
+        assertEquals(Speaker.UNKNOWN, VoiceMatch.classifyShortScores(.95f, .95f, 2100, 60_001))
         assertEquals(Speaker.UNKNOWN, VoiceMatch.classifyShortScores(.95f, .95f, 2100, -1))
         assertEquals(Speaker.UNKNOWN, VoiceMatch.classifyShortScores(Float.NaN, .95f, 2100, 100))
     }

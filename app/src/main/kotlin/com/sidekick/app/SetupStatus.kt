@@ -45,7 +45,31 @@ internal fun SetupStatus(settings: GuidanceSettings) {
     var checking by remember { mutableStateOf(false) }
     var result by remember(permission, locationOn) { mutableStateOf("") }
     val scope = rememberCoroutineScope()
+    val reminders = (context.applicationContext as SidekickApplication).reminders
+    val reminderReady = remember(refresh) { reminders.notificationsAllowed() }
+    var reminderResult by remember { mutableStateOf("") }
+    var schedulingReminder by remember { mutableStateOf(false) }
     Text("Setup status")
+    Text("Reminder delivery: ${if (reminderReady) "Enabled" else "Blocked in Android settings"}", modifier = Modifier.testTag("reminder-access-status"))
+    Text(remember(refresh) { reminders.alertDescription() }, modifier = Modifier.testTag("reminder-alert-details"))
+    TextButton(modifier = Modifier.testTag("reminder-channel-settings"), onClick = {
+        context.startActivity(android.content.Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            .putExtra(Settings.EXTRA_CHANNEL_ID, com.sidekick.app.reminders.ReminderCoordinator.CHANNEL))
+    }) { Text("Reminder sound, vibration & pop-up") }
+    TextButton(enabled = reminderReady && !schedulingReminder, modifier = Modifier.testTag("test-reminder"), onClick = {
+        scope.launch {
+            schedulingReminder = true
+            try {
+                val due = reminders.scheduleCheck()
+                val time = java.time.Instant.ofEpochMilli(due).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm z"))
+                reminderResult = "Test reminder set for $time. Close Settings and lock the phone. Android may delay delivery; Undo in Planner removes the check."
+            } catch (e: CancellationException) { throw e }
+            catch (_: Exception) { reminderResult = "Could not schedule the check. Enable reminder notifications and try again." }
+            finally { schedulingReminder = false }
+        }
+    }) { Text("Test a reminder in 2 minutes") }
+    if (reminderResult.isNotBlank()) Text(reminderResult, modifier = Modifier.testTag("reminder-check-result"))
     Text("Location permission: ${if (permission) "Allowed" else "Not allowed"}", modifier = Modifier.testTag("location-permission-status"))
     Text("Android Location: ${if (locationOn) "On" else "Off"}")
     Text("Message scanning: " + when {

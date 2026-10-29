@@ -13,6 +13,8 @@ import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
+data class RecentAutomaticChange(val id: String, val token: String, val title: String, val action: String)
+
 class MemoryViewModel(application: Application) : AndroidViewModel(application) {
     private val container = application as SidekickApplication
     private val dao = container.database.commitments()
@@ -20,6 +22,23 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         drafts.filter { draft -> saved.none { it.id == draft.id } } + saved
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val liveText = container.temporary.text
+    val automaticChanges = combine(dao.observe(), dao.observeChanges()) { items, changes ->
+        changes.mapNotNull { change -> runCatching {
+            val item = items.singleOrNull { it.id == change.targetId } ?: return@runCatching null
+            val expected = com.sidekick.app.data.MemorySnapshot.decode(change.after)
+            if (!com.sidekick.app.data.MemorySnapshot.matchesForUndo(item, expected)) return@runCatching null
+            RecentAutomaticChange(item.id, change.token, item.title, when {
+                item.state == "CANCELLED" -> "Cancelled"
+                item.state == "DISMISSED" -> "Archived"
+                change.before == null -> "Added"
+                else -> "Updated"
+            })
+        }.getOrNull() }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    fun undoAutomatic(id: String, token: String) = mutate {
+        message.value = if (container.automation.undo(id, token)) "Automatic change undone"
+            else "This change was already undone or edited."
+    }
     val smartReady = container.intent.ready
     val guidance = container.guidance.mode
     fun setGuidance(mode: GuidanceMode) = container.guidance.setMode(mode)
@@ -28,6 +47,7 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     val transcript = MutableStateFlow("")
     private var capturedAt = Instant.now()
     private var capturedZone = ZoneId.systemDefault()
+    private var analysisSource: String? = null
     val editError = MutableStateFlow<String?>(null)
     private var importJob: Job? = null
 
@@ -80,24 +100,36 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         if (text.length > 10_000) return
         if (transcript.value.isEmpty() || captured != null) {
             capturedAt = captured ?: Instant.now(); capturedZone = zone ?: ZoneId.systemDefault()
+            analysisSource = null
         }
         transcript.value = text
     }
-    fun clearTranscript() { transcript.value = ""; container.temporary.clearText() }
+    fun copyLiveText() {
+        setTranscript(liveText.value.takeLast(if (smartReady.value) 4000 else 6000), Instant.now())
+        analysisSource = "voice:copied"
+    }
+    fun clearTranscript() { transcript.value = ""; analysisSource = null; container.temporary.clearText() }
 
     fun analyze() {
         if (busy.value) return
-        val input = Transcript(transcript.value.trim(), capturedAt, capturedZone, Speaker.USER, true)
+        val origin = analysisSource
+        val input = container.temporary.prepareChanges(Transcript(transcript.value.trim(), capturedAt, capturedZone, Speaker.USER, true), origin ?: "typed")
         busy.value = true
         importJob = viewModelScope.launch {
             try {
-                val count = if (smartReady.value) {
+                val count = if (input.text.isBlank()) 0 else if (smartReady.value) {
                     val proposals = withTimeout(90_000) { container.intent.extract(input) }
-                    container.temporary.addProposals(proposals)
-                } else withContext(Dispatchers.Default) { container.temporary.propose(input) }
-                message.value = if (count > 0) "$count temporary proposal(s) ready for review. Approve to save."
+                    container.temporary.addProposals(proposals.map { it.copy(sourceKey = origin) })
+                } else withContext(Dispatchers.Default) { container.temporary.propose(input, origin) }
+                container.automation.process()
+                message.value = if (container.guidance.handsOffMode.value) container.automation.status.value
+                    else if (count > 0) "$count temporary proposal(s) ready for review. Approve to save."
                     else "No new validated commitment found. Review existing proposals or add one manually."
-            } catch (_: TimeoutCancellationException) { message.value = "Local analysis timed out. Try a shorter note." }
+                container.intent.notice.value?.let { message.value += " " + it }
+            } catch (_: TimeoutCancellationException) {
+                container.temporary.propose(input, origin); container.automation.process()
+                message.value = "Smart analysis timed out. Used local rules; some plans may be missed."
+            }
             catch (e: CancellationException) { message.value = "Analysis cancelled."; throw e }
             catch (e: Exception) { message.value = e.message ?: "Could not analyze. Try a shorter note." }
             finally { busy.value = false }
@@ -109,11 +141,12 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     }
     fun analyzeSharedText(text: String) = mutate {
         if (!container.guidance.sharedMessages.value) { message.value = "Shared-message analysis is disabled in Settings."; return@mutate }
-        val input = Transcript(text.take(6000), Instant.now(), ZoneId.systemDefault(), Speaker.OTHER, true)
+        val input = container.temporary.prepareChanges(Transcript(text.take(6000), Instant.now(), ZoneId.systemDefault(), Speaker.OTHER, true), "shared")
         val proposals = withContext(Dispatchers.Default) { ActivityTiming.extract(input, informationalOnly = true) }
             .map { it.copy(sourceKey = "shared", needsReview = "Shared message: attendance is unconfirmed. " + it.needsReview) }
         val count = container.temporary.addProposals(proposals)
-        message.value = "$count shared-message suggestion(s) ready for review. Nothing was saved automatically."
+        container.automation.process()
+        message.value = if (container.guidance.handsOffMode.value) container.automation.status.value else "$count shared-message suggestion(s) ready for review. Nothing was saved automatically."
     }
     fun save(id: String, title: String, time: String, zoneId: String, activityStart: String = "", activityEnd: String = "",
         informational: Boolean? = null, placeName: String? = null, placeAddress: String? = null, onSaved: () -> Unit) {
@@ -125,7 +158,9 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
                 val start = if (activityStart.isBlank()) null else TimeResolver.parseEditor(activityStart, ZoneId.of(zoneId)).toEpochMilli()
                 val end = if (activityEnd.isBlank()) null else TimeResolver.parseEditor(activityEnd, ZoneId.of(zoneId)).toEpochMilli()
                 val target = container.temporary.updateTarget(id) ?: id
-                container.reminders.save(target, title, due, zoneId, proposal, start, end, informational, placeName, placeAddress)
+                val targetDraft = container.temporary.drafts.value.find { it.id == target && it.id != id }
+                val source = if (targetDraft != null) proposal?.copy(id = target) else proposal
+                container.reminders.save(target, title, due, zoneId, source, start, end, informational, placeName, placeAddress)
                 dao.get(target)?.let { container.temporary.approve(id, it) }
                 onSaved()
             } catch (e: CancellationException) { throw e }

@@ -12,8 +12,8 @@ android {
         applicationId = "com.sidekick.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 17
-        versionName = "0.10.0"
+        versionCode = 40
+        versionName = "0.23.1"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -32,6 +32,12 @@ android {
     androidResources { noCompress += "bin" }
     sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/language-fixtures"))
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/quality-fixtures"))
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/speaker-evaluation"))
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/korean-evaluation/assets"))
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/asr-commands"))
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/quality-small"))
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/moonshine-ar/assets"))
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -44,11 +50,24 @@ val verifySpeechModel by tasks.registering {
     val vadFile = layout.projectDirectory.file("src/main/assets/models/ggml-silero-v5.1.2.bin")
     val multilingualFile = layout.projectDirectory.file("src/main/assets/models/ggml-tiny.bin")
     val speakerFile = layout.projectDirectory.file("src/main/assets/models/voxceleb_resnet34_LM.onnx")
+    val baseFile = layout.projectDirectory.file("src/main/assets/models/ggml-base.bin")
     inputs.file(modelFile)
     inputs.file(vadFile)
     inputs.file(multilingualFile)
     inputs.file(speakerFile)
+    inputs.file(layout.projectDirectory.file("src/main/assets/models/sensevoice-ko.int8.onnx"))
+    inputs.file(layout.projectDirectory.file("src/main/assets/models/sensevoice-tokens.txt"))
+    inputs.file(layout.projectDirectory.file("src/main/assets/models/omni-model.int8.onnx"))
+    inputs.file(layout.projectDirectory.file("src/main/assets/models/omni-tokens.txt"))
+    inputs.file(layout.projectDirectory.file("src/main/assets/models/campplus-advanced.onnx"))
+    inputs.file(baseFile)
     doLast {
+        check(layout.projectDirectory.file("src/main/assets/models/omni-model.int8.onnx").asFile.length() == 365_352_120L) { "Run scripts/prepare_omnilingual.py." }
+        check(layout.projectDirectory.file("src/main/assets/models/omni-tokens.txt").asFile.length() == 86_423L) { "Run scripts/prepare_omnilingual.py." }
+        check(layout.projectDirectory.file("src/main/assets/models/sensevoice-ko.int8.onnx").asFile.length() == 239_233_841L) { "Run scripts/prepare_sensevoice.py." }
+        check(layout.projectDirectory.file("src/main/assets/models/sensevoice-tokens.txt").asFile.length() == 315_894L) { "Run scripts/prepare_sensevoice.py." }
+        check(layout.projectDirectory.file("src/main/assets/models/campplus-advanced.onnx").asFile.length() == 28_281_164L) { "Run scripts/prepare_speaker.py to prepare CAM++." }
+        check(baseFile.asFile.isFile && baseFile.asFile.length() == 147_951_465L) { "Run scripts/prepare_speech.py to prepare Whisper base." }
         check(multilingualFile.asFile.isFile && multilingualFile.asFile.length() == 77_691_713L) {
             "Run python scripts/prepare_speech.py to prepare multilingual transcription."
         }

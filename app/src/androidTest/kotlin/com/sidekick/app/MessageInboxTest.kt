@@ -7,6 +7,39 @@ import org.junit.Test
 import java.time.LocalDate
 
 class MessageInboxTest {
+    @Test fun fragmentedMessagesStayInTheirConversationAndNeverImplyUserAttendance() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        org.junit.Assume.assumeTrue(context.packageName.endsWith(".benchmark"))
+        val settings = GuidanceSettings(context)
+        val enabled = settings.messageNotifications.value; val apps = settings.messageApps.value
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val memory = TemporaryMemory()
+        try {
+            settings.setMessageNotifications(true); settings.setMessageApp("synthetic.fragments", true)
+            val inbox = MessageInbox(settings, memory, scope)
+            val now = System.currentTimeMillis()
+            suspend fun send(thread: String, text: String, offset: Long) = inbox.ingest(MessageEnvelope("synthetic.fragments", thread, listOf(IncomingText(text, now + offset))))
+            inbox.ingest(MessageEnvelope("synthetic.fragments", "party-thread", listOf(
+                IncomingText("Tomorrow", now + 2), IncomingText("There's a party", now))))
+            send("unrelated-thread", "Tomorrow. At 9pm.", 1)
+            assertTrue(memory.drafts.value.isEmpty())
+            send("party-thread", "Tomorrow", 2)
+            send("party-thread", "At 8pm", 3)
+            val first = memory.drafts.value.single()
+            assertEquals(20, java.time.Instant.ofEpochMilli(first.activityStartAt!!).atZone(java.time.ZoneId.systemDefault()).hour)
+            send("party-thread", "It ends at midnight. It's at Synthetic Hall. I'll be there.", 4)
+            val updated = memory.drafts.value.single()
+            assertEquals(first.id, updated.id); assertTrue(updated.informational)
+            assertNotNull(updated.activityEndAt); assertEquals("Synthetic Hall", updated.placeName)
+            send("party-thread", "At 8pm", 3) // Grouped notification replay.
+            assertEquals(updated, memory.drafts.value.single())
+            send("party-thread", "Actually it's at Old Hall.", 1) // Unseen but stale notification.
+            assertEquals(updated, memory.drafts.value.single())
+        } finally {
+            scope.cancel(); settings.messageApps.value.forEach { settings.setMessageApp(it, false) }
+            apps.forEach { settings.setMessageApp(it, true) }; settings.setMessageNotifications(enabled)
+        }
+    }
     @Test fun informationalSettingCanExcludeEventFactsWithoutLosingPersonalPlans() {
         val memory = TemporaryMemory { false }
         val time = java.time.Instant.now()

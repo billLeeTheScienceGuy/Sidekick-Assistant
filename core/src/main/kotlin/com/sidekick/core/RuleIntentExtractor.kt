@@ -14,7 +14,7 @@ class RuleIntentExtractor : IntentExtractor {
         if (!transcript.processingAllowed || transcript.speaker != Speaker.USER) return emptyList()
         return Sentences.split(transcript.text)
             .map(String::trim).filter(String::isNotEmpty).mapNotNull { original ->
-                if (original.endsWith("?")) return@mapNotNull null
+                if (original.endsWith("?") || AnalysisContext.reported(original)) return@mapNotNull null
                 val evidence = original.trimEnd('.', '!')
                 val normalized = evidence.replace('’', '\'')
                 val planned = presentPlan.matchEntire(normalized)?.takeIf { futureTime.containsMatchIn(normalized) }

@@ -49,7 +49,7 @@ class IntentModelTest {
         assertTrue(proposals.all { positive.text.contains(it.evidence) })
         assertTrue(withTimeout(90_000) { engine.extract(source("Emma said: I'll water the plants tomorrow.")) }.isEmpty())
         assertTrue(withTimeout(90_000) { engine.extract(source("Maybe I'll water the plants if I have time.")) }.isEmpty())
-        val job = launch { engine.extract(positive) }
+        val job = launch { engine.extract(source("I intend to organize my bookshelf tomorrow.")) }
         delay(100)
         withTimeout(20_000) { job.cancelAndJoin() }
         assertTrue(job.isCancelled)

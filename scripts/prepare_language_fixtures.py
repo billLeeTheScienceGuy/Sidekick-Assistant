@@ -1,4 +1,4 @@
-"""Fetch five public FLEURS examples for opt-in device evaluation, never app assets.
+"""Fetch six public FLEURS examples for opt-in device evaluation, never app assets.
 
 Dataset source: https://huggingface.co/datasets/google/fleurs (CC BY 4.0).
 The manifest records each retrieved file hash and reference; no private audio is used.
@@ -14,7 +14,7 @@ import wave
 target = Path(__file__).resolve().parents[1] / ".deps/language-fixtures"
 target.mkdir(parents=True, exist_ok=True)
 manifest = []
-for code, config in [("ko", "ko_kr"), ("zh", "cmn_hans_cn"), ("fr", "fr_fr"), ("de", "de_de"), ("ru", "ru_ru")]:
+for code, config in [("ko", "ko_kr"), ("zh", "cmn_hans_cn"), ("fr", "fr_fr"), ("de", "de_de"), ("ru", "ru_ru"), ("ar", "ar_eg")]:
     split = "validation"
     url = f"https://datasets-server.huggingface.co/first-rows?dataset=google%2Ffleurs&config={config}&split={split}"
     with urllib.request.urlopen(url) as response:

@@ -10,6 +10,38 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ActivityTimingTest {
+    @Test fun multilingualLiveAndIncomingTextRefineDraftsWithoutSavingThem() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val database = Room.inMemoryDatabaseBuilder(context, com.sidekick.app.data.MemoryDatabase::class.java).build()
+        val now = Instant.parse("2026-10-23T17:00:00Z")
+        val zone = ZoneId.of("America/Chicago")
+        try {
+            val memory = TemporaryMemory()
+            memory.appendAttributedLive("저는 내일 오후 8시에 파티에 갈 거예요.", now, zone, com.sidekick.core.Speaker.USER)
+            val initial = memory.drafts.value.single()
+            assertFalse(initial.informational)
+            memory.appendAttributedLive("자정에 끝나요.", now.plusSeconds(10), zone, com.sidekick.core.Speaker.USER)
+            assertEquals(initial.id, memory.drafts.value.single().id)
+            assertEquals(Instant.parse("2026-10-25T05:00:00Z").toEpochMilli(), memory.drafts.value.single().activityEndAt)
+            assertTrue(database.commitments().all().isEmpty())
+            val folder = java.io.File(context.cacheDir, "language-no-model-${java.util.UUID.randomUUID()}").apply { mkdirs() }
+            try {
+                val isolated = object : android.content.ContextWrapper(context) {
+                    override fun getNoBackupFilesDir(): java.io.File = folder
+                }
+                val engine = com.sidekick.app.intent.IntentEngine(isolated)
+                assertFalse(engine.ready.value)
+                val typed = engine.extract(com.sidekick.core.Transcript("Morgen ist eine Party um 20 Uhr. Sie endet um Mitternacht.", now, zone, com.sidekick.core.Speaker.USER, true))
+                assertEquals(Instant.parse("2026-10-25T05:00:00Z"), typed.single().activityEndAt)
+            } finally { folder.delete() }
+            val other = com.sidekick.core.Transcript("我明天晚上八点去参加派对。午夜结束。", now, zone, com.sidekick.core.Speaker.OTHER, true)
+            val incoming = com.sidekick.core.ActivityTiming.extract(other, informationalOnly = true)
+            assertTrue(incoming.single().informational)
+            memory.addProposals(incoming.map { it.copy(sourceKey = "synthetic-message") })
+            assertEquals(2, memory.drafts.value.size)
+            assertTrue(database.commitments().all().isEmpty())
+        } finally { database.close() }
+    }
     @Test fun playbackScriptKeepsOneDraftWhileEndAndVenueAreCorrected() {
         val memory = TemporaryMemory()
         val zone = ZoneId.of("America/Chicago")

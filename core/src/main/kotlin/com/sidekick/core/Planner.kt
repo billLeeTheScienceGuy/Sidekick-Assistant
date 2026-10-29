@@ -15,7 +15,7 @@ object Planner {
             PlannerView.REVIEW -> item.state == "PROPOSED"
             PlannerView.REMINDERS -> item.state == "ACCEPTED" && item.dueAt != null
             PlannerView.UNSCHEDULED -> item.state == "ACCEPTED" && item.dueAt == null
-            PlannerView.HISTORY -> item.state in setOf("DONE", "DISMISSED")
+            PlannerView.HISTORY -> item.state in setOf("DONE", "DISMISSED", "CANCELLED")
             PlannerView.ALL -> true
         } }.sortedWith(compareBy<PlannerEntry> { group(it) }
             .thenBy { if (group(it) == 1) it.dueAt else -it.capturedAt }

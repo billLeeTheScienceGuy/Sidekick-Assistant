@@ -10,7 +10,7 @@ class SpeechSegmenter(
     private val minSpeechSamples: Int,
     private val overlapSamples: Int = 0,
 ) {
-    data class Segment(val startSample: Long, val samples: FloatArray)
+    data class Segment(val startSample: Long, val samples: FloatArray, val continuesPrevious: Boolean = false)
 
     init {
         require(maxSamples > 0)
@@ -79,7 +79,7 @@ class SpeechSegmenter(
     /** Flushes pending speech when the user finishes. Silence alone produces no chunk. */
     fun finish(): Segment? {
         val result = if (freshSpeech && (speechCount >= minSpeechSamples || (continuation && speechCount > 0)))
-            Segment(start, audio.copyOf(count)) else null
+            Segment(start, audio.copyOf(count), continuation) else null
         audio.fill(0f)
         preRoll.fill(0f)
         count = 0

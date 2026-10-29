@@ -21,6 +21,7 @@ import org.junit.runner.RunWith
 class ReminderTest {
     @Test fun reminderDeliveryIsIdempotentAndDeletionRemovesNotification() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
+        assertEquals(android.content.pm.PackageManager.PERMISSION_GRANTED, context.checkSelfPermission(Manifest.permission.VIBRATE))
         if (Build.VERSION.SDK_INT >= 33) InstrumentationRegistry.getInstrumentation().uiAutomation
             .grantRuntimePermission(context.packageName, Manifest.permission.POST_NOTIFICATIONS)
         val db = Room.inMemoryDatabaseBuilder(context, MemoryDatabase::class.java).build()
@@ -39,6 +40,7 @@ class ReminderTest {
             coordinator.deliver(id, now)
             assertEquals(delivered, db.commitments().get(id)!!.deliveredAt)
             withTimeout(3000) { while (manager.activeNotifications.none { it.tag == id }) delay(30) }
+            assertEquals(android.app.Notification.CATEGORY_REMINDER, manager.activeNotifications.single { it.tag == id }.notification.category)
             coordinator.delete(id)
             assertNull(db.commitments().get(id))
             withTimeout(3000) { while (manager.activeNotifications.any { it.tag == id }) delay(30) }

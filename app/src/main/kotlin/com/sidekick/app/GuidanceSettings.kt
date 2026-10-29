@@ -9,8 +9,14 @@ enum class PlaceContext { CITY, PHONE }
 
 class GuidanceSettings(context: Context) {
     private val preferences = context.getSharedPreferences("guidance", Context.MODE_PRIVATE)
+    private val handsOff = MutableStateFlow(preferences.getBoolean("hands_off", !context.packageName.endsWith(".benchmark")))
+    val handsOffMode = handsOff.asStateFlow()
+    fun setHandsOff(value: Boolean) { preferences.edit().putBoolean("hands_off", value).apply(); handsOff.value = value }
     private val languageValue = MutableStateFlow(com.sidekick.core.SpeechLanguage.fromCode(preferences.getString("speech_language", "en")))
     val speechLanguage = languageValue.asStateFlow()
+    private val qualityValue = MutableStateFlow(com.sidekick.core.SpeechQuality.fromName(preferences.getString("speech_quality", null)))
+    val speechQuality = qualityValue.asStateFlow()
+    fun setSpeechQuality(value: com.sidekick.core.SpeechQuality) { preferences.edit().putString("speech_quality", value.name).apply(); qualityValue.value = value }
     fun setSpeechLanguage(value: com.sidekick.core.SpeechLanguage) { preferences.edit().putString("speech_language", value.code).apply(); languageValue.value = value }
     private val current = MutableStateFlow(if (preferences.getBoolean("ask_end_time", false)) GuidanceMode.ASK else GuidanceMode.PASSIVE)
     val mode = current.asStateFlow()

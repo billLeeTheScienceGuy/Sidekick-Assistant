@@ -11,10 +11,14 @@ import java.util.concurrent.atomic.AtomicInteger
 class LiveSpeechProcessor(
     private val speech: SpeechEngine,
     private val inspect: (FloatArray) -> Boolean = { true },
+    private val contextKey: () -> String? = { null },
+    private val onBoundary: (Boolean) -> Unit = {},
     private val onText: suspend (String, Long, Long) -> Unit,
 ) {
-    private val segmenter = SpeechSegmenter(80_000, 4_096, 12_288, 3_072, overlapSamples = 8_192)
-    private val queue = Channel<SpeechSegmenter.Segment>(2, onUndeliveredElement = { it.samples.fill(0f) })
+    private val segmenter = SpeechSegmenter(160_000, 4_096, 16_384, 3_072, overlapSamples = 16_000)
+    private val speechContext = com.sidekick.core.SpeechContext()
+    private val queued = AtomicInteger()
+    private val queue = Channel<SpeechSegmenter.Segment>(2, onUndeliveredElement = { queued.decrementAndGet(); it.samples.fill(0f) })
     private val history = FloatArray(16_384)
     private var historySize = 0
     private val transcriptions = AtomicInteger()
@@ -23,16 +27,23 @@ class LiveSpeechProcessor(
     suspend fun consume() {
         try {
             for (chunk in queue) {
+                queued.decrementAndGet()
                 val start = android.os.SystemClock.elapsedRealtime()
                 try {
-                    if (!inspect(chunk.samples)) continue
+                    if (!inspect(chunk.samples)) { speechContext.clear(); continue }
                     transcriptions.incrementAndGet()
-                    val text = try { withTimeout(30_000) { speech.transcribe(chunk.samples, 2, true, 512) } }
+                    if (!chunk.continuesPrevious) speechContext.clear()
+                    val window = speechContext.prepare(chunk.samples, chunk.startSample, contextKey())
+                    // Boost isolated short English phrases; let tiny catch up when speech is queued.
+                    val shortBoost = chunk.samples.size < speech.shortBoostLimit() && queued.get() == 0
+                    val text = try { withTimeout(30_000) { speech.transcribe(window, 2, true, speech.liveContext(shortBoost), shortPhrase = shortBoost) } }
                         catch (_: TimeoutCancellationException) { error("Transcription timed out. Listening stopped; review text captured so far.") }
+                        finally { if (window !== chunk.samples) window.fill(0f) }
+                    onBoundary(chunk.continuesPrevious)
                     onText(text, chunk.startSample, android.os.SystemClock.elapsedRealtime() - start)
                 } finally { chunk.samples.fill(0f) }
             }
-        } finally { withContext(NonCancellable) { speech.release() } }
+        } finally { speechContext.clear(); withContext(NonCancellable) { speech.release() } }
     }
 
     /** At most 4096 new samples; VAD sees a rolling context to avoid per-frame state resets. */
@@ -61,7 +72,9 @@ class LiveSpeechProcessor(
 
     private fun enqueue(chunk: SpeechSegmenter.Segment) {
         if (chunk.samples.size < 1600) { chunk.samples.fill(0f); return }
+        queued.incrementAndGet()
         if (queue.trySend(chunk).isFailure) {
+            queued.decrementAndGet()
             chunk.samples.fill(0f)
             error("Transcription fell behind. Listening stopped; review the text captured so far.")
         }

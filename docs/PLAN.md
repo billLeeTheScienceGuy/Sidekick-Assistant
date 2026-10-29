@@ -1,5 +1,8 @@
 # SideKick foundation plan
 
+This records the original foundation design. Use [ROADMAP.md](ROADMAP.md) and
+[STATUS.md](STATUS.md) for current implemented features, limits and remaining work.
+
 ## Product and scope
 
 An Android, local-first assistant that turns consenting conversations into reviewable commitments. Start with English and Android 8+ (API 26). No paid APIs, accounts, server, or network permission are required by the foundation app. Models run on the device once installed. Free models still have license and attribution requirements.

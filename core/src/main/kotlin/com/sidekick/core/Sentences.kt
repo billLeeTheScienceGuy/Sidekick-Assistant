@@ -2,7 +2,7 @@ package com.sidekick.core
 
 /** Preserve source wording while avoiding sentence breaks inside spoken clock notation. */
 object Sentences {
-    private val boundary = Regex("(?<=[.!?])\\s+|\\n+")
+    private val boundary = Regex("(?<=[.!?])\\s+|(?<=[。！？])\\s*|\\n+")
     private val meridiem = Regex("\\b[ap]\\.m\\.$", RegexOption.IGNORE_CASE)
     private val continuation = Regex("^(?:at|on|in|until|till|and|to|from|for)\\b", RegexOption.IGNORE_CASE)
     fun split(text: String): List<String> {

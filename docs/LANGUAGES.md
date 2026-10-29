@@ -1,3 +1,13 @@
+# Current model option
+
+Version 0.21 adds Arabic and evaluated Adaptive routing. Korean/Chinese use
+SenseVoice; Arabic uses Omnilingual int8. French uses Whisper base for short clear-queue
+phrases and Omnilingual for longer speech. German uses full-context Whisper tiny for
+short phrases and Omnilingual for longer speech. Russian uses base for short phrases
+and full-context tiny for longer speech. English keeps its prior short-phrase boost.
+Auto retains Whisper language detection. Explicit Fast/Base choices remain available.
+See [measurements and limits](ASR_EVALUATION.md) and [Arabic scope](ARABIC.md).
+
 # Multilingual speech — 0.10.0
 
 Settings → Speech language offers English, Automatic, Korean, Chinese, French,
@@ -12,10 +22,11 @@ spoken language is more reliable. Transcription preserves its language rather
 than translating everything to English. Language selection is disabled during
 listening/finishing. UTF-8 JNI output supports Hangul, Han and Cyrillic scripts.
 
-This release adds speech transcription, not full multilingual assistant semantics
-or translated UI. Activity/date extraction remains English-only and the UI states
-that limit. Do not infer that non-English plans will automatically create correct
-event suggestions. Voice matching has also not been calibrated across languages.
+Version 0.10.0 added speech transcription without multilingual event grammar.
+Version 0.11.0 adds basic event/date extraction in the five languages; see
+MULTILINGUAL_EVENTS.md for supported phrases and tests. Full multilingual reasoning
+and translated UI are not implemented. Voice matching has not been calibrated
+across languages, and every event still requires review.
 
 ## Model and build
 

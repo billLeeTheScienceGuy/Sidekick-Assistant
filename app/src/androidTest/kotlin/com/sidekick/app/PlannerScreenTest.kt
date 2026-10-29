@@ -10,6 +10,16 @@ import org.junit.Rule
 import org.junit.Test
 
 class PlannerScreenTest {
+    private var handsOff = false
+    @org.junit.Before fun reviewMode() {
+        val app = compose.activity.application as SidekickApplication
+        assumeTrue(app.packageName.endsWith(".benchmark"))
+        handsOff = app.guidance.handsOffMode.value; app.guidance.setHandsOff(false); app.temporary.discard()
+    }
+    @org.junit.After fun restoreMode() {
+        val app = compose.activity.application as SidekickApplication
+        app.temporary.discard(); app.guidance.setHandsOff(handsOff)
+    }
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     @Test fun speechLanguagePersistsAndShowsItsLocalTranscriptionScope() {
         val app = compose.activity.application as SidekickApplication
@@ -92,7 +102,8 @@ class PlannerScreenTest {
             compose.onNodeWithTag("mode-passive").performScrollTo().performClick()
             compose.onNodeWithText("Close").performClick()
             compose.onNodeWithTag("filter-UNSCHEDULED").performScrollTo().performClick()
-            compose.onNodeWithText("Edit").performScrollTo().performClick()
+            compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("review-${fixture.id}"))
+            compose.onNodeWithTag("review-${fixture.id}").performClick()
             compose.onNodeWithText("When do you think this will last till?").assertDoesNotExist()
             compose.onNodeWithTag("pick-activity-end").assertDoesNotExist()
             compose.onNodeWithTag("optional-activity").assertExists()
@@ -124,12 +135,15 @@ class PlannerScreenTest {
             compose.onNodeWithTag("planner-search").performScrollTo().performTextInput("Planner fixture")
             compose.onNodeWithText(draft.title).performScrollTo().assertExists()
             compose.onNodeWithTag("filter-REMINDERS").performScrollTo().performClick()
-            compose.onNodeWithText("Planner fixture scheduled").performScrollTo().assertExists()
+            compose.onNodeWithTag("main-list").performScrollToNode(hasText("Planner fixture scheduled"))
+            compose.onNodeWithText("Planner fixture scheduled").assertExists()
             compose.onNodeWithText(draft.title).assertDoesNotExist()
             compose.onNodeWithTag("filter-UNSCHEDULED").performScrollTo().performClick()
-            compose.onNodeWithText("Planner fixture undated").performScrollTo().assertExists()
+            compose.onNodeWithTag("main-list").performScrollToNode(hasText("Planner fixture undated"))
+            compose.onNodeWithText("Planner fixture undated").assertExists()
             compose.onNodeWithTag("filter-HISTORY").performScrollTo().performClick()
-            compose.onNodeWithText("Planner fixture done").performScrollTo().assertExists()
+            compose.onNodeWithTag("main-list").performScrollToNode(hasText("Planner fixture done"))
+            compose.onNodeWithText("Planner fixture done").assertExists()
             compose.onNodeWithTag("filter-REVIEW").performScrollTo().performClick()
             compose.onNodeWithText("Review & accept").performScrollTo().performClick()
             compose.onNodeWithTag("pick-reminder").assertExists()

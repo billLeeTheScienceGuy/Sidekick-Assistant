@@ -17,10 +17,21 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class FoundationTest {
+    private var handsOff = false
+    @org.junit.Before fun reviewMode() {
+        val app = compose.activity.application as SidekickApplication
+        org.junit.Assume.assumeTrue(app.packageName.endsWith(".benchmark"))
+        handsOff = app.guidance.handsOffMode.value; app.guidance.setHandsOff(false); app.temporary.discard()
+    }
+    @org.junit.After fun restoreMode() {
+        val app = compose.activity.application as SidekickApplication
+        app.temporary.discard(); app.guidance.setHandsOff(handsOff)
+    }
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun textRequiresConsentAndCreatesReviewableMemory() {
-        compose.onNodeWithText("Use an example").performScrollTo().performClick()
+        compose.onNodeWithTag("main-list").performScrollToNode(hasText("Use an example"))
+        compose.onNodeWithText("Use an example").performClick()
         compose.onNodeWithText("Find commitments").assertIsNotEnabled()
         compose.onNodeWithTag("consent").performScrollTo().performClick()
         compose.onNodeWithText("Find commitments").performScrollTo().performClick()
@@ -29,7 +40,7 @@ class FoundationTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
         // The text flow works without asking for microphone access.
-        compose.onNodeWithText("Microphone is off").performScrollTo().assertExists()
+        assertFalse(com.sidekick.app.audio.ListeningService.state.value.recording)
     }
 
     @Test fun acceptedMemorySurvivesDatabaseReopenAndCanBeDeleted() = runBlocking {

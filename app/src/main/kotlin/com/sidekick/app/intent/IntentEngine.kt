@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
 
-class IntentEngine(private val context: Context) {
+class IntentEngine(private val context: Context, private val smartOverride: (suspend (Transcript) -> List<IntentCandidate>)? = null) {
     private val model = File(context.noBackupFilesDir, "qwen3-0.6b-q4_k_m.gguf")
     private val mutableReady = MutableStateFlow(model.isFile && model.length() == SIZE)
     val ready = mutableReady.asStateFlow()
@@ -44,10 +44,30 @@ class IntentEngine(private val context: Context) {
         } finally { temp.delete() }
     } }
 
+    private val mutableNotice = MutableStateFlow<String?>(null)
+    val notice = mutableNotice.asStateFlow()
     suspend fun extract(source: Transcript): List<ProposedCommitment> = gate.withLock {
+        mutableNotice.value = null
         require(source.text.length <= 4000) { "Use at most 4,000 characters for smart analysis." }
         if (!source.processingAllowed || source.speaker != Speaker.USER) return@withLock emptyList()
-        withContext(Dispatchers.IO) {
+        val local = AnalysisContext.local(source)
+        val unresolved = AnalysisContext.unresolved(source, local)
+        if (unresolved.isBlank()) return@withLock local
+        try {
+            val remaining = source.copy(text = unresolved)
+            val smart = smartOverride?.let { IntentValidation.validate(source, it(remaining)) } ?: extractSmart(remaining, source)
+            val evidence = local.map { it.evidence.trimEnd('.', '!').lowercase() }.toSet()
+            local + smart.filter { it.evidence.trimEnd('.', '!').lowercase() !in evidence }
+        } catch (e: CancellationException) { throw e }
+        catch (_: Exception) {
+            mutableNotice.value = "Smart analysis could not finish. Used local rules; some plans may be missed."
+            local
+        }
+    }
+    private suspend fun extractSmart(source: Transcript, original: Transcript): List<ProposedCommitment> {
+        require(source.text.length <= 4000) { "Use at most 4,000 characters for smart analysis." }
+        if (!source.processingAllowed || source.speaker != Speaker.USER) return emptyList()
+        return withContext(Dispatchers.IO) {
             check(mutableReady.value) { "Import the Qwen model first." }
             if (!verified) {
                 val hash = MessageDigest.getInstance("SHA-256")
@@ -89,11 +109,7 @@ class IntentEngine(private val context: Context) {
                 require(item.keys().asSequence().toSet() == setOf("action", "evidence", "time_phrase"))
                 IntentCandidate(item.getString("action"), item.getString("evidence"), item.getString("time_phrase"))
             }
-            val modelProposals = IntentValidation.validate(source, candidates)
-            val seen = modelProposals.map { it.evidence.trimEnd('.', '!').lowercase() }.toSet()
-            val supported = RuleIntentExtractor().extract(source).filter { it.evidence.trimEnd('.', '!').lowercase() !in seen }
-                .map { it.copy(needsReview = "Explicit future plan detected by rules. Review the action and time before saving.") }
-            ActivityTiming.merge(source, modelProposals + supported)
+            IntentValidation.validate(original, candidates)
         }
     }
 

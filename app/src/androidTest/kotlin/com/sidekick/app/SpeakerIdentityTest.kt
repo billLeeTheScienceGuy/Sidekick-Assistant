@@ -39,14 +39,17 @@ class SpeakerIdentityTest {
             assertEquals(id, memory.drafts.value.single().id)
             assertEquals(Instant.parse("2026-10-25T05:00:00Z").toEpochMilli(), memory.drafts.value.single().activityEndAt)
             // Short matches do not renew the long-phrase anchor.
-            assertEquals(Speaker.UNKNOWN, engine.identify(short, 32_001))
-            assertEquals(Speaker.USER, engine.identify(long, 40_000))
-            assertEquals(Speaker.UNKNOWN, engine.identify(FloatArray(33_600), 41_000))
-            assertEquals(Speaker.UNKNOWN, engine.identify(short, 42_000))
+            assertEquals(Speaker.UNKNOWN, engine.identify(short, 62_001))
+            assertEquals(Speaker.USER, engine.identify(long, 70_000))
+            assertEquals(Speaker.UNKNOWN, engine.identify(FloatArray(33_600), 71_000))
+            assertEquals(Speaker.UNKNOWN, engine.identify(short, 72_000))
         } finally { profile.delete(); engine.close(); pcm.fill(0f); long.fill(0f); short.fill(0f) }
     }
 
-    @Test fun speakerMatchingAndWhisperShareThePacedPipelineWithoutQueueOverflow() = runBlocking {
+    @Test fun speakerMatchingAndWhisperShareThePacedPipelineWithoutQueueOverflow() = pacedPipeline(SpeechQuality.ACCURATE, 1)
+    @Test fun defaultModelHandlesSustainedPacedSpeech() = pacedPipeline(SpeechQuality.FAST, 4)
+
+    private fun pacedPipeline(quality: SpeechQuality, repeats: Int) = runBlocking {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val app = instrumentation.targetContext.applicationContext as SidekickApplication
         assumeTrue(app.packageName.endsWith(".benchmark"))
@@ -58,29 +61,38 @@ class SpeakerIdentityTest {
         val transcripts = mutableListOf<String>()
         val start = android.os.SystemClock.elapsedRealtime()
         val cpu = android.os.Process.getElapsedCpuTime()
+        val previousQuality = app.guidance.speechQuality.value
+        app.guidance.setSpeechQuality(quality)
+        var currentSpeaker = Speaker.UNKNOWN
         val enrollment = pcm.copyOfRange(0, 80_000)
         com.sidekick.app.speech.NativeVad.open(com.sidekick.app.speech.VadModel.install(app))
         val pipeline = com.sidekick.app.audio.LiveSpeechProcessor(app.speech, inspect = { samples ->
-            speakers += engine.identify(samples); true
-        }) { text, _, latency -> transcripts += text; latencies += latency }
+            currentSpeaker = engine.identify(samples); speakers += currentSpeaker; true
+        }, contextKey = { if (currentSpeaker == Speaker.USER) "fixture" else null }) { text, _, latency -> transcripts += text; latencies += latency }
         try {
             val vector = engine.embedding(enrollment)
             profile.save(listOf(vector, vector, vector))
             coroutineScope {
                 val worker = launch(Dispatchers.IO) { pipeline.consume() }
-                for (startSample in pcm.indices step 4096) {
+                repeat(repeats) { for (startSample in pcm.indices step 4096) {
                     val frame = pcm.copyOfRange(startSample, minOf(startSample + 4096, pcm.size))
                     try { pipeline.accept(frame) } finally { frame.fill(0f) }
                     delay(256)
-                }
+                } }
                 pipeline.finish()
                 withTimeout(30_000) { worker.join() }
             }
             assertTrue(transcripts.joinToString(" ").contains("country", true))
             assertTrue(speakers.contains(Speaker.USER))
-            println("SPEAKER_PIPELINE elapsedMs=${android.os.SystemClock.elapsedRealtime() - start}; processCpuMs=${android.os.Process.getElapsedCpuTime() - cpu}; chunks=${transcripts.size}; userChunks=${speakers.count { it == Speaker.USER }}; maxWhisperMs=${latencies.maxOrNull()}")
+            val other = instrumentation.context.assets.open("quality-party.wav").use { WavAudio.decode(it.readBytes()) }
+            try { assertNotEquals("Synthetic other voice must not inherit identity", Speaker.USER, engine.identify(other)) }
+            finally { other.fill(0f) }
+            val memory = android.os.Debug.MemoryInfo().also { android.os.Debug.getMemoryInfo(it) }
+            println("SPEAKER_BASE_MEMORY pssKb=${memory.totalPss}")
+            println("SPEAKER_PIPELINE model=$quality; audioMs=${pcm.size * 1000L / 16000 * repeats}; elapsedMs=${android.os.SystemClock.elapsedRealtime() - start}; processCpuMs=${android.os.Process.getElapsedCpuTime() - cpu}; chunks=${transcripts.size}; userChunks=${speakers.count { it == Speaker.USER }}; maxCombinedChunkMs=${latencies.maxOrNull()}")
         } finally {
             pipeline.close(); engine.close(); profile.delete(); pcm.fill(0f); enrollment.fill(0f)
+            app.guidance.setSpeechQuality(previousQuality)
             com.sidekick.app.speech.NativeVad.close()
         }
     }
@@ -98,7 +110,9 @@ class SpeakerIdentityTest {
         memory.appendAttributedLive("I'll go to the party tomorrow at 8pm.", now, zone, Speaker.USER)
         assertFalse(memory.drafts.value.single().informational)
         memory.appendAttributedLive("It ends at midnight.", now, zone, Speaker.UNKNOWN)
-        assertNull(memory.drafts.value.single().activityEndAt)
+        assertNull(memory.drafts.value.first().activityEndAt)
+        assertEquals(2, memory.drafts.value.size)
+        assertTrue(memory.drafts.value.last().reviewNote.contains("speaker uncertain"))
     }
 
     @Test fun knownUserCorrectionsStayInOneReviewDraft() {

@@ -4,19 +4,32 @@ import kotlin.math.sqrt
 
 /** Conservative prototype thresholds; identity is never consent or authentication. */
 object VoiceMatch {
+    fun identifyTurn(profile: FloatArray, windows: List<FloatArray>): Speaker {
+        if (windows.size < 2) return Speaker.UNKNOWN
+        val scores = windows.zipWithNext { first, second -> identify(profile, first, second) }
+        return when {
+            scores.all { it == Speaker.USER } -> Speaker.USER
+            scores.all { it == Speaker.OTHER } -> Speaker.OTHER
+            else -> Speaker.UNKNOWN
+        }
+    }
     /** Short phrases need their own strong evidence against both enrollment and a recent long phrase. */
-    fun classifyShortScores(profile: Float, recentVoice: Float, durationMs: Long, anchorAgeMs: Long): Speaker {
-        if (durationMs !in 1500L..2999L || anchorAgeMs !in 0L..30_000L) return Speaker.UNKNOWN
+    fun classifyShortScores(profile: Float, recentVoice: Float, durationMs: Long, anchorAgeMs: Long, minimum: Float = .80f): Speaker {
+        require(minimum.isFinite() && minimum >= .60f && minimum <= .80f)
+        if (durationMs !in 1500L..2999L || anchorAgeMs !in 0L..VoiceAnchors.MAX_AGE_MS) return Speaker.UNKNOWN
         if (!profile.isFinite() || !recentVoice.isFinite() || profile !in -1f..1f || recentVoice !in -1f..1f) return Speaker.UNKNOWN
-        return if (profile >= .80f && recentVoice >= .80f) Speaker.USER else Speaker.UNKNOWN
+        return if (profile >= minimum && recentVoice >= minimum) Speaker.USER else Speaker.UNKNOWN
     }
     fun normalized(vector: FloatArray): FloatArray {
-        require(vector.size == 256 && vector.all { it.isFinite() })
+        require(vector.size in setOf(192, 256) && vector.all { it.isFinite() })
         val norm = sqrt(vector.sumOf { it.toDouble() * it }).toFloat()
         require(norm > 0.0001f)
         return FloatArray(vector.size) { vector[it] / norm }
     }
-    fun similarity(a: FloatArray, b: FloatArray): Float = normalized(a).zip(normalized(b)).sumOf { (x, y) -> (x * y).toDouble() }.toFloat()
+    fun similarity(a: FloatArray, b: FloatArray): Float {
+        require(a.size == b.size) { "Voice signatures belong to different model dimensions." }
+        return normalized(a).zip(normalized(b)).sumOf { (x, y) -> (x * y).toDouble() }.toFloat()
+    }
     fun identify(profile: FloatArray?, first: FloatArray, second: FloatArray): Speaker {
         if (profile == null) return Speaker.UNKNOWN
         val a = similarity(profile, first)

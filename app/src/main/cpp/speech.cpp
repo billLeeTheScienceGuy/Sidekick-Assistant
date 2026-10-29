@@ -28,16 +28,17 @@ Java_com_sidekick_app_speech_NativeSpeech_release(JNIEnv *, jobject) {
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL
-Java_com_sidekick_app_speech_NativeSpeech_transcribe(JNIEnv *env, jobject, jstring path, jfloatArray pcm, jint threads, jboolean retain_model, jint audio_context, jstring language) {
+Java_com_sidekick_app_speech_NativeSpeech_transcribe(JNIEnv *env, jobject, jstring path, jfloatArray pcm, jint threads, jboolean retain_model, jint audio_context, jstring language, jint beam_size) {
     std::lock_guard<std::mutex> lock(inference_mutex);
     try {
         if (threads < 1 || threads > 4) { fail(env, "Invalid speech thread count."); return nullptr; }
+        if (beam_size < 1 || beam_size > 5) { fail(env, "Invalid speech beam size."); return nullptr; }
         const char *raw_language = env->GetStringUTFChars(language, nullptr);
         if (!raw_language) return nullptr;
         std::string language_code(raw_language);
         env->ReleaseStringUTFChars(language, raw_language);
         if (language_code != "auto" && language_code != "en" && language_code != "ko" && language_code != "zh" &&
-            language_code != "fr" && language_code != "de" && language_code != "ru") {
+            language_code != "fr" && language_code != "de" && language_code != "ru" && language_code != "ar") {
             fail(env, "Unsupported speech language."); return nullptr;
         }
         const auto count = env->GetArrayLength(pcm);
@@ -68,7 +69,8 @@ Java_com_sidekick_app_speech_NativeSpeech_transcribe(JNIEnv *env, jobject, jstri
         struct Cleanup { bool retain; ~Cleanup() { if (!retain) cached_context.reset(); } } cleanup{bool(retain_model)};
         auto *context = cached_context.get();
         if (!context) { fail(env, "Could not load the local speech model."); return nullptr; }
-        auto p = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
+        auto p = whisper_full_default_params(beam_size == 1 ? WHISPER_SAMPLING_GREEDY : WHISPER_SAMPLING_BEAM_SEARCH);
+        p.beam_search.beam_size = beam_size;
         p.n_threads = threads;
         p.audio_ctx = audio_context;
         p.language = language_code == "auto" ? nullptr : language_code.c_str();

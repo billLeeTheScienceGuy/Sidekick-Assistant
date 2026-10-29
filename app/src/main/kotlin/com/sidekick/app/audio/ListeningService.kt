@@ -32,6 +32,7 @@ data class ListeningState(
     val voiceStatus: String = "Speaker unassigned",
     val userVoiceChunks: Int = 0, val otherVoiceChunks: Int = 0, val unknownVoiceChunks: Int = 0,
     val voiceDiagnostics: List<String> = emptyList(),
+    val recognitionDiagnostics: List<String> = emptyList(),
     val note: String = "Microphone is off",
 )
 
@@ -47,17 +48,20 @@ class ListeningService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            FINISH -> { finish = true; if (capture == null) stopSelf(); return START_NOT_STICKY }
-            CANCEL -> { discard = true; capture?.cancel(); if (capture == null) stopSelf(); return START_NOT_STICKY }
+            FINISH -> { app.assistant.disarm(); finish = true; if (capture == null) stopSelf(); return START_NOT_STICKY }
+            CANCEL -> { app.assistant.disarm(); discard = true; capture?.cancel(); if (capture == null) stopSelf(); return START_NOT_STICKY }
         }
-        if (intent == null) { stopSelf(); return START_NOT_STICKY }
-        if (capture != null) return START_NOT_STICKY
+        val recovering = intent == null || intent.action == RESUME
+        if (recovering && !app.assistant.canRecover()) { stopSelf(); return START_NOT_STICKY }
+        if (capture != null) return if (app.assistant.armed && !enrollment) START_STICKY else START_NOT_STICKY
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             mutableState.value = ListeningState(note = "Microphone permission is required")
+            app.assistant.disarm("Microphone permission is required")
             stopSelf(); return START_NOT_STICKY
         }
         finish = false; discard = false
-        enrollment = intent.getBooleanExtra(ENROLL, false)
+        enrollment = intent?.getBooleanExtra(ENROLL, false) == true
+        if (!enrollment && !recovering) app.assistant.rememberUserStart()
         try {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
                 NotificationChannel(CHANNEL, "Listening and transcription", NotificationManager.IMPORTANCE_LOW))
@@ -66,10 +70,11 @@ class ListeningService : Service() {
             mutableState.value = ListeningState(processing = true, enrolling = enrollment, note = "Preparing local speech detection…")
             capture = scope.launch { runSession() }
         } catch (_: Exception) {
+            app.assistant.disarm("Android could not resume listening. Open SideKick and start again.")
             mutableState.value = ListeningState(note = "Android could not start listening. Open the app and try again.")
             stopSelf()
         }
-        return START_NOT_STICKY
+        return if (!enrollment && app.assistant.armed) START_STICKY else START_NOT_STICKY
     }
 
     private fun notification(recording: Boolean): Notification {
@@ -78,10 +83,10 @@ class ListeningService : Service() {
         val open = PendingIntent.getActivity(this, 2, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         return Notification.Builder(this, CHANNEL).setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentTitle(if (recording) "SideKick · Listening" else "SideKick · Finishing transcript")
-            .setContentText("On-device only. No audio files. Tap to review.")
+            .setContentText(if (app.guidance.handsOffMode.value && !enrollment) "On-device · events save automatically · Undo in event notifications" else "On-device only. No audio files. Tap to review.")
             .setContentIntent(open).setOngoing(true)
             .apply { if (recording) addAction(Notification.Action.Builder(null, "Finish", done).build()) }
-            .addAction(Notification.Action.Builder(null, "Discard session", cancel).build()).build()
+            .addAction(Notification.Action.Builder(null, if (app.guidance.handsOffMode.value && !enrollment) "Stop & clear text" else "Discard session", cancel).build()).build()
     }
 
     @Suppress("MissingPermission")
@@ -89,6 +94,9 @@ class ListeningService : Service() {
         var recorder: AudioRecord? = null
         var processor: LiveSpeechProcessor? = null
         val raw = ShortArray(4096)
+        val setupLanguage = app.guidance.speechLanguage.value
+        app.voiceProfile.selectLanguage(setupLanguage)
+        val setupModel = app.voiceProfile.model.value
         val speaker = SpeakerEngine(this, app.voiceProfile)
         val enrollmentSamples = mutableListOf<FloatArray>()
         val wake = getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SideKick:LiveNotes")
@@ -109,7 +117,8 @@ class ListeningService : Service() {
             if (!enrollment) app.temporary.beginSession()
             coroutineScope {
                 var identified = Speaker.UNKNOWN
-                val pipeline = LiveSpeechProcessor(app.speech, inspect = { samples ->
+                var continuation = false
+                val pipeline = LiveSpeechProcessor(app.speech, onBoundary = { continuation = it }, contextKey = { if (identified == Speaker.USER) "user" else null }, inspect = { samples ->
                     if (enrollment) {
                         if (!discard && enrollmentSamples.size < 3 && samples.size >= 48_000) {
                             enrollmentSamples += speaker.embedding(samples)
@@ -134,9 +143,13 @@ class ListeningService : Service() {
                     }
                 }) { text, startSample, latency ->
                     ensureActive()
-                    if (!discard) app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified)
+                    if (!discard) {
+                        app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified, continuation)
+                        app.automation.process()
+                    }
                     mutableState.update { it.copy(chunks = it.chunks + 1, lastLatencyMs = latency,
-                        note = if (it.recording) "Listening · live text is ready for review" else "Finishing remaining speech…") }
+                        recognitionDiagnostics = (it.recognitionDiagnostics + listOfNotNull(app.speech.lastClockDiagnostic)).takeLast(5),
+                        note = if (it.recording) { if (app.guidance.handsOffMode.value) "Listening · saving events automatically" else "Listening · live text is ready for review" } else "Finishing remaining speech…") }
                 }
                 processor = pipeline
                 val worker = launch { pipeline.consume() }
@@ -179,17 +192,21 @@ class ListeningService : Service() {
                 worker.join()
             }
             currentCoroutineContext().ensureActive()
-            if (enrollment && !discard && enrollmentSamples.size == 3) app.voiceProfile.save(enrollmentSamples)
+            if (enrollment && !discard && enrollmentSamples.size == 3) {
+                check(app.voiceProfile.language.value == setupLanguage && app.voiceProfile.model.value == setupModel) { "Voice settings changed. Repeat setup in the selected language." }
+                app.voiceProfile.save(enrollmentSamples)
+            }
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
                 note = if (enrollment) {
                     if (enrollmentSamples.size == 3) "Voice setup complete. Your local voice profile is ready."
                     else "Voice setup incomplete. Speak in longer phrases and try again; any previous profile is unchanged."
-                } else if (it.chunks == 0) "No speech detected. Try speaking closer to the microphone." else "Session finished. Review and approve commitments below.") }
+                } else if (it.chunks == 0) "No speech detected. Try speaking closer to the microphone." else if (app.guidance.handsOffMode.value) app.automation.status.value else "Session finished. Review and approve commitments below.") }
         } catch (e: CancellationException) {
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
                 note = if (discard) "Session discarded" else "Listening interrupted. Review text captured so far.") }
             throw e
         } catch (e: Exception) {
+            if (!enrollment) app.assistant.disarm("Listening paused after an error. Start again when ready.")
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
                 note = e.message ?: "Listening failed. Review the text captured so far, then try again.") }
         } finally {
@@ -202,13 +219,14 @@ class ListeningService : Service() {
         }
     }
 
-    override fun onTimeout(startId: Int) { capture?.cancel(); stopSelf() }
+    override fun onTimeout(startId: Int) { app.assistant.disarm("Android stopped listening"); capture?.cancel(); stopSelf() }
     override fun onDestroy() { scope.cancel(); stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy() }
     companion object {
         private const val CHANNEL = "listening"
         const val FINISH = "com.sidekick.FINISH"
         const val CANCEL = "com.sidekick.CANCEL"
         const val ENROLL = "com.sidekick.ENROLL"
+        const val RESUME = "com.sidekick.RESUME_ASSISTANT"
         private val mutableState = MutableStateFlow(ListeningState())
         val state = mutableState.asStateFlow()
     }

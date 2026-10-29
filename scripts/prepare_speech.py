@@ -42,3 +42,16 @@ if not multilingual.exists() or digest(multilingual) != multilingual_hash:
     finally:
         temporary.unlink(missing_ok=True)
 print("Verified multilingual speech model ready for APK packaging.")
+
+base = target.with_name("ggml-base.bin")
+base_hash = "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe"
+if not base.exists() or digest(base) != base_hash:
+    temporary = base.with_suffix(".download")
+    try:
+        urllib.request.urlretrieve("https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.bin", temporary)
+        if digest(temporary) != base_hash:
+            raise RuntimeError("Base speech model checksum mismatch")
+        temporary.replace(base)
+    finally:
+        temporary.unlink(missing_ok=True)
+print("Verified multilingual Whisper base ready for APK packaging.")

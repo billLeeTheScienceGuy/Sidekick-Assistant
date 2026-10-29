@@ -3,6 +3,17 @@ package com.sidekick.core
 import kotlin.test.*
 
 class SpeechSegmenterTest {
+    @Test fun `max window continuation and new speech after silence are distinguishable`() {
+        val segmenter = SpeechSegmenter(8, 0, 2, 1, 2)
+        val first = segmenter.accept(FloatArray(8) { .1f }, true).single()
+        assertFalse(first.continuesPrevious)
+        segmenter.accept(FloatArray(2) { .1f }, true)
+        val tail = segmenter.accept(FloatArray(2), false).single()
+        assertTrue(tail.continuesPrevious)
+        segmenter.accept(FloatArray(3) { .1f }, true)
+        val separate = segmenter.accept(FloatArray(2), false).single()
+        assertFalse(separate.continuesPrevious)
+    }
     @Test fun `overlap preserves boundary audio without emitting an overlap-only tail`() {
         val segmenter = SpeechSegmenter(4, 0, 2, 1, overlapSamples = 2)
         val first = segmenter.accept(floatArrayOf(.1f, .2f, .3f, .4f), true).single()
