@@ -1,7 +1,6 @@
 package com.sidekick.core
 
 import java.time.*
-import java.time.temporal.TemporalAdjusters
 
 /** Grounded English timing suggestions. Missing or ambiguous times stay unknown. */
 object ActivityTiming {
@@ -11,7 +10,7 @@ object ActivityTiming {
     private val ending = Regex("\\b(?:ends?|finish(?:es)?|until|till|over)\\s+(?:(?:at|around|about|by)\\s+)?($clock)", RegexOption.IGNORE_CASE)
     private val duration = Regex("\\b(?:lasts?|takes?)\\s+(?:(?:for|about|around)\\s+)?(\\d{1,2}(?:\\.\\d)?)\\s+(hours?|minutes?)\\b", RegexOption.IGNORE_CASE)
     private val excluded = Regex("\\b(yesterday|was|were|ended|finished|cancelled|canceled|not|never|won't|would|could|might|maybe|if|unless)\\b", RegexOption.IGNORE_CASE)
-    private val namedDate = Regex("\\b(today|tonight|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\\d{4}-\\d{2}-\\d{2})\\b", RegexOption.IGNORE_CASE)
+    private val namedDate = EnglishDates.pattern
 
     fun looksLikeActivity(text: String): Boolean = event.containsMatchIn(text) || LocalizedActivities.hasEvent(text)
 
@@ -94,6 +93,7 @@ object ActivityTiming {
             ProposedCommitment(sentence.substring(noun.range.first).trimEnd('.', '!').replaceFirstChar { it.uppercase() }.take(500),
                 evidence, source.capturedAt, source.zoneId,
                 "Attendance is unconfirmed. " + (if (!explicitDate) "Date inferred from the next occurrence; check it. " else "") +
+                    (if (EnglishDates.hasNextWeekday(sentence)) "\"Next\" weekday read as next week's; check it. " else "") +
                     "Activity times are suggestions from speech; review them. " + (if (end == null) "End time is unknown." else "End may be approximate."),
                 start, end, informational = true, placeName = place.name, placeAddress = place.address)
         }.distinctBy { it.evidence.substringBefore('\n').lowercase() }
@@ -130,14 +130,7 @@ object ActivityTiming {
         end
     }.getOrNull()
 
-    private fun date(text: String, today: LocalDate): LocalDate? {
-        return namedDate.findAll(text).map { match -> when (val value = match.value.lowercase()) {
-            "today", "tonight" -> today
-            "tomorrow" -> today.plusDays(1)
-            else -> DayOfWeek.entries.firstOrNull { it.name.equals(value, true) }?.let { today.with(TemporalAdjusters.next(it)) }
-                ?: LocalDate.parse(value)
-        } }.toSet().singleOrNull()
-    }
+    private fun date(text: String, today: LocalDate): LocalDate? = EnglishDates.date(text, today)
 
     private fun at(day: LocalDate, text: String, zone: ZoneId): Instant {
         val normalized = text.lowercase().replace(" ", "").replace(".", "")

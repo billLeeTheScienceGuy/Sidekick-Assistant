@@ -3,7 +3,6 @@ package com.sidekick.core
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
-import java.time.temporal.TemporalAdjusters
 
 /** Only resolve explicit dates and unambiguous clock times. Everything else stays for review. */
 object TimeResolver {
@@ -16,27 +15,31 @@ object TimeResolver {
     }
     fun format(instant: Instant, zone: ZoneId): String = formatter.format(instant.atZone(zone))
 
+    private val meridiem = Regex("\\b(?:at\\s+)?(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)\\b")
+    private val military = Regex("\\bat\\s+(\\d{1,2}):(\\d{2})\\b")
+    private val noon = Regex("\\bnoon\\b")
+    private val offset = Regex("\\bin\\s+(?:(half an hour)|(a|an|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\\d{1,3})\\s+(minute|hour)s?)\\b")
+
     fun suggest(text: String, captured: Instant, zone: ZoneId): Instant? = runCatching {
         val lower = text.lowercase().replace("a.m.", "am").replace("p.m.", "pm")
-        val local = captured.atZone(zone)
-        val date = when {
-            Regex("\\btomorrow\\b").containsMatchIn(lower) -> local.toLocalDate().plusDays(1)
-            Regex("\\btoday\\b").containsMatchIn(lower) -> local.toLocalDate()
-            Regex("\\b\\d{4}-\\d{2}-\\d{2}\\b").containsMatchIn(lower) ->
-                LocalDate.parse(Regex("\\b\\d{4}-\\d{2}-\\d{2}\\b").find(lower)!!.value)
-            else -> {
-                val day = DayOfWeek.entries.firstOrNull { Regex("\\b${it.name.lowercase()}\\b").containsMatchIn(lower) } ?: return null
-                local.toLocalDate().with(TemporalAdjusters.next(day))
-            }
+        val hasClock = meridiem.containsMatchIn(lower) || military.containsMatchIn(lower) || noon.containsMatchIn(lower)
+        // "In 30 minutes" is relative to capture time; combined with a date or clock it is ambiguous.
+        offset.find(lower)?.let { match ->
+            if (hasClock || EnglishDates.pattern.containsMatchIn(lower)) return null
+            val minutes = if (match.groupValues[1].isNotEmpty()) 30 else
+                EnglishDates.amount(match.groupValues[2]) * if (match.groupValues[3] == "hour") 60 else 1
+            return captured.plus(Duration.ofMinutes(minutes)).truncatedTo(java.time.temporal.ChronoUnit.MINUTES).takeIf { it.isAfter(captured) }
         }
-        val match = Regex("\\b(?:at\\s+)?(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)\\b").find(lower)
+        if (EnglishDates.hasNextWeekday(lower)) return null // "Next Friday" may mean this week or the following one.
+        val date = EnglishDates.date(lower, captured.atZone(zone).toLocalDate()) ?: return null
+        val match = meridiem.find(lower)
         val clock = if (match != null) {
             val hour = match.groupValues[1].toInt()
             require(hour in 1..12)
             LocalTime.of(hour % 12 + if (match.groupValues[3] == "pm") 12 else 0, match.groupValues[2].ifBlank { "0" }.toInt())
-        } else {
-            val military = Regex("\\bat\\s+(\\d{1,2}):(\\d{2})\\b").find(lower) ?: return null
-            LocalTime.of(military.groupValues[1].toInt(), military.groupValues[2].toInt())
+        } else if (noon.containsMatchIn(lower)) LocalTime.NOON else {
+            val time = military.find(lower) ?: return null
+            LocalTime.of(time.groupValues[1].toInt(), time.groupValues[2].toInt())
         }
         val result = parseEditor("$date ${clock.format(DateTimeFormatter.ofPattern("HH:mm"))}", zone)
         result.takeIf { it.isAfter(captured) }
