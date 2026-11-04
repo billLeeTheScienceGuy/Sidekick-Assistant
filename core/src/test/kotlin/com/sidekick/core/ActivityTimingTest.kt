@@ -61,6 +61,34 @@ class ActivityTimingTest {
         val activity = ActivityTiming.extract(source("There's a party at 8pm. It ends at 11pm. Actually it ends at midnight.")).single()
         assertEquals(Instant.parse("2026-10-23T05:00:00Z"), activity.activityEndAt)
     }
+    @Test fun `day after tomorrow is two days later rather than tomorrow`() {
+        val activity = ActivityTiming.extract(source("There's a dinner the day after tomorrow at 7pm.")).single()
+        assertEquals(Instant.parse("2026-10-25T00:00:00Z"), activity.activityStartAt)
+        assertFalse(activity.needsReview.contains("Date inferred"))
+    }
+    @Test fun `next weekday means the following week and is flagged for review`() {
+        val next = ActivityTiming.extract(source("The meeting is next Friday at 3pm.")).single()
+        assertEquals(Instant.parse("2026-10-30T20:00:00Z"), next.activityStartAt)
+        assertTrue(next.needsReview.contains("\"Next\" weekday"))
+        val upcoming = ActivityTiming.extract(source("The meeting is this Friday at 3pm.")).single()
+        assertEquals(Instant.parse("2026-10-23T20:00:00Z"), upcoming.activityStartAt)
+        assertFalse(upcoming.needsReview.contains("\"Next\" weekday"))
+    }
+    @Test fun `month and day dates resolve across DST and keep the venue clean`() {
+        val party = ActivityTiming.extract(source("There's a party at the James on November 12th at 8pm.")).single()
+        assertEquals(Instant.parse("2026-11-13T02:00:00Z"), party.activityStartAt)
+        assertEquals("the James", party.placeName)
+        assertEquals(Instant.parse("2026-11-13T02:00:00Z"), ActivityTiming.extract(source("There's a party on the 12th of November at 8pm.")).single().activityStartAt)
+        assertEquals(Instant.parse("2027-03-04T02:00:00Z"), ActivityTiming.extract(source("There's a party on March 3rd at 8pm.")).single().activityStartAt)
+        assertTrue(ActivityTiming.extract(source("There's a party on November 31st at 8pm.")).isEmpty())
+    }
+    @Test fun `relative day counts resolve from capture date`() {
+        assertEquals(Instant.parse("2026-10-24T17:00:00Z"), ActivityTiming.extract(source("There's a lunch in two days at noon.")).single().activityStartAt)
+        assertEquals(Instant.parse("2026-10-29T19:00:00Z"), ActivityTiming.extract(source("The meeting is in a week at 2pm.")).single().activityStartAt)
+    }
+    @Test fun `two different dates in one sentence are not guessed`() {
+        assertTrue(ActivityTiming.extract(source("There's a party tomorrow or the day after tomorrow at 8pm.")).isEmpty())
+    }
     @Test fun `DST ambiguity remains unknown rather than shifting silently`() {
         val input = source("The meeting is 2026-11-01 at 1:30am.")
         assertTrue(ActivityTiming.extract(input).isEmpty())

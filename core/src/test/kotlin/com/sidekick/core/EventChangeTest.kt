@@ -17,6 +17,10 @@ class EventChangeTest {
         assertEquals(Instant.parse("2026-10-24T01:00:00Z"), EventChange.parse("Move it to Friday.")!!.newStart(previous, now, zone))
         assertEquals(Instant.parse("2026-10-23T02:00:00Z"), EventChange.parse("Reschedule it to 9pm.")!!.newStart(previous, now, zone))
     }
+    @Test fun `moves to day after tomorrow and calendar dates`() {
+        assertEquals(Instant.parse("2026-10-25T01:00:00Z"), EventChange.parse("Move the party to the day after tomorrow.")!!.newStart(previous, now, zone))
+        assertEquals(Instant.parse("2026-11-13T03:00:00Z"), EventChange.parse("Move it to November 12th at 9pm.")!!.newStart(previous, now, zone))
+    }
     @Test fun `cancelled and canceled statements and direct commands`() {
         for (text in listOf("The party is cancelled.", "The party has been canceled.", "Cancel the party.")) {
             val change = EventChange.parse(text)!!

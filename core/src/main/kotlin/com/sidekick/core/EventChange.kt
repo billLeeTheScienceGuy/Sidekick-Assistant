@@ -1,19 +1,14 @@
 package com.sidekick.core
 
 import java.time.*
-import java.time.temporal.TemporalAdjusters
 
 /** Explicit grounded corrections; questions, possibilities and ambiguous clocks are ignored. */
 data class EventChange(val target: String, val cancel: Boolean, val timing: String, val evidence: String, val localized: Boolean = false) {
     fun newStart(previous: Instant, capturedAt: Instant, zone: ZoneId): Instant? = if (localized) LocalizedActivities.changeStart(timing, previous, capturedAt, zone) else runCatching {
-        val dates = Regex("\\b(today|tonight|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\\d{4}-\\d{2}-\\d{2})\\b").findAll(timing).toList()
-        require(dates.size <= 1)
+        val dates = EnglishDates.pattern.findAll(timing).toList()
+        require(dates.size <= 1 && !EnglishDates.hasNextWeekday(timing))
         val today = capturedAt.atZone(zone).toLocalDate()
-        val date = dates.singleOrNull()?.value?.let { value -> when (value) {
-            "today", "tonight" -> today
-            "tomorrow" -> today.plusDays(1)
-            else -> DayOfWeek.entries.firstOrNull { it.name.equals(value, true) }?.let { today.with(TemporalAdjusters.next(it)) } ?: LocalDate.parse(value)
-        } } ?: previous.atZone(zone).toLocalDate()
+        val date = dates.singleOrNull()?.value?.let { EnglishDates.resolve(it, today) } ?: previous.atZone(zone).toLocalDate()
         val clocks = Regex("\\b(?:1[0-2]|0?[1-9])(?::[0-5]\\d)?\\s*[ap]\\.?m\\.?(?!\\w)|\\b(?:[01]?\\d|2[0-3]):[0-5]\\d\\b|\\b(?:noon|midnight)\\b").findAll(timing).toList()
         require(clocks.size <= 1 && (clocks.isNotEmpty() || dates.isNotEmpty()))
         // Reject unexplained text (including a second time, a range, or an ambiguous bare hour).

@@ -88,7 +88,7 @@ class ReminderCoordinator(private val context: Context, private val dao: Commitm
             old.activityStartAt?.let { (start!! - (it - due)).takeIf { value -> value > System.currentTimeMillis() } }
         }
         val updated = old.copy(title = if (cancellation) old.title else if (com.sidekick.core.LocalizedActivities.hasEvent(old.title)) com.sidekick.core.LocalizedActivities.eventName(old.title) ?: old.title else old.title.replace(
-            Regex("\\s+(?:at|on|today|tonight|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\\b.*", RegexOption.IGNORE_CASE), "").trim().ifBlank { old.title },
+            Regex("\\s+(?:(?:at|on)\\b|" + com.sidekick.core.EnglishDates.pattern.pattern + ").*", RegexOption.IGNORE_CASE), "").trim().ifBlank { old.title },
             state = if (archiveDuplicate) "DISMISSED" else if (cancellation) "CANCELLED" else "ACCEPTED",
             activityStartAt = if (cancellation) old.activityStartAt else start,
             activityEndAt = if (cancellation) old.activityEndAt else duration?.let { start!! + it },
