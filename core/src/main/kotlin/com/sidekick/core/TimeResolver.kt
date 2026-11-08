@@ -24,7 +24,8 @@ object TimeResolver {
     private val duration = Regex("\\b(?:a|an|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|sixty|ninety|\\d{1,3})\\s+(?:minutes?|hours?)\\b")
 
     fun suggest(text: String, captured: Instant, zone: ZoneId): Instant? = runCatching {
-        val lower = text.lowercase().replace("a.m.", "am").replace("p.m.", "pm")
+        if (EnglishDates.unresolvedTiming(text)) return null
+        val lower = EnglishClocks.normalize(text.lowercase()).replace("a.m.", "am").replace("p.m.", "pm")
         if (EnglishDates.unresolvedTiming(lower)) return null
         val clockCount = clocks.findAll(lower).count()
         if (clockCount > 1) return null

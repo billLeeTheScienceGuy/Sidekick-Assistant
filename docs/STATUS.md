@@ -1,5 +1,18 @@
 # Handoff
 
+Current source: 0.26.1/code44. Fixed eight of the ten missed-reminder cases from
+the unchanged 92-case text corpus: spelled English clocks, heading-to plans,
+Chinese 明晚 and bounded French/German/Russian/Arabic appointment ownership.
+Corpus recall is now 97.6%; two colloquial German/dialect Arabic cases still fail.
+No false or mistimed corpus reminders; these results are not speech accuracy.
+157 core tests pass, including spoken end times, split timing, uncertain plans,
+speaker ownership and third-person counterexamples.
+Debug and compactTest builds/lint pass. Seven targeted emulator checks pass in
+12.88 seconds. Installed 0.26.1/code44 on the Pixel with install -r; the submission
+bundle is regenerated. No new natural-speech or battery claim is made.
+
+Previous 0.26.0:
+
 Current source: 0.26.0/code43. Added compact onboarding, separately imported and
 checksum-verified offline speech packs, a reproducible multilingual evaluation,
 and a local submission bundle. Normal APK is about 225 MB, down from 905 MB.

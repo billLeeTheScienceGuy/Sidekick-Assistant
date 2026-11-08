@@ -12,8 +12,8 @@ android {
         applicationId = "com.sidekick.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 43
-        versionName = "0.26.0"
+        versionCode = 44
+        versionName = "0.26.1"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

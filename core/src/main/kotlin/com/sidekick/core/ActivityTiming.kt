@@ -40,12 +40,14 @@ object ActivityTiming {
         return ConversationActivities.enrich(source, raw, informationalOnly)
     }
     internal fun hasDate(text: String) = namedDate.containsMatchIn(text) || LocalizedActivities.hasExplicitDate(text)
-    internal fun mentionsClock(text: String) = clocks.containsMatchIn(text)
+    internal fun mentionsClock(text: String) = clocks.containsMatchIn(EnglishClocks.normalize(text))
     internal fun timingFragment(text: String): String? {
         val clean = text.trim().trimEnd('.', '!', '。').replace(Regex("^(?:(?:it|that)(?:['’]s| is)|(?:it )?starts?|(?:it )?will be)\\s+", RegexOption.IGNORE_CASE), "")
         if (clean.any { it in "?？؟\"“”«»" }) return null
-        val remainder = namedDate.replace(clocks.replace(clean, ""), "").replace(Regex("\\b(?:at|on|or)\\b|[\\s,.!]", RegexOption.IGNORE_CASE), "")
-        return clean.takeIf { ((namedDate.containsMatchIn(clean) || clocks.containsMatchIn(clean)) && remainder.isEmpty()) || LocalizedActivities.timingFragment(clean) }
+        if (EnglishDates.unresolvedTiming(clean)) return null
+        val timing = EnglishClocks.normalize(clean)
+        val remainder = namedDate.replace(clocks.replace(timing, ""), "").replace(Regex("\\b(?:at|on|or)\\b|[\\s,.!]", RegexOption.IGNORE_CASE), "")
+        return clean.takeIf { ((namedDate.containsMatchIn(timing) || clocks.containsMatchIn(timing)) && remainder.isEmpty()) || LocalizedActivities.timingFragment(clean) }
     }
     internal fun extractGrounded(source: Transcript, informationalOnly: Boolean = false): List<ProposedCommitment> {
         if (!source.processingAllowed || (source.speaker != Speaker.USER && !(informationalOnly && source.speaker == Speaker.OTHER))) return emptyList()
@@ -56,10 +58,11 @@ object ActivityTiming {
             if (LocalizedActivities.hasEvent(sentence)) return@mapIndexedNotNull null
             val noun = event.find(sentence) ?: return@mapIndexedNotNull null
             if (excluded.containsMatchIn(sentence) || sentence.endsWith('?')) return@mapIndexedNotNull null
-            val startClocks = clocks.findAll(sentence).filter { clock -> ending.findAll(sentence).none { clock.range.first in it.range } }.toList()
+            val timing = EnglishClocks.normalize(sentence)
+            val startClocks = clocks.findAll(timing).filter { clock -> ending.findAll(timing).none { clock.range.first in it.range } }.toList()
             val firstClock = startClocks.singleOrNull() ?: return@mapIndexedNotNull null
             // A statement about when an event ends is a continuation, not a second activity.
-            if (ending.find(sentence)?.range?.first?.let { it < firstClock.range.first } == true) return@mapIndexedNotNull null
+            if (ending.find(timing)?.range?.first?.let { it < firstClock.range.first } == true) return@mapIndexedNotNull null
             val explicitDate = namedDate.containsMatchIn(sentence)
             val start = resolveStart(sentence, firstClock.value, source) ?: return@mapIndexedNotNull null
             var end: Instant? = null
@@ -73,7 +76,7 @@ object ActivityTiming {
                     val otherNouns = event.findAll(following).map { it.value.lowercase() }.toList()
                     // Do not attach an ambiguous "it ends" across another activity/topic.
                     if (otherNouns.any { it != nounName }) break
-                    if (otherNouns.isNotEmpty() && clocks.containsMatchIn(following) && !ending.containsMatchIn(following) && !duration.containsMatchIn(following)) break
+                    if (otherNouns.isNotEmpty() && mentionsClock(following) && !ending.containsMatchIn(EnglishClocks.normalize(following)) && !duration.containsMatchIn(following)) break
                     if (otherNouns.isNotEmpty()) {
                         val target = ActivityIdentity.subject(following)
                         if (target != null && target != nounName && target != ActivityIdentity.subject(sentence)) continue
@@ -117,7 +120,7 @@ object ActivityTiming {
     }.getOrNull()
 
     private fun resolveEnd(sentence: String, start: Instant, source: Transcript): Instant? = runCatching {
-        val match = ending.find(sentence)
+        val match = ending.find(EnglishClocks.normalize(sentence))
         val end = if (match != null) {
             val startDay = start.atZone(source.zoneId).toLocalDate()
             val explicitDay = date(sentence, source.capturedAt.atZone(source.zoneId).toLocalDate())

@@ -21,9 +21,9 @@ object LocalizedActivities {
     private val foreign = rx("[가-힣\u3400-\u9fffА-Яа-яЁё]|\\b(demain|aujourd'hui|heures?|minuit|fête|réunion|dîner|anniversaire|rendez-vous|mariage|cours|konzert|abendessen|termin|unterricht|geburtstag|hochzeit|morgen|heute|uhr|endet|treffen|besprechung)\\b")
     private val negative = rx("없(?:어|다|어요|습니다)|(?<![가-힣])안\\s*(?:가|갈|해|할)|않|아니|취소|어제|아마|만약|没|沒|不|取消|昨天|可能|如果|\\b(pas|jamais|annulé|annulée|hier|peut-être|si|nicht|kein\\w*|abgesagt|gestern|vielleicht|falls|wenn|не|нет|отмен[а-я]*|вчера|возможно|если)\\b")
     private val endMarker = rx("끝|종료|까지|结束|結束|到午夜|\\b(finit|finir|termine|terminer|jusqu['’]à|endet|enden|bis|законч[а-я]*|заверш[а-я]*|до|ends?|finishes|until|till)\\b")
-    private val personal = rx("(?:저는|나는|제가|내가|전\\s|난\\s).*(?:갈|가요|갑니다|참석)|我(?:明天|今天|会|會|将|將|要|打算|计划|計劃|去|参加|參加)|\\b(?:je vais|j['’]irai|je participerai|ich werde|ich gehe|ich nehme|я пойду|я приду|я собираюсь|я буду)\\b")
+    private val personal = rx("(?:저는|나는|제가|내가|전\\s|난\\s).*(?:갈|가요|갑니다|참석)|我(?:明天|今天|会|會|将|將|要|打算|计划|計劃|去|参加|參加)|\\b(?:je vais|je compte aller|j['’]ai rendez-vous|j['’]irai|je participerai|ich habe(?=\\s+(?:(?:morgen|heute|um|am|einen|\\d{1,2}(?::\\d{2})?|uhr)\\s+){0,8}termin\\b)|ich werde|ich gehe|ich nehme|у меня(?=\\s+(?:(?:завтра|сегодня|в|на|\\d{1,2}(?::\\d{2})?)\\s+){0,8}при[её]м\\b)|я пойду|я приду|я собираюсь|я буду)\\b")
     private val reported = rx("[\"“”«»「」『』]|말했|말하|라고|说|說|\\b(?:dit|disait|sagt|sagte|сказал[а-я]*|говорит)\\b")
-    private val nextDay = rx("내일|明天|\\bdemain\\b|\\bmorgen\\b|\\bзавтра\\b|\\btomorrow\\b")
+    private val nextDay = rx("내일|明天|明晚|\\bdemain\\b|\\bmorgen\\b|\\bзавтра\\b|\\btomorrow\\b")
     private val sameDay = rx("오늘|今天|今晚|\\baujourd['’]hui\\b|\\bce soir\\b|\\bheute\\b|\\bсегодня\\b|\\b(?:today|tonight)\\b")
     private val weekdays = listOf(
         "월요일|星期一|周一|週一|\\blundi\\b|\\bmontag\\b|\\bпонедельник\\b|\\bmonday\\b",
@@ -94,7 +94,7 @@ object LocalizedActivities {
         }
         hourPattern.findAll(text).forEach { match ->
             var hour = number(match.groupValues[2]) ?: return@forEach
-            val qualifier = match.groupValues[1] + match.groupValues[6]
+            val qualifier = match.groupValues[1] + match.groupValues[6] + if (rx("明晚\\s*$").containsMatchIn(text.substring(0, match.range.first))) "晚上" else ""
             val pm = rx("오후|저녁|밤|下午|晚上|soir|abends|вечера").containsMatchIn(qualifier)
             val am = rx("오전|아침|새벽|上午|早上|matin|morgens|утра").containsMatchIn(qualifier)
             if (pm || am) { if (hour !in 1..12) return@forEach; hour = hour % 12 + if (pm) 12 else 0 }

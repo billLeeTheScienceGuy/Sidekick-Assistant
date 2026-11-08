@@ -13,7 +13,7 @@ object IntentValidation {
     private val forms = mapOf("going" to "go", "attending" to "attend", "visiting" to "visit",
         "travelling" to "travel", "traveling" to "travel", "driving" to "drive", "flying" to "fly",
         "joining" to "join", "meeting" to "meet", "leaving" to "leave", "taking" to "take",
-        "bringing" to "bring", "sending" to "send", "calling" to "call", "watering" to "water")
+        "bringing" to "bring", "sending" to "send", "calling" to "call", "watering" to "water", "heading" to "go")
     private fun canonical(word: String) = forms[word] ?: word
 
     fun validate(source: Transcript, candidates: List<IntentCandidate>): List<ProposedCommitment> {
