@@ -113,7 +113,7 @@ object ArabicActivities {
                 val value = resolveEnd(following, start, source) ?: continue
                 ending = value; evidence += following
             }
-            val personal = !informationalOnly && source.speaker == Speaker.USER && rx("ساحضر|سوف احضر|ساذهب|سوف اذهب").containsMatchIn(clean) && !reported.containsMatchIn(clean)
+            val personal = !informationalOnly && source.speaker == Speaker.USER && rx("ساحضر|سوف احضر|ساذهب|سوف اذهب|(?<![\\p{L}])عندي\\s+(?:ال)?موعد(?![\\p{L}])").containsMatchIn(clean) && !reported.containsMatchIn(clean)
             val place = rx("(?:في|بـ)\\s+((?:مطعم|مقهى|قاعة|فندق)\\s+.+?)(?=\\s+(?:غدا|اليوم|الساعة|عند)|[.!،]|$)").find(sentence)?.groupValues?.get(1)
             ProposedCommitment(sentence.trimEnd('.', '!'), evidence.joinToString("\n"), source.capturedAt, source.zoneId, "Basic Arabic rule; uncertain dates and places require review.", start, ending, informational = !personal, placeName = place)
         }

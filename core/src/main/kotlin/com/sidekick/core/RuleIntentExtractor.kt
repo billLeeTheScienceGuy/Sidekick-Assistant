@@ -3,11 +3,11 @@ package com.sidekick.core
 /** Narrow development baseline; not a language model or a general promise detector. */
 class RuleIntentExtractor : IntentExtractor {
     private val promise = Regex("^(?:I'll|I will|I promise to|I need to|I have to|I plan to|I intend to|I'm going to|I am going to|Remind me to)\\s+(.+)$", RegexOption.IGNORE_CASE)
-    private val presentPlan = Regex("^I(?:'m| am) (attending|visiting|joining|meeting|travelling|traveling)\\s+(.+)$", RegexOption.IGNORE_CASE)
+    private val presentPlan = Regex("^I(?:'m| am) (attending|visiting|joining|meeting|travelling|traveling|heading)\\s+(.+)$", RegexOption.IGNORE_CASE)
     private val futureTime = Regex("\\b(tomorrow|tonight|next|on (?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday))\\b", RegexOption.IGNORE_CASE)
     private val action = Regex("^(call|email|send|meet|finish|submit|bring|buy|book|pay|pick up|review|go|attend|visit|join|travel|drive|fly|leave|take|water|cook|study|exercise)\\b", RegexOption.IGNORE_CASE)
     private val progressive = mapOf("going" to "go", "attending" to "attend", "visiting" to "visit", "joining" to "join",
-        "meeting" to "meet", "travelling" to "travel", "traveling" to "travel", "driving" to "drive", "flying" to "fly")
+        "meeting" to "meet", "travelling" to "travel", "traveling" to "travel", "driving" to "drive", "flying" to "fly", "heading" to "go")
     private val uncertain = Regex("\\b(maybe|might|perhaps|if|unless|not|never|won't|would|could)\\b", RegexOption.IGNORE_CASE)
 
     override fun extract(transcript: Transcript): List<ProposedCommitment> {

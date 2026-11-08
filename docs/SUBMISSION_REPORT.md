@@ -1,6 +1,6 @@
 # SideKick prototype implementation and evaluation
 
-Prepared November 8, 2026. Version 0.26.0. This describes a working Android
+Prepared November 8, 2026. Version 0.26.1. This describes a working Android
 prototype and its measured limits; it is not a claim that the entire Phase 1
 proposal or a production 24/7 assistant is complete.
 
@@ -31,9 +31,9 @@ multiple events, unknown/alternative times, task deadlines, reported speech and
 broader language challenges. It is a development corpus, partly based on known
 functional examples, not a blind holdout, native-speaker audit or user study.
 
-On this corpus, event-subject precision is 100%, recall 96.4%, matched-event exact
-time accuracy 98.8% and matched-event attendance accuracy 92.5%. There are no false
-or mistimed reminders in these cases. Missed reminders and failed language cases
+On this corpus, event-subject precision is 100%, recall 97.6%, matched-event exact
+time accuracy 100% and matched-event attendance accuracy 100%. There are no false
+or mistimed reminders in these cases; two expected reminders are missed. Failed language cases
 remain in [the full report](ACCURACY_REPORT.md); the aggregate scores must not be
 presented as real-world speech accuracy. Speaker labels were supplied, not inferred.
 Optional Qwen and live action execution are not measured by this text benchmark.
@@ -42,8 +42,11 @@ The evaluation exposed unsafe guesses for alternative bare clocks, ambiguous
 numeric dates and vague future periods. These now retain unknown times rather
 than create an inferred next-occurrence reminder. Event titles preserve names;
 spoken thirty-minute delays are supported, and historical “used to” statements
-are excluded. Broader wording, several appointment ownership forms and dialectal
-Arabic remain limited. The original labels were retained; a Russian subject-token
+are excluded. Version 0.26.1 adds explicit spelled-out English clocks, heading-to
+plans, Chinese tomorrow-evening timing and bounded appointment ownership forms.
+Original evidence is retained; ambiguous clocks and third-person ownership remain
+guarded. Colloquial German and dialectal Arabic cases still fail. Broader wording
+remains limited. The original labels were retained; a Russian subject-token
 spelling was corrected to match the source's ё, without changing its semantics.
 
 Core unit checks additionally cover parsing, Undo semantics, date boundaries,

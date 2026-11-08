@@ -1,3 +1,21 @@
+# 0.26.1 text-understanding fixes
+
+157 core tests pass. Four new regression groups cover explicit spelled-out clocks
+and midnight endings, split timing with unchanged evidence, ambiguous clock choices,
+uncertain heading-to plans, multilingual appointment ownership, other/unknown
+speakers and third-person counterexamples. Parsing normalizes explicit clock words
+internally; original conversation evidence is retained.
+
+The unchanged 92-case corpus improves from 10 to two missed reminders: 100%
+precision, 97.6% recall and no false/mistimed reminders. Matched-event exact time
+and attendance are 100% on this corpus. Colloquial German and dialectal Arabic
+cases remain failures. These are authored text checks, not new ASR measurements.
+
+CompactTest build/lint and normal debug build/lint pass. Seven targeted emulator
+checks passed in 12.88 seconds across ActivityTimingTest and CompactSetupTest.
+The build is 0.26.1/code44; the submission bundle and evaluation report are updated.
+No real microphone, speaker calibration or battery testing was performed.
+
 # 0.26 compact setup, model packs and evaluation
 
 153 core tests pass. New coverage checks streamed model-pack validation,

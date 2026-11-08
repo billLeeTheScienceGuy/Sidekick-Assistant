@@ -1,6 +1,6 @@
 # SideKick
 
-0.26 adds a [92-case text evaluation](docs/ACCURACY_REPORT.md), a Get started checklist, [verified offline model packs](docs/MODEL_PACKS.md), and a compact APK about 75% smaller. A [prototype submission report](docs/SUBMISSION_REPORT.md) and `scripts/prepare_submission.py` provide reproducible demo deliverables. The evaluation is curated text coverage, not real-world speech accuracy.
+0.26 adds a [92-case text evaluation](docs/ACCURACY_REPORT.md), a Get started checklist, [verified offline model packs](docs/MODEL_PACKS.md), and a compact APK about 75% smaller. 0.26.1 fixes eight of the corpus's ten missed-reminder cases while preserving ambiguity and ownership checks. A [prototype submission report](docs/SUBMISSION_REPORT.md) and `scripts/prepare_submission.py` provide reproducible demo deliverables. The evaluation is curated text coverage, not real-world speech accuracy.
 
 0.25 adds [daily summaries and temporary conversation highlights](docs/SUMMARIES.md), explicit calendar-editor handoff, and stronger named/multilingual attendance updates. A [prototype demo checklist](docs/DEMO.md) describes the supported scope.
 

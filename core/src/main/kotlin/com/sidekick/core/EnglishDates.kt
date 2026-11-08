@@ -32,6 +32,8 @@ object EnglishDates {
     /** "Next Friday" is read as Friday of the following Monday-start week; callers should flag it for review. */
     fun hasNextWeekday(text: String) = nextWeekday.containsMatchIn(text)
     fun unresolvedTiming(text: String): Boolean {
+        val spokenHour = "(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\\d{1,2})"
+        if (Regex("\\b$spokenHour\\s+(?:or|to)\\s+$spokenHour\\b", RegexOption.IGNORE_CASE).containsMatchIn(text)) return true
         if (Regex("\\b\\d{1,4}/\\d{1,2}(?:/\\d{1,4})?\\b|\\b(?:next|this)\\s+(?:week|month|year)\\b|\\bweekend\\b", RegexOption.IGNORE_CASE).containsMatchIn(text)) return true
         val withoutDates = pattern.replace(text, " ")
         return Regex("\\b\\d{1,2}(?::\\d{2})?\\s*(?:or|to|[-–])\\s*\\d{1,2}\\b", RegexOption.IGNORE_CASE).containsMatchIn(withoutDates)
