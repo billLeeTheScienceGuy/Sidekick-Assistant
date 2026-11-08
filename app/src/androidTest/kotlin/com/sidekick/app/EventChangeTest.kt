@@ -12,6 +12,25 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 class EventChangeTest {
+    @Test fun calendarDateAndRelativeCorrectionPreserveOneEventAndUndo() = runBlocking { fixture { _, memory, dao, _, auto ->
+        val now = Instant.now(); val date = now.atZone(zone).toLocalDate().plusDays(3)
+        val phrase = date.format(java.time.format.DateTimeFormatter.ofPattern("MMMM d, uuuu", java.util.Locale.ENGLISH))
+        memory.appendAttributedLive("I'll attend the workshop on $phrase at 8pm at Test Hall.", now, zone, Speaker.USER, false); auto.process()
+        val original = dao.all().single()
+        assertEquals(date.atTime(20, 0).atZone(zone).toInstant().toEpochMilli(), original.activityStartAt)
+        assertEquals(original.activityStartAt, original.dueAt)
+        memory.appendAttributedLive("Move the workshop to in two days at 9pm.", now.plusSeconds(5), zone, Speaker.USER, false); auto.process()
+        val moved = dao.all().single()
+        assertEquals(original.id, moved.id); assertEquals("Test Hall", moved.placeName)
+        assertEquals(date.minusDays(1).atTime(21, 0).atZone(zone).toInstant().toEpochMilli(), moved.activityStartAt)
+        assertEquals(moved.activityStartAt, moved.dueAt)
+        assertTrue(auto.undo(moved.id, dao.change(moved.id)!!.token)); assertEquals(original, dao.all().single())
+    } }
+    @Test fun ambiguousNextWeekdayDoesNotScheduleAnAutomaticReminder() = runBlocking { fixture { _, memory, dao, _, auto ->
+        memory.appendAttributedLive("I'll attend the workshop next Friday at 8pm.", Instant.now(), zone, Speaker.USER, false); auto.process()
+        val item = dao.all().single()
+        assertNotNull(item.activityStartAt); assertFalse(item.informational); assertNull(item.dueAt)
+    } }
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private val zone = ZoneId.of("America/Chicago")
     private val party = "I'll go to the party tomorrow at 8pm at The James. It ends at midnight."

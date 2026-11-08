@@ -1,3 +1,32 @@
+# 0.24 phone-free validation
+
+Integrated Yi Huang's English date changes from 6f9cff4 without rewriting the
+commit. GitHub Actions success verified for that commit (41921614060) and the
+previous main commit 9b9d650 (41940141857).
+
+140 core tests pass. New cases cover alternative clocks and relative delays,
+compound-duration rejection, exact seconds in elapsed reminders, DST boundaries,
+midnight, alternative multilingual clocks, conflicting ISO/relative local dates
+and conflicting Arabic end dates. Debug and benchmark builds/lint both pass.
+
+77 instrumentation checks passed on the headless Pixel_7a emulator in 109.27s:
+Foundation, Planner, automatic sharing, synthetic calendar reads, activity timing,
+automatic memory, event changes, multilingual changes, messages, copied speech,
+reminders, scheduling rollback, reminder journey, Undo, uncertain updates,
+duplicate protection and language profile isolation. The unchanged native
+VAD/Whisper inference test was excluded from this batch. New integration checks
+exercise month/day creation, relative rescheduling with one event and Undo, and
+withholding an automatic reminder for ambiguous “next Friday.”
+
+Three assistant checks also passed in 6.159s after selecting the benchmark
+assistant on the emulator: recovery with explicit Stop protection, competing
+recognition capture and silence timeout, and service registration. These used
+the silent virtual microphone, with assistant settings restored afterward.
+
+Total: 80 emulator checks. The physical Pixel was unavailable. Emulator success
+does not establish real-world ASR, speaker accuracy, battery use, OEM recovery or
+real messaging-app behavior. The normal 0.24 APK was built for later phone use.
+
 # 0.23.1 broader self-test pass
 
 122 core tests pass. Both variants build and lint successfully. New regressions

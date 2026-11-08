@@ -32,6 +32,7 @@ class ArabicActivitiesTest {
         assertEquals(4, Duration.between(item.activityStartAt, item.activityEndAt).toHours())
         val duration = extract("سأحضر حفلة غدا الساعة 8 مساء. تستمر لمدة ساعتين.").single()
         assertEquals(2, Duration.between(duration.activityStartAt, duration.activityEndAt).toHours())
+        assertNull(extract("سأحضر حفلة غدا الساعة 8 مساء. تنتهي غدا اليوم الساعة 11 مساء.").single().activityEndAt)
     }
     @Test fun `explicit corrections retain matching and reject unsafe alternatives`() {
         val start = now.atZone(zone).toLocalDate().plusDays(1).atTime(18, 0).atZone(zone).toInstant()

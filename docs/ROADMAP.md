@@ -29,6 +29,9 @@ recovery are implemented. They remain prototype features with limited field test
    Version 0.23 adds grounded split date/time assembly in seven languages and
    English attendance/named-detail context. General multilingual reference
    resolution and longer conversations remain limited.
+   Version 0.24 integrates Yi Huang's shared English date parser and adds
+   ambiguity/elapsed-time checks. Date, correction and Planner flows can also
+   be tested in the saved Pixel emulator without the physical phone.
 4. **Real integrations.** Validate actual messaging apps, grouped notifications,
    location/venue/address updates and reminder delivery under Doze. Calendar access
    currently checks conflicts; calendar writing/sync is a separate product decision.

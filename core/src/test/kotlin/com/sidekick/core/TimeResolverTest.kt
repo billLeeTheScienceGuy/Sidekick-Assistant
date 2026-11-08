@@ -4,6 +4,25 @@ import java.time.*
 import kotlin.test.*
 
 class TimeResolverTest {
+    @Test fun `alternative clocks offsets and compound durations stay unknown`() {
+        for (text in listOf("I'll call tomorrow at 5pm or 6pm", "I'll call tomorrow at noon or 5pm",
+            "I'll call tomorrow at 17:00 or 18:00", "I'll call in 30 minutes or in an hour",
+            "I'll call in an hour and thirty minutes", "I'll call in 1 hour 30 minutes")) {
+            assertNull(TimeResolver.suggest(text, captured, zone), text)
+        }
+        assertNotNull(TimeResolver.suggest("I'll call tomorrow at 5:30 pm", captured, zone))
+    }
+    @Test fun `relative reminders retain the full requested delay including seconds`() {
+        val start = captured.plusSeconds(59)
+        assertEquals(start.plusSeconds(60), TimeResolver.suggest("I'll call in one minute", start, zone))
+        assertEquals(start.plusSeconds(1800), TimeResolver.suggest("I'll call in half an hour", start, zone))
+    }
+    @Test fun `midnight and relative durations across DST use the intended clock or elapsed time`() {
+        assertEquals(Instant.parse("2026-10-22T05:00:00Z"), TimeResolver.suggest("I'll call tomorrow at midnight", captured, zone))
+        val beforeGap = Instant.parse("2027-03-14T07:45:30Z")
+        assertEquals(beforeGap.plusSeconds(1800), TimeResolver.suggest("I'll call in 30 minutes", beforeGap, zone))
+        assertNull(TimeResolver.suggest("I'll call 2027-03-14 at 2:30am", beforeGap, zone))
+    }
     private val zone = ZoneId.of("America/Chicago")
     private val captured = Instant.parse("2026-10-22T01:00:00Z")
     @Test fun `tomorrow uses capture timezone rather than UTC date`() {
