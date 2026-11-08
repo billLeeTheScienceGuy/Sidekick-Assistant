@@ -17,7 +17,9 @@ object ActivityTiming {
     fun merge(source: Transcript, commitments: List<ProposedCommitment>): List<ProposedCommitment> {
         val activities = extract(source)
         fun matches(a: ProposedCommitment, b: ProposedCommitment): Boolean =
-            b.evidence.lowercase().contains(a.evidence.substringBefore('\n').trimEnd('.', '!').lowercase())
+            b.evidence.lowercase().contains(a.evidence.substringBefore('\n').trimEnd('.', '!').lowercase()) ||
+                a.evidence.lines().drop(1).any { ConversationActivities.attendanceValue(it) != null &&
+                    it.trimEnd('.', '!').equals(b.evidence.trimEnd('.', '!'), true) }
         val enriched = commitments.map { item ->
             val activity = activities.singleOrNull { matches(it, item) }
             if (activity == null) {
@@ -29,7 +31,8 @@ object ActivityTiming {
                 placeName = activity.placeName, placeAddress = activity.placeAddress,
                 needsReview = item.needsReview + " " + activity.needsReview.substringAfter("Attendance is unconfirmed. "))
         }
-        return enriched + activities.filter { a -> commitments.none { matches(a, it) } }
+        return (enriched + activities.filter { a -> commitments.none { matches(a, it) } })
+            .distinctBy { it.evidence.substringBefore('\n').lowercase() to it.activityStartAt }
     }
 
     fun extract(source: Transcript, informationalOnly: Boolean = false): List<ProposedCommitment> {
@@ -37,6 +40,7 @@ object ActivityTiming {
         return ConversationActivities.enrich(source, raw, informationalOnly)
     }
     internal fun hasDate(text: String) = namedDate.containsMatchIn(text) || LocalizedActivities.hasExplicitDate(text)
+    internal fun mentionsClock(text: String) = clocks.containsMatchIn(text)
     internal fun timingFragment(text: String): String? {
         val clean = text.trim().trimEnd('.', '!', '。').replace(Regex("^(?:(?:it|that)(?:['’]s| is)|(?:it )?starts?|(?:it )?will be)\\s+", RegexOption.IGNORE_CASE), "")
         if (clean.any { it in "?？؟\"“”«»" }) return null

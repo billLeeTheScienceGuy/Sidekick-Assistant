@@ -12,6 +12,36 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 class EventChangeTest {
+    @Test fun groupedMessagesApplyCreationMoveAndCancellationInCaptureOrder() = runBlocking { fixture { settings, memory, dao, _, auto ->
+        val previous = settings.messageNotifications.value; val apps = settings.messageApps.value
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            settings.setMessageNotifications(true); settings.setMessageApp("synthetic.grouped", true)
+            val inbox = MessageInbox(settings, memory, scope) { auto.process() }
+            val now = System.currentTimeMillis()
+            inbox.ingest(MessageEnvelope("synthetic.grouped", "A", listOf(
+                IncomingText("Cancel it.", now + 20_000), IncomingText("There's a party tomorrow at 8pm.", now),
+                IncomingText("Move it to 9pm.", now + 10_000))))
+            val saved = dao.all().single()
+            assertEquals("CANCELLED", saved.state)
+            assertEquals(21, Instant.ofEpochMilli(saved.activityStartAt!!).atZone(ZoneId.systemDefault()).hour)
+            assertTrue(saved.informational); assertNull(saved.dueAt)
+        } finally {
+            scope.cancel(); settings.messageApps.value.forEach { settings.setMessageApp(it, false) }
+            apps.forEach { settings.setMessageApp(it, true) }; settings.setMessageNotifications(previous)
+        }
+    } }
+    @Test fun processingDelayDoesNotChangeTheCaptureTimeOfPronounCorrections() = runBlocking { fixture { _, memory, dao, _, auto ->
+        val capture = Instant.now().minusSeconds(60)
+        memory.appendAttributedLive(party, capture, zone, Speaker.UNKNOWN, false); auto.process()
+        val original = dao.all().single()
+        memory.appendAttributedLive("Move it to 9pm.", capture.plusSeconds(10), zone, Speaker.UNKNOWN, false); auto.process()
+        assertEquals(original.activityStartAt!! + 3_600_000, dao.all().single().activityStartAt)
+        memory.appendAttributedLive("It ends at midnight.", capture.plusSeconds(15), zone, Speaker.UNKNOWN, false); auto.process()
+        assertEquals(original.activityEndAt, dao.all().single().activityEndAt)
+        memory.appendAttributedLive("Cancel it.", capture.plusSeconds(20), zone, Speaker.UNKNOWN, false); auto.process()
+        assertEquals("CANCELLED", dao.all().single().state)
+    } }
     @Test fun calendarDateAndRelativeCorrectionPreserveOneEventAndUndo() = runBlocking { fixture { _, memory, dao, _, auto ->
         val now = Instant.now(); val date = now.atZone(zone).toLocalDate().plusDays(3)
         val phrase = date.format(java.time.format.DateTimeFormatter.ofPattern("MMMM d, uuuu", java.util.Locale.ENGLISH))

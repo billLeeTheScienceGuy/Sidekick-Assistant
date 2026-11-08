@@ -33,7 +33,8 @@ class UncertainUpdateScreenTest {
             compose.onNode(hasText(revision.reviewNote) and hasAnyAncestor(isDialog())).performScrollTo().assertIsDisplayed()
             assertNull(runBlocking { app.database.commitments().get(original.id) })
             compose.onNodeWithText("Confirm & apply update").performClick()
-            compose.waitUntil(5000) { runBlocking { app.database.commitments().get(original.id) != null } }
+            compose.waitUntil(5000) { runBlocking { app.database.commitments().get(original.id) != null } &&
+                app.temporary.drafts.value.none { it.id == original.id || it.id == revision.id } }
             assertEquals(revision.activityEndAt, runBlocking { app.database.commitments().get(original.id)!!.activityEndAt })
             assertTrue(app.temporary.drafts.value.none { it.id == original.id || it.id == revision.id })
             assertNull(runBlocking { app.database.commitments().get(revision.id) })

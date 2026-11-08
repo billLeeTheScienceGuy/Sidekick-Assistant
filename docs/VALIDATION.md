@@ -1,3 +1,30 @@
+# 0.25 summaries, attendance and delayed corrections
+
+147 core tests pass. Added coverage for phone-zone daily boundaries, a 25-hour
+DST day, overnight overlap, reminder versus activity dates, unknown dates, current
+history states, draft exclusion and exact temporary excerpts. Attendance cases
+cover named subjects, multiple events, withdrawal/rejoining and affirmative,
+negative, quoted and reported phrases in all seven selected languages.
+
+Both debug and benchmark builds/lint pass. The full emulator run passed 82 tests
+in 131.312s. New integration checks cover summary editing and clearing without
+deleting saved events, no summary cards for temporary drafts, calendar-editor
+intent fields without private evidence, rejection of invalid exports, one-event
+named attendance/rejoining/Undo, and corrections delayed relative to capture.
+
+The broader run exposed a real bug: paced speech was recognized correctly, but
+processing-wall-time anchors could discard later pronoun commands. Anchors,
+correction context and bounded transient observations now use capture timestamps.
+The paced real-VAD/adaptive-ASR move/negation/cancellation trial then passed.
+An uncertain-update UI assertion now waits for both database save and draft
+cleanup rather than racing the asynchronous operation.
+
+The final grouped-message improvement processes creation/move/cancellation in
+chronological order. Eight targeted message/localized tests passed in 1.377s,
+including the new reversed-input grouped case. Across the final runs, 83 distinct
+emulator checks passed. No fresh physical microphone trial or battery claim is
+included. Calendar tests inspect drafts; they do not save to a real account.
+
 # 0.24 phone-free validation
 
 Integrated Yi Huang's English date changes from 6f9cff4 without rewriting the

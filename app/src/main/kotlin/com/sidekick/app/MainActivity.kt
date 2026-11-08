@@ -84,6 +84,7 @@ class MainActivity : ComponentActivity() {
         var error by remember { mutableStateOf<String?>(null) }
         var awaitingLiveNotifications by remember { mutableStateOf(false) }
         var plannerOpen by rememberSaveable { mutableStateOf(false) }
+        var summaryOpen by rememberSaveable { mutableStateOf(false) }
         var selectedView by rememberSaveable { mutableStateOf(PlannerView.REVIEW) }
         var search by rememberSaveable { mutableStateOf("") }
         val references = entries.map { PlannerEntry(it.id, it.state, it.dueAt, it.capturedAt) }
@@ -94,7 +95,7 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(sharedText, handsOff, sharedMessagesEnabled) {
             if (handsOff && sharedMessagesEnabled) sharedText?.let { text ->
                 sharedText = null; model.analyzeSharedText(text)
-                plannerOpen = true; selectedView = PlannerView.ALL; search = ""
+                plannerOpen = true; summaryOpen = false; selectedView = PlannerView.ALL; search = ""
             }
         }
 
@@ -138,10 +139,17 @@ class MainActivity : ComponentActivity() {
                     TextButton(onClick = { settingsOpen = true }, modifier = Modifier.testTag("settings")) { Text("Settings") }
                     Text(if (handsOff) "Hands-off mode · $automaticStatus" else "Review mode · approve items to save", modifier = Modifier.testTag("automation-status"))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        FilterChip(selected = !plannerOpen, onClick = { plannerOpen = false }, label = { Text("Capture") })
-                        FilterChip(selected = plannerOpen, onClick = { plannerOpen = true }, label = { Text("Planner") }, modifier = Modifier.testTag("planner-tab"))
+                        FilterChip(selected = !plannerOpen && !summaryOpen, onClick = { plannerOpen = false; summaryOpen = false }, label = { Text("Capture") })
+                        FilterChip(selected = plannerOpen && !summaryOpen, onClick = { plannerOpen = true; summaryOpen = false }, label = { Text("Planner") }, modifier = Modifier.testTag("planner-tab"))
+                        FilterChip(selected = summaryOpen, onClick = { summaryOpen = true }, label = { Text("Summary") }, modifier = Modifier.testTag("summary-tab"))
                     }
                 }
+                if (summaryOpen && (listening.recording || listening.processing)) item {
+                    Text(listening.note)
+                    if (listening.recording) Button(onClick = { serviceAction(ListeningService.FINISH) }) { Text("Finish listening") }
+                }
+                if (summaryOpen) item { SummarySection(entries, liveText, !listening.recording && !listening.processing, model::clearRecentConversation, ::openEditor) }
+                else {
                 if (plannerOpen && (listening.recording || listening.processing)) item {
                     Text(listening.note)
                     if (listening.recording) Button(onClick = { serviceAction(ListeningService.FINISH) }) { Text("Finish listening") }
@@ -300,6 +308,7 @@ class MainActivity : ComponentActivity() {
                     TextButton(onClick = { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }) { Text("Notification settings") }
                     Text("Speech and intent run on this phone. Optional place lookup uses an online provider. Reminders may be delayed by battery saving. Raw audio is never saved.", style = MaterialTheme.typography.bodySmall)
                 }
+                }
             }
         }
         if (micDialog) AlertDialog(onDismissRequest = { micDialog = false }, title = { Text("Start live notes?") },
@@ -327,7 +336,7 @@ class MainActivity : ComponentActivity() {
                 text = { Column(Modifier.verticalScroll(rememberScrollState())) {
                     Text(if (sharing) "Analyze selected text for information-only activities? Sender plans are not assumed to be yours. " + (if (handsOff) "Detected events save automatically; full messages stay temporary." else "Nothing saves until approval.") else "Shared-message analysis is off. Enable it in Settings to analyze this text.")
                     Text(text.take(2000))
-                } }, confirmButton = { TextButton(enabled = sharing, onClick = { model.analyzeSharedText(text); sharedText = null; plannerOpen = true; selectedView = PlannerView.REVIEW; search = "" }) { Text("Find activity suggestions") } },
+                } }, confirmButton = { TextButton(enabled = sharing, onClick = { model.analyzeSharedText(text); sharedText = null; plannerOpen = true; summaryOpen = false; selectedView = PlannerView.REVIEW; search = "" }) { Text("Find activity suggestions") } },
                 dismissButton = { TextButton(onClick = { sharedText = null }) { Text("Discard") } })
         }
         if (deleteDialog) AlertDialog(onDismissRequest = { deleteDialog = false }, title = { Text("Delete all saved memory?") },

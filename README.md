@@ -1,5 +1,7 @@
 # SideKick
 
+0.25 adds [daily summaries and temporary conversation highlights](docs/SUMMARIES.md), explicit calendar-editor handoff, and stronger named/multilingual attendance updates. A [prototype demo checklist](docs/DEMO.md) describes the supported scope.
+
 0.24 integrates [broader English dates](docs/DATE_UNDERSTANDING.md), preserves exact relative reminder delays, and rejects ambiguous times across the supported grammars. Ambiguous “next weekday” suggestions do not trigger automatic reminders.
 
 0.23.1 prevents delayed message notifications from rewinding conversation context and handles long notes within validation limits. Expanded device checks cover Planner editing, sharing, calendar filtering, uncertain-speaker updates and profile isolation.

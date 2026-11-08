@@ -1,5 +1,34 @@
 # Handoff
 
+Current source: 0.25.0/code42. Added Summary tab: a derived daily view of saved
+plans, information-only events, current history and explicitly undated items;
+temporary exact conversation highlights with clear control; editor access; explicit
+calendar-editor handoff with only known fields and no transcript export.
+
+Named English attendance updates select a unique subject across multiple events.
+Bounded attendance/withdrawal phrases support all seven languages, guarded against
+other/unknown speakers, quotations and reported speech. Rejoining after withdrawal
+keeps one event and restores the reminder; Undo works. General language and full
+speaker diarization remain outside this change.
+
+Fixed a real latency bug exposed by recorded-audio testing: event anchors and
+correction context now use source capture timestamps, not processing wall time.
+Transient observation metadata stays bounded and clears with recent text. Grouped
+messages finish each chronological operation before processing the next message.
+
+147 core tests pass. Both builds/lint pass. Full emulator suite: 82 passed in
+131.312s, including Summary edit/clear, calendar draft validation, named attendance,
+rejoining/Undo, delayed processing and paced VAD/ASR corrections. After the final
+grouped-message fix, all 8 targeted message/localized checks passed in 1.377s,
+including one new grouped-message case: 83 distinct emulator checks across runs.
+Natural speech, multi-speaker calibration and all-day battery trials are deferred
+at the user's request. See SUMMARIES.md, DEMO.md and VALIDATION.md.
+Normal 0.25.0/code42 installed on Pixel 7a with install -r; package version
+verified and MainActivity opened. Existing saved data/models/profiles retained.
+Summary layout was visually checked on the emulator, which was then shut down.
+
+Previous 0.24:
+
 Current source: 0.24.0/code41. Integrated Yi Huang's commit 6f9cff4 by fast-forward,
 preserving authorship. English month/day, relative dates and corrections now share
 one grammar. Added protections for alternative clocks/offsets, conflicting local

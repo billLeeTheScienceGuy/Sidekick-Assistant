@@ -56,15 +56,15 @@ class MessageInbox(private val settings: GuidanceSettings, private val temporary
             while (context.seen.size > 256) context.seen.remove(context.seen.first())
             val ordinary = temporary.prepareChanges(Transcript(text, Instant.ofEpochMilli(message.timestamp), ZoneId.systemDefault(), Speaker.OTHER, true), key)
             context.text = LiveText.append(context.text, ordinary.text, utteranceBreak = true).takeLast(6000)
+            val source = Transcript(context.text, context.capturedAt, ZoneId.systemDefault(), Speaker.OTHER, true)
+            val proposals = ActivityTiming.extract(source, informationalOnly = true).map {
+                it.copy(sourceKey = key, needsReview = "Incoming message: sender attendance does not imply yours. " + it.needsReview)
+            }
+            temporary.addProposals(proposals, messageAt)
+            onDetected() // Finish each message before a later message can change its reference context.
         }
         context.lastSeen = now
         while (contexts.size > 20) contexts.remove(contexts.keys.first())
-        val source = Transcript(context.text, context.capturedAt, ZoneId.systemDefault(), Speaker.OTHER, true)
-        val proposals = ActivityTiming.extract(source, informationalOnly = true).map {
-            it.copy(sourceKey = key, needsReview = "Incoming message: sender attendance does not imply yours. " + it.needsReview)
-        }
-        temporary.addProposals(proposals)
-        onDetected()
     }
     private fun hash(value: String) = MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
 }
