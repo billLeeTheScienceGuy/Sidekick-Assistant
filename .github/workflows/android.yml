@@ -25,3 +25,9 @@ jobs:
       - run: python scripts/prepare_omnilingual.py
       - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
       - run: bash ./gradlew :core:test :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: text-understanding-evaluation
+          path: core/build/reports/accuracy.md
+          retention-days: 7

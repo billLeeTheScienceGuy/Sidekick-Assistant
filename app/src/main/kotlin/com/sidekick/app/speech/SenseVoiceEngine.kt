@@ -9,25 +9,10 @@ import java.security.MessageDigest
 internal class SenseVoiceEngine(private val context: Context) {
     private var recognizer: OfflineRecognizer? = null
     private var recognizerLanguage: String? = null
-    private val verified = mutableSetOf<String>()
+    private val verified = mutableMapOf<String, File>()
     private fun install(name: String, expected: String): File {
-        val file = File(context.noBackupFilesDir, name)
-        fun hash(value: File): String {
-            val digest = MessageDigest.getInstance("SHA-256")
-            value.inputStream().use { input -> val buffer = ByteArray(65536); while (true) { val count = input.read(buffer); if (count < 0) break; digest.update(buffer, 0, count) } }
-            return digest.digest().joinToString("") { "%02x".format(it) }
-        }
-        if (name in verified && file.exists()) return file
-        if (!file.exists() || hash(file) != expected) {
-            val temporary = File(context.noBackupFilesDir, "$name.download")
-            try {
-                context.assets.open("models/$name").use { input -> temporary.outputStream().use(input::copyTo) }
-                check(hash(temporary) == expected) { "SenseVoice model checksum mismatch." }
-                check(temporary.renameTo(file)) { "Could not install SenseVoice model." }
-            } finally { temporary.delete() }
-        }
-        verified += name
-        return file
+        verified[name]?.takeIf { it.isFile }?.let { return it }
+        return ModelPacks.ensure(context, name, expected).also { verified[name] = it }
     }
     fun transcribe(samples: FloatArray, threads: Int, retain: Boolean, language: String): String {
         require(language in setOf("ko", "zh"))

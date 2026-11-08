@@ -14,8 +14,10 @@ class GuidanceSettings(context: Context) {
     fun setHandsOff(value: Boolean) { preferences.edit().putBoolean("hands_off", value).apply(); handsOff.value = value }
     private val languageValue = MutableStateFlow(com.sidekick.core.SpeechLanguage.fromCode(preferences.getString("speech_language", "en")))
     val speechLanguage = languageValue.asStateFlow()
-    private val qualityValue = MutableStateFlow(com.sidekick.core.SpeechQuality.fromName(preferences.getString("speech_quality", null)))
+    private val qualityValue = MutableStateFlow(preferences.getString("speech_quality", null)?.let(com.sidekick.core.SpeechQuality::fromName)
+        ?: if (com.sidekick.app.speech.ModelPacks.available(context, "ggml-base.bin")) com.sidekick.core.SpeechQuality.ADAPTIVE else com.sidekick.core.SpeechQuality.FAST)
     val speechQuality = qualityValue.asStateFlow()
+    init { if (!preferences.contains("speech_quality")) preferences.edit().putString("speech_quality", qualityValue.value.name).apply() }
     fun setSpeechQuality(value: com.sidekick.core.SpeechQuality) { preferences.edit().putString("speech_quality", value.name).apply(); qualityValue.value = value }
     fun setSpeechLanguage(value: com.sidekick.core.SpeechLanguage) { preferences.edit().putString("speech_language", value.code).apply(); languageValue.value = value }
     private val current = MutableStateFlow(if (preferences.getBoolean("ask_end_time", false)) GuidanceMode.ASK else GuidanceMode.PASSIVE)

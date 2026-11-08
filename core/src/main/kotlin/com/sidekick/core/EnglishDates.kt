@@ -31,6 +31,11 @@ object EnglishDates {
 
     /** "Next Friday" is read as Friday of the following Monday-start week; callers should flag it for review. */
     fun hasNextWeekday(text: String) = nextWeekday.containsMatchIn(text)
+    fun unresolvedTiming(text: String): Boolean {
+        if (Regex("\\b\\d{1,4}/\\d{1,2}(?:/\\d{1,4})?\\b|\\b(?:next|this)\\s+(?:week|month|year)\\b|\\bweekend\\b", RegexOption.IGNORE_CASE).containsMatchIn(text)) return true
+        val withoutDates = pattern.replace(text, " ")
+        return Regex("\\b\\d{1,2}(?::\\d{2})?\\s*(?:or|to|[-–])\\s*\\d{1,2}\\b", RegexOption.IGNORE_CASE).containsMatchIn(withoutDates)
+    }
 
     fun resolve(phrase: String, today: LocalDate): LocalDate {
         val value = phrase.lowercase(Locale.ROOT).replace(Regex("\\s+"), " ").removePrefix("the ")
@@ -65,6 +70,7 @@ object EnglishDates {
     }
 
     internal fun amount(word: String): Long = when (word) {
+        "twenty" -> 20; "thirty" -> 30; "forty" -> 40; "fifty" -> 50; "sixty" -> 60; "ninety" -> 90
         "a", "an" -> 1
         in numbers -> numbers.indexOf(word) + 1L
         else -> word.toLong()

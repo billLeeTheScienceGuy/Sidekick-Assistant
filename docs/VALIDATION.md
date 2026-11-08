@@ -1,3 +1,28 @@
+# 0.26 compact setup, model packs and evaluation
+
+153 core tests pass. New coverage checks streamed model-pack validation,
+incomplete/corrupt/unsafe archives, cancellation, staging cleanup and recovery.
+The 92-case authored multilingual text evaluation is reproduced by the core test
+task and documented with its failures in ACCURACY_REPORT.md. It measures local
+event parsing, not transcription or speaker recognition. No false or mistimed
+reminders appeared in this corpus; 10 expected reminders were missed.
+
+83 benchmark emulator tests passed in 129.95 seconds, including paced recorded
+VAD/ASR corrections. Two additional compact-install tests passed in 56.022 seconds:
+language/quality setup disables listening when required packs are missing;
+a real verified Whisper pack imports and transcribes the recorded fixture;
+a corrupt replacement is rejected while preserving the installed pack.
+The final collapsed-pack onboarding layout was checked again separately.
+
+Debug, benchmark and compactTest builds/lint pass. The normal APK excludes optional
+speech weights and is about 225 MB rather than 905 MB. The submission preparation
+script checks the APK contents and writes a bundle manifest with SHA-256 hashes.
+Existing Pixel Korean model files were checked before upgrade; no fresh live
+speech, speaker calibration or all-day battery trial was performed.
+Normal 0.26.0/code43 was installed with install -r on the connected Pixel and its
+package version verified. The final setup recheck passed in 8.086 seconds, and
+the compact checklist was visually inspected on the emulator.
+
 # 0.25 summaries, attendance and delayed corrections
 
 147 core tests pass. Added coverage for phone-zone daily boundaries, a 25-hour
