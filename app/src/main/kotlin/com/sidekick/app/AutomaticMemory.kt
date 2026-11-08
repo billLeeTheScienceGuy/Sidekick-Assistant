@@ -158,7 +158,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                     if (dao.change(target) == null) continue
                 }
                 if (old != null && dao.change(target) == null) continue
-                val due = if (withdrawal || source.informational) null else if (attendance || timingUpgrade) source.activityStartAt?.takeIf { it > System.currentTimeMillis() } else if (old != null) old.dueAt else
+                val due = if (withdrawal || source.informational || com.sidekick.core.EnglishDates.hasNextWeekday(source.evidence)) null else if (attendance || timingUpgrade) source.activityStartAt?.takeIf { it > System.currentTimeMillis() } else if (old != null) old.dueAt else
                     (candidate.activityStartAt ?: TimeResolver.suggest(candidate.evidence, Instant.ofEpochMilli(candidate.capturedAt), ZoneId.of(candidate.zoneId))?.toEpochMilli())
                         ?.takeIf { it > System.currentTimeMillis() }
                 reminders.save(target, source.title, due?.takeIf { it > System.currentTimeMillis() }, source.zoneId,

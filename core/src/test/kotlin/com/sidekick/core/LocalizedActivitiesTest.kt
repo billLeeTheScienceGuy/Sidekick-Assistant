@@ -5,6 +5,12 @@ import java.time.ZoneId
 import kotlin.test.*
 
 class LocalizedActivitiesTest {
+    @Test fun `alternative local clocks and conflicting date forms are never chosen arbitrarily`() {
+        listOf("내일 오후 8시 또는 오후 9시에 파티가 있어요.", "明天晚上八点或者晚上九点有派对。",
+            "Il y a une fête demain à 20 heures ou 21 heures.", "Morgen ist eine Party um 20 Uhr oder 21 Uhr.",
+            "Завтра вечеринка в 20:00 или 21:00.", "내일 2026-11-12 오후 8시에 파티가 있어요.")
+            .forEach { assertTrue(ActivityTiming.extract(source(it)).isEmpty(), it) }
+    }
     private val now = Instant.parse("2026-10-23T17:00:00Z")
     private fun source(text: String) = Transcript(text, now, ZoneId.of("America/Chicago"), Speaker.USER, true)
     private val examples = listOf(

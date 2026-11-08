@@ -1,5 +1,7 @@
 # SideKick
 
+0.24 integrates [broader English dates](docs/DATE_UNDERSTANDING.md), preserves exact relative reminder delays, and rejects ambiguous times across the supported grammars. Ambiguous “next weekday” suggestions do not trigger automatic reminders.
+
 0.23.1 prevents delayed message notifications from rewinding conversation context and handles long notes within validation limits. Expanded device checks cover Planner editing, sharing, calendar filtering, uncertain-speaker updates and profile isolation.
 
 0.23 adds [conversation context](docs/CONVERSATION_CONTEXT.md): split date/time details in seven languages, stable updates to untimed plans, and English attendance changes with reminder updates and Undo. Ambiguous references stay unapplied.

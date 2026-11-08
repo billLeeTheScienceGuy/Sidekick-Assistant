@@ -1,5 +1,26 @@
 # Handoff
 
+Current source: 0.24.0/code41. Integrated Yi Huang's commit 6f9cff4 by fast-forward,
+preserving authorship. English month/day, relative dates and corrections now share
+one grammar. Added protections for alternative clocks/offsets, conflicting local
+dates and Arabic ending dates, and retained full seconds in relative reminders.
+Ambiguous “next weekday” activities remain suggestions without automatic reminders.
+
+140 core tests pass. Debug and benchmark build/lint pass. 77 synthetic/UI tests
+passed on the headless Pixel_7a emulator (109.27s), including new calendar-date
+rescheduling/Undo and ambiguous-next-weekday reminder checks. Excluded unchanged
+native audio inference from this batch; no live physical-device accuracy claim.
+Three additional assistant tests passed (6.159s) using the emulator's silent
+virtual microphone: recovery, explicit Stop, competing capture and silence timeout.
+Emulator assistant selection was restored afterward. Total: 80 emulator checks.
+
+Verified GitHub Actions success for main 9b9d650 (run 41940141857) and Yi Huang's
+6f9cff4 (run 41921614060). These do not claim CI success for the new local fixes.
+Physical phone was unavailable; it still has 0.23.1. Normal APK is ready at
+app/build/outputs/apk/debug/app-debug.apk. No physical-phone settings/data changed.
+
+Previous 0.23.1:
+
 Current source: 0.23.1/code40. User requested the accumulated work be committed
 and pushed with simple wording. Grouped incoming messages are ordered by their
 timestamps; unseen delayed messages cannot rewind the current context. Long local

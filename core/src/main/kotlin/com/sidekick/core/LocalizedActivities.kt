@@ -105,8 +105,10 @@ object LocalizedActivities {
         return values.sortedBy { it.position }
     }
     private fun date(text: String, today: LocalDate): LocalDate? {
-        rx("\\b\\d{4}-\\d{2}-\\d{2}\\b").find(text)?.let { return runCatching { LocalDate.parse(it.value) }.getOrNull() }
         val candidates = mutableSetOf<LocalDate>()
+        rx("\\b\\d{4}-\\d{2}-\\d{2}\\b").findAll(text).forEach {
+            candidates += runCatching { LocalDate.parse(it.value) }.getOrNull() ?: return null
+        }
         if (nextDay.containsMatchIn(text)) candidates += today.plusDays(1)
         if (sameDay.containsMatchIn(text)) candidates += today
         val nextWeek = rx("다음\\s*주|下周|下週|semaine prochaine|nächste\\w* woche|следующей неделе").containsMatchIn(text)
@@ -159,6 +161,7 @@ object LocalizedActivities {
         "$it ${local.toLocalDate()} ${local.toLocalTime().toString().take(5)}."
     }
     fun isContinuation(text: String) = ArabicActivities.isContinuation(text) || endMarker.containsMatchIn(text) || durationMarker.containsMatchIn(text) || place(text).let { it.name != null || it.address != null }
+    private val alternatives = rx("또는|아니면|혹은|或者|还是|還是|\\b(?:ou|oder|или)\\b")
 
     fun resolveEnd(text: String, start: Instant, source: Transcript): Instant? {
         if (ArabicActivities.isArabic(text)) return ArabicActivities.resolveEnd(text, start, source)
@@ -173,6 +176,7 @@ object LocalizedActivities {
             }.getOrNull()
         }
         if (!endMarker.containsMatchIn(text)) return null
+        if (alternatives.containsMatchIn(text) && clocks(text).size > 1) return null
         val time = clocks(text).lastOrNull()?.time ?: return null
         return runCatching {
             val startDay = start.atZone(source.zoneId).toLocalDate()
@@ -210,6 +214,7 @@ object LocalizedActivities {
             val event = events.firstOrNull { it.pattern.containsMatchIn(sentence) } ?: return@mapIndexedNotNull null
             val times = clocks(sentence)
             if (times.isEmpty() || (times.size == 1 && endMarker.containsMatchIn(sentence))) return@mapIndexedNotNull null
+            if (times.size > 1 && (times.size != 2 || !endMarker.containsMatchIn(sentence) || alternatives.containsMatchIn(sentence))) return@mapIndexedNotNull null
             // Never skip an earlier unresolved clock to borrow a later statement's clear time.
             if (hourPattern.find(sentence)?.range?.first?.let { it < times.first().position } == true) return@mapIndexedNotNull null
             val localDay = source.capturedAt.atZone(source.zoneId).toLocalDate()

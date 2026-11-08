@@ -72,6 +72,7 @@ object ArabicActivities {
         } else {
             val time = times(clean).last().value
             val explicit = day(clean, source.capturedAt.atZone(source.zoneId).toLocalDate())
+            require(!datePattern.containsMatchIn(clean) || explicit != null)
             val startDay = start.atZone(source.zoneId).toLocalDate()
             var date = explicit ?: startDay
             var value = TimeResolver.parseEditor("$date $time", source.zoneId)
