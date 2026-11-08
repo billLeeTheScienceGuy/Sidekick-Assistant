@@ -20,11 +20,12 @@ object TimeResolver {
     private val noon = Regex("\\bnoon\\b")
     private val midnight = Regex("\\bmidnight\\b")
     private val clocks = Regex("${meridiem.pattern}|\\b\\d{1,2}:\\d{2}\\b|${noon.pattern}|${midnight.pattern}")
-    private val offset = Regex("\\bin\\s+(?:(half an hour)|(a|an|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\\d{1,3})\\s+(minute|hour)s?)\\b")
+    private val offset = Regex("\\bin\\s+(?:(half an hour)|(a|an|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|sixty|ninety|\\d{1,3})\\s+(minute|hour)s?)\\b")
     private val duration = Regex("\\b(?:a|an|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|sixty|ninety|\\d{1,3})\\s+(?:minutes?|hours?)\\b")
 
     fun suggest(text: String, captured: Instant, zone: ZoneId): Instant? = runCatching {
         val lower = text.lowercase().replace("a.m.", "am").replace("p.m.", "pm")
+        if (EnglishDates.unresolvedTiming(lower)) return null
         val clockCount = clocks.findAll(lower).count()
         if (clockCount > 1) return null
         val hasClock = clockCount == 1

@@ -2,6 +2,7 @@
 .kotlin/
 .idea/
 .deps/
+dist/
 **/.cxx/
 app/src/main/assets/models/
 **/build/

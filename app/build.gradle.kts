@@ -12,14 +12,19 @@ android {
         applicationId = "com.sidekick.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 42
-        versionName = "0.25.0"
+        versionCode = 43
+        versionName = "0.26.0"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { compose = true }
     buildTypes {
+        create("compactTest") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".compacttest"
+            matchingFallbacks += "debug"
+        }
         create("benchmark") {
             initWith(getByName("debug"))
             applicationIdSuffix = ".benchmark"
@@ -27,7 +32,7 @@ android {
             externalNativeBuild { cmake { arguments += "-DSIDEKICK_BENCHMARK=ON" } }
         }
     }
-    testBuildType = if (providers.gradleProperty("speechBenchmark").isPresent) "benchmark" else "debug"
+    testBuildType = if (providers.gradleProperty("compactTest").isPresent) "compactTest" else if (providers.gradleProperty("speechBenchmark").isPresent) "benchmark" else "debug"
     externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
     androidResources { noCompress += "bin" }
     sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
@@ -38,6 +43,8 @@ android {
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/asr-commands"))
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/quality-small"))
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/moonshine-ar/assets"))
+    sourceSets.getByName("main").assets.setSrcDirs(listOf(layout.buildDirectory.dir("generated/compactAssets")))
+    sourceSets.getByName("benchmark").assets.srcDir("src/main/assets")
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -83,7 +90,12 @@ val verifySpeechModel by tasks.registering {
         }
     }
 }
-tasks.named("preBuild") { dependsOn(verifySpeechModel) }
+val prepareCompactAssets by tasks.registering(Sync::class) {
+    from("src/main/assets")
+    into(layout.buildDirectory.dir("generated/compactAssets"))
+    exclude("models/ggml-tiny.bin", "models/ggml-base.bin", "models/sensevoice-*", "models/omni-*")
+}
+tasks.named("preBuild") { dependsOn(verifySpeechModel, prepareCompactAssets) }
 dependencies {
     implementation(files("libs/sherpa-onnx-1.13.3.aar"))
     implementation(project(":core"))

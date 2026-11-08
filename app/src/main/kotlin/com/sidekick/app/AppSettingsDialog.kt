@@ -54,6 +54,7 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
     AlertDialog(onDismissRequest = onClose, title = { Text("Settings") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SetupStatus(settings)
+            ModelPackSection()
             Text("Default assistant", style = MaterialTheme.typography.titleMedium)
             Text(if (assistantSelected) "SideKick is your default assistant" else "SideKick is not your default assistant", modifier = Modifier.testTag("assistant-role-status"))
             TextButton(onClick = { assistantPicker.launch(assistant.picker()) }, modifier = Modifier.testTag("assistant-picker")) { Text("Choose default assistant") }

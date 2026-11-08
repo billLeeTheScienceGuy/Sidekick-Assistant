@@ -1,0 +1,93 @@
+# id	language	bucket	speaker	text	expected token@start@end@P/I@place@reminder (semicolon-separated)
+en01	en	baseline	USER	I'll attend Alex's party tomorrow at 8pm.	alex@2026-11-09T20:00@-@P@-@yes
+en02	en	baseline	USER	There's a meeting tomorrow at 2pm.	meeting@2026-11-09T14:00@-@I@-@no
+en03	en	baseline	OTHER	I'll attend Alex's party tomorrow at 8pm.	alex@2026-11-09T20:00@-@I@-@no
+en04	en	baseline	USER	Maybe I'll attend the party tomorrow at 8pm.	-
+en05	en	baseline	USER	There's a party tomorrow at 8pm at The James. It ends at midnight.	party@2026-11-09T20:00@2026-11-10T00:00@I@The James@no
+en06	en	baseline	USER	There's a party. Tomorrow. At 8pm.	party@2026-11-09T20:00@-@I@-@no
+en07	en	baseline	USER	I'll call Emma in thirty minutes.	call@2026-11-08T10:30@-@P@-@yes
+en08	en	baseline	USER	I'll call Emma in 30 minutes.	call@2026-11-08T10:30@-@P@-@yes
+en09	en	baseline	USER	I'll attend the workshop on November 12th at 9am.	workshop@2026-11-12T09:00@-@P@-@yes
+en10	en	baseline	USER	There's a concert tomorrow at 8pm or 9pm.	-
+ko01	ko	baseline	USER	저는 내일 오후 8시에 파티에 갈 거예요.	파티@2026-11-09T20:00@-@P@-@yes
+ko02	ko	baseline	USER	내일 오후 8시에 파티가 있어요.	파티@2026-11-09T20:00@-@I@-@no
+ko03	ko	baseline	OTHER	저는 내일 오후 8시에 파티에 갈 거예요.	파티@2026-11-09T20:00@-@I@-@no
+ko04	ko	baseline	USER	내일 오후 8시에 파티가 없어요.	-
+ko05	ko	baseline	USER	내일 오후 8시에 The James에서 파티가 있어요. 자정에 끝나요.	파티@2026-11-09T20:00@2026-11-10T00:00@I@The James@no
+ko06	ko	baseline	USER	파티가 있어요. 내일. 오후 8시.	파티@2026-11-09T20:00@-@I@-@no
+ko07	ko	baseline	USER	내일 오후 8시에 파티가 있어요. 저도 갈게요.	파티@2026-11-09T20:00@-@P@-@yes
+ko08	ko	baseline	USER	내일 오후 8시에 파티가 있어요. 저도 갈게요. 저는 못 가요.	파티@2026-11-09T20:00@-@I@-@no
+zh01	zh	baseline	USER	我明天晚上八点去参加派对。	派对@2026-11-09T20:00@-@P@-@yes
+zh02	zh	baseline	USER	明天晚上八点有派对。	派对@2026-11-09T20:00@-@I@-@no
+zh03	zh	baseline	OTHER	我明天晚上八点去参加派对。	派对@2026-11-09T20:00@-@I@-@no
+zh04	zh	baseline	USER	明天晚上八点没有派对。	-
+zh05	zh	baseline	USER	明天晚上八点在The James有派对。午夜结束。	派对@2026-11-09T20:00@2026-11-10T00:00@I@The James@no
+zh06	zh	baseline	USER	有聚会。明天。晚上八点。	聚会@2026-11-09T20:00@-@I@-@no
+zh07	zh	baseline	USER	明天晚上八点有派对。我会去。	派对@2026-11-09T20:00@-@P@-@yes
+zh08	zh	baseline	USER	明天晚上八点有派对。我会去。我不去了。	派对@2026-11-09T20:00@-@I@-@no
+fr01	fr	baseline	USER	Je vais à la fête demain à 20 heures.	fête@2026-11-09T20:00@-@P@-@yes
+fr02	fr	baseline	USER	Il y a une fête demain à 20 heures.	fête@2026-11-09T20:00@-@I@-@no
+fr03	fr	baseline	OTHER	Je vais à la fête demain à 20 heures.	fête@2026-11-09T20:00@-@I@-@no
+fr04	fr	baseline	USER	Il n'y a pas de fête demain à 20 heures.	-
+fr05	fr	baseline	USER	Il y a une fête demain à vingt heures au The James. Ça finit à minuit.	fête@2026-11-09T20:00@2026-11-10T00:00@I@The James@no
+fr06	fr	baseline	USER	Il y a une fête. Demain. À 20 heures.	fête@2026-11-09T20:00@-@I@-@no
+fr07	fr	baseline	USER	Il y a une fête demain à 20 heures. J'y serai.	fête@2026-11-09T20:00@-@P@-@yes
+fr08	fr	baseline	USER	Il y a une fête demain à 20 heures. J'y serai. Je ne viendrai pas.	fête@2026-11-09T20:00@-@I@-@no
+de01	de	baseline	USER	Ich werde morgen zur Party um 20 Uhr gehen.	party@2026-11-09T20:00@-@P@-@yes
+de02	de	baseline	USER	Morgen ist eine Party um 20 Uhr.	party@2026-11-09T20:00@-@I@-@no
+de03	de	baseline	OTHER	Ich werde morgen zur Party um 20 Uhr gehen.	party@2026-11-09T20:00@-@I@-@no
+de04	de	baseline	USER	Morgen ist keine Party um 20 Uhr.	-
+de05	de	baseline	USER	Morgen ist eine Party um 20 Uhr im The James. Sie endet um Mitternacht.	party@2026-11-09T20:00@2026-11-10T00:00@I@The James@no
+de06	de	baseline	USER	Es gibt eine Party. Morgen. Um 20 Uhr.	party@2026-11-09T20:00@-@I@-@no
+de07	de	baseline	USER	Morgen ist eine Party um 20 Uhr. Ich komme.	party@2026-11-09T20:00@-@P@-@yes
+de08	de	baseline	USER	Morgen ist eine Party um 20 Uhr. Ich komme. Ich komme nicht.	party@2026-11-09T20:00@-@I@-@no
+ru01	ru	baseline	USER	Я пойду на вечеринку завтра в 20:00.	вечерин@2026-11-09T20:00@-@P@-@yes
+ru02	ru	baseline	USER	Завтра вечеринка в 20:00.	вечерин@2026-11-09T20:00@-@I@-@no
+ru03	ru	baseline	OTHER	Я пойду на вечеринку завтра в 20:00.	вечерин@2026-11-09T20:00@-@I@-@no
+ru04	ru	baseline	USER	Завтра не будет вечеринки в 20:00.	-
+ru05	ru	baseline	USER	Завтра вечеринка в 20:00 в The James. Она закончится в полночь.	вечерин@2026-11-09T20:00@2026-11-10T00:00@I@The James@no
+ru06	ru	baseline	USER	Есть вечеринка. Завтра. В 20 часов.	вечерин@2026-11-09T20:00@-@I@-@no
+ru07	ru	baseline	USER	Завтра вечеринка в 20:00. Я приду.	вечерин@2026-11-09T20:00@-@P@-@yes
+ru08	ru	baseline	USER	Завтра вечеринка в 20:00. Я приду. Я не приду.	вечерин@2026-11-09T20:00@-@I@-@no
+ar01	ar	baseline	USER	سأحضر حفلة غدا الساعة الثامنة مساء.	حفلة@2026-11-09T20:00@-@P@-@yes
+ar02	ar	baseline	USER	هناك حفلة غدا الساعة الثامنة مساء.	حفلة@2026-11-09T20:00@-@I@-@no
+ar03	ar	baseline	OTHER	سأحضر حفلة غدا الساعة الثامنة مساء.	حفلة@2026-11-09T20:00@-@I@-@no
+ar04	ar	baseline	USER	لن أحضر حفلة غدا الساعة الثامنة مساء.	-
+ar05	ar	baseline	USER	سأحضر حفلة غدا الساعة الثامنة مساء وتنتهي عند منتصف الليل.	حفلة@2026-11-09T20:00@2026-11-10T00:00@P@-@yes
+ar06	ar	baseline	USER	هناك حفلة. غدا. الساعة الثامنة مساء.	حفلة@2026-11-09T20:00@-@I@-@no
+ar07	ar	baseline	USER	هناك حفلة غدا الساعة الثامنة مساء. سأحضر.	حفلة@2026-11-09T20:00@-@P@-@yes
+ar08	ar	baseline	USER	هناك حفلة غدا الساعة الثامنة مساء. سأحضر. لن أحضر.	حفلة@2026-11-09T20:00@-@I@-@no
+cx01	en	baseline	USER	There's Alex's party tomorrow at 8pm. There's Emma's party tomorrow at 9pm. I'll attend Alex's party.	alex@2026-11-09T20:00@-@P@-@yes;emma@2026-11-09T21:00@-@I@-@no
+cx02	en	baseline	USER	There's a party tomorrow at 8pm. Emma said. I'll be there.	party@2026-11-09T20:00@-@I@-@no
+cx03	en	baseline	USER	I'll attend the meeting tomorrow at 8pm. I won't be there.	meeting@2026-11-09T20:00@-@I@-@no
+cx04	en	baseline	USER	I'll attend the party next Friday at 8pm.	party@2026-11-13T20:00@-@P@-@no
+ch01	en	challenge	USER	I'll go to the party tomorrow at eight in the evening.	party@2026-11-09T20:00@-@P@-@yes
+ch02	en	challenge	USER	I'm heading to Maya's birthday tomorrow at 6pm.	maya@2026-11-09T18:00@-@P@-@yes
+ch03	en	challenge	USER	I'll call Emma tomorrow at 5 or 6 pm.	call@-@-@P@-@no
+ch04	en	challenge	USER	I'll attend the workshop on 11/12 at 8pm.	workshop@-@-@P@-@no
+ch05	en	challenge	USER	I'll attend the meeting next week at 7pm.	meeting@-@-@P@-@no
+ch06	ko	challenge	USER	저는 내일 저녁 여덟 시쯤에 친구 생일에 가요.	생일@2026-11-09T20:00@-@P@-@yes
+ch07	zh	challenge	USER	我打算明晚八点参加聚会。	聚会@2026-11-09T20:00@-@P@-@yes
+ch08	fr	challenge	USER	Je compte aller à l'anniversaire de Léa demain à huit heures du soir.	anniversaire@2026-11-09T20:00@-@P@-@yes
+ch09	de	challenge	USER	Ich bin morgen Abend um acht bei Annas Geburtstag dabei.	geburtstag@2026-11-09T20:00@-@P@-@yes
+ch10	ru	challenge	USER	Я собираюсь на день рождения Анны завтра в восемь вечера.	рождения@2026-11-09T20:00@-@P@-@yes
+ch11	ar	challenge	USER	بكرة رايح الحفلة الساعة ثمانية بالليل.	حفلة@2026-11-09T20:00@-@P@-@yes
+ex01	en	challenge	USER	I need to submit the project report tomorrow at 4pm.	report@2026-11-09T16:00@-@P@-@yes
+ex02	en	challenge	USER	I'll pick up the prescription tomorrow at 9am.	prescription@2026-11-09T09:00@-@P@-@yes
+ex03	en	challenge	USER	I'll take the train to Milwaukee on Monday at 7am.	milwaukee@2026-11-09T07:00@-@P@-@yes
+ex04	en	challenge	USER	Remind me to pay rent on November 15th at noon.	rent@2026-11-15T12:00@-@P@-@yes
+ex05	en	challenge	USER	I'll buy groceries tomorrow.	groceries@-@-@P@-@no
+ex06	en	challenge	USER	Can we meet tomorrow at 6pm?	-
+ex07	en	challenge	USER	I used to attend class at 7am.	-
+ex08	ko	challenge	USER	내일 오후 3시에 회의가 있어요.	회의@2026-11-09T15:00@-@I@-@no
+ex09	ko	challenge	USER	내일 오후 6시에 진료 약속이 있어요.	약속@2026-11-09T18:00@-@I@-@no
+ex10	zh	challenge	USER	明天下午三点有会议。	会议@2026-11-09T15:00@-@I@-@no
+ex11	zh	challenge	USER	我明天下午三点参加会议。	会议@2026-11-09T15:00@-@P@-@yes
+ex12	fr	challenge	USER	Il y a une réunion demain à 15 heures.	réunion@2026-11-09T15:00@-@I@-@no
+ex13	fr	challenge	USER	J'ai rendez-vous demain à 14 heures.	rendez-vous@2026-11-09T14:00@-@P@-@yes
+ex14	de	challenge	USER	Morgen ist eine Besprechung um 15 Uhr.	besprechung@2026-11-09T15:00@-@I@-@no
+ex15	de	challenge	USER	Ich habe morgen um 14 Uhr einen Termin.	termin@2026-11-09T14:00@-@P@-@yes
+ex16	ru	challenge	USER	Завтра встреча в 15:00.	встреч@2026-11-09T15:00@-@I@-@no
+ex17	ru	challenge	USER	У меня завтра приём в 14:00.	приём@2026-11-09T14:00@-@P@-@yes
+ex18	ar	challenge	USER	هناك اجتماع غدا الساعة الثالثة مساء.	اجتماع@2026-11-09T15:00@-@I@-@no
+ex19	ar	challenge	USER	عندي موعد غدا الساعة الثالثة مساء.	موعد@2026-11-09T15:00@-@P@-@yes

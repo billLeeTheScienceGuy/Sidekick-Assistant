@@ -76,6 +76,9 @@ class MainActivity : ComponentActivity() {
         val speechLanguage by (application as SidekickApplication).guidance.speechLanguage.collectAsStateWithLifecycle()
         val speechQuality by (application as SidekickApplication).guidance.speechQuality.collectAsStateWithLifecycle()
         var settingsOpen by remember { mutableStateOf(false) }
+        var quickStartOpen by remember { mutableStateOf(false) }
+        val packRevision by com.sidekick.app.speech.ModelPacks.revision.collectAsStateWithLifecycle()
+        val missingPacks = remember(speechLanguage, speechQuality, packRevision) { com.sidekick.app.speech.ModelPacks.missing(this@MainActivity, speechLanguage, speechQuality) }
         var consent by remember { mutableStateOf(false) }
         var micDialog by remember { mutableStateOf(false) }
         var showVoiceDiagnostics by remember { mutableStateOf(false) }
@@ -104,6 +107,7 @@ class MainActivity : ComponentActivity() {
             catch (e: Exception) { error = "Could not update the recording session." }
         }
         fun startRecording() {
+            if (missingPacks.isNotEmpty()) { error = "Install the selected speech model pack in Get started, or choose English Fast."; return }
             try { startForegroundService(Intent(this@MainActivity, ListeningService::class.java)) }
             catch (e: Exception) { error = "Could not start recording. Reopen the app and try again." }
         }
@@ -137,6 +141,7 @@ class MainActivity : ComponentActivity() {
                     Text("SideKick", style = MaterialTheme.typography.headlineLarge)
                     Text("A little less to remember", style = MaterialTheme.typography.titleMedium)
                     TextButton(onClick = { settingsOpen = true }, modifier = Modifier.testTag("settings")) { Text("Settings") }
+                    TextButton(onClick = { quickStartOpen = true }, modifier = Modifier.testTag("get-started")) { Text("Get started · language, models & permissions") }
                     Text(if (handsOff) "Hands-off mode · $automaticStatus" else "Review mode · approve items to save", modifier = Modifier.testTag("automation-status"))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         FilterChip(selected = !plannerOpen && !summaryOpen, onClick = { plannerOpen = false; summaryOpen = false }, label = { Text("Capture") })
@@ -195,7 +200,8 @@ class MainActivity : ComponentActivity() {
                                 Text("${listening.seconds / 60}m ${listening.seconds % 60}s · ${listening.chunks} speech chunks")
                                 Button(onClick = { serviceAction(ListeningService.FINISH) }) { Text("Finish listening") }
                             } else if (listening.processing) LinearProgressIndicator(Modifier.fillMaxWidth())
-                            else Button(onClick = { micDialog = true }, enabled = !busy) { Text("Start live notes") }
+                            else Button(onClick = { micDialog = true }, enabled = !busy && missingPacks.isEmpty()) { Text("Start live notes") }
+                            if (missingPacks.isNotEmpty()) Text("Speech model needed. Open Get started to install a pack or select English Fast.")
                             if (!listening.recording && !listening.processing) {
                                 TextButton(onClick = { wavPicker.launch(arrayOf("audio/wav", "audio/x-wav", "audio/wave")) }, enabled = !busy) { Text("Import my WAV recording") }
                             }
@@ -330,6 +336,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         if (settingsOpen) AppSettingsDialog((application as SidekickApplication).guidance) { settingsOpen = false }
+        if (quickStartOpen) QuickStart { quickStartOpen = false }
         sharedText?.takeIf { !handsOff || !sharedMessagesEnabled }?.let { text ->
             val sharing by (application as SidekickApplication).guidance.sharedMessages.collectAsStateWithLifecycle()
             AlertDialog(onDismissRequest = { sharedText = null }, title = { Text("Shared message") },

@@ -9,7 +9,7 @@ object ActivityTiming {
     private val clocks = Regex(clock, RegexOption.IGNORE_CASE)
     private val ending = Regex("\\b(?:ends?|finish(?:es)?|until|till|over)\\s+(?:(?:at|around|about|by)\\s+)?($clock)", RegexOption.IGNORE_CASE)
     private val duration = Regex("\\b(?:lasts?|takes?)\\s+(?:(?:for|about|around)\\s+)?(\\d{1,2}(?:\\.\\d)?)\\s+(hours?|minutes?)\\b", RegexOption.IGNORE_CASE)
-    private val excluded = Regex("\\b(yesterday|was|were|ended|finished|cancelled|canceled|not|never|won't|would|could|might|maybe|if|unless)\\b", RegexOption.IGNORE_CASE)
+    private val excluded = Regex("\\b(yesterday|was|were|ended|finished|cancelled|canceled|not|never|won't|would|could|might|maybe|if|unless|used\\s+to)\\b", RegexOption.IGNORE_CASE)
     private val namedDate = EnglishDates.pattern
 
     fun looksLikeActivity(text: String): Boolean = event.containsMatchIn(text) || LocalizedActivities.hasEvent(text)
@@ -52,6 +52,7 @@ object ActivityTiming {
         val sentences = Sentences.split(source.text)
         val english = sentences.mapIndexedNotNull { index, sentence ->
             if (AnalysisContext.reported(sentence)) return@mapIndexedNotNull null
+            if (EnglishDates.unresolvedTiming(sentence)) return@mapIndexedNotNull null
             if (LocalizedActivities.hasEvent(sentence)) return@mapIndexedNotNull null
             val noun = event.find(sentence) ?: return@mapIndexedNotNull null
             if (excluded.containsMatchIn(sentence) || sentence.endsWith('?')) return@mapIndexedNotNull null
@@ -94,7 +95,7 @@ object ActivityTiming {
                 }
             }
             val evidence = listOfNotNull(sentence, endEvidence, placeEvidence).distinct().joinToString("\n")
-            ProposedCommitment(sentence.substring(noun.range.first).trimEnd('.', '!').replaceFirstChar { it.uppercase() }.take(500),
+            ProposedCommitment(sentence.trimEnd('.', '!').replaceFirstChar { it.uppercase() }.take(500),
                 evidence, source.capturedAt, source.zoneId,
                 "Attendance is unconfirmed. " + (if (!explicitDate) "Date inferred from the next occurrence; check it. " else "") +
                     (if (EnglishDates.hasNextWeekday(sentence)) "\"Next\" weekday read as next week's; check it. " else "") +

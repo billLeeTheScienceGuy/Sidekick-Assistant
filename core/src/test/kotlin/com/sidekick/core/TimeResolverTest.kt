@@ -4,6 +4,11 @@ import java.time.*
 import kotlin.test.*
 
 class TimeResolverTest {
+    @Test fun `unsupported or ambiguous date qualifiers never become next occurrence reminders`() {
+        for (text in listOf("I'll call tomorrow at 5 or 6 pm", "I'll attend on 11/12 at 8pm", "I'll attend next week at 7pm"))
+            assertNull(TimeResolver.suggest(text, captured, zone), text)
+        assertEquals(captured.plusSeconds(1800), TimeResolver.suggest("I'll call in thirty minutes", captured, zone))
+    }
     @Test fun `alternative clocks offsets and compound durations stay unknown`() {
         for (text in listOf("I'll call tomorrow at 5pm or 6pm", "I'll call tomorrow at noon or 5pm",
             "I'll call tomorrow at 17:00 or 18:00", "I'll call in 30 minutes or in an hour",

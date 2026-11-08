@@ -39,9 +39,11 @@ recovery are implemented. They remain prototype features with limited field test
    location/venue/address updates and reminder delivery under Doze. Calendar access
    checks conflicts. Version 0.25 can hand an event to the calendar editor for
    explicit review/save; automatic calendar writing/sync remains a separate decision.
-5. **Release readiness.** Reduce the large bundled-model package using model packs,
-   simplify onboarding/settings, check accessibility, add retention/export controls,
-   prepare a signed build and run remote CI before sharing a release.
+5. **Release readiness.** Version 0.26 reduces the normal APK from about 905 MB to
+   225 MB using verified optional model packs, adds a compact setup checklist,
+   and prepares a reproducible submission bundle and evaluation report. Remaining:
+   broader accessibility checks, retention/export controls, production signing,
+   distribution and release CI verification.
 
 ## Known quality limits
 

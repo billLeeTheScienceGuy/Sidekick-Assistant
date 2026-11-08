@@ -10,7 +10,7 @@ import com.sidekick.core.SpeechLanguage
 import com.sidekick.core.SpeechQuality
 
 class SpeechEngine(private val context: Context, private val language: () -> SpeechLanguage = { SpeechLanguage.ENGLISH }, private val quality: () -> SpeechQuality = { SpeechQuality.FAST }) {
-    private val verified = mutableSetOf<String>()
+    private val verified = mutableMapOf<String, File>()
     private val senseVoice = SenseVoiceEngine(context)
     private val omni = OmniSpeechEngine(context)
     @Volatile var lastClockDiagnostic: String? = null
@@ -85,18 +85,10 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
     suspend fun release() = gate.withLock { withContext(Dispatchers.IO) { senseVoice.release(); omni.release(); NativeSpeech.release() } }
 
     private fun installModel(language: SpeechLanguage, quality: SpeechQuality): File {
-        val model = File(context.noBackupFilesDir, if (quality == SpeechQuality.ACCURATE) "ggml-base.bin" else if (language.multilingual) "ggml-tiny.bin" else "ggml-tiny.en.bin")
+        val name = if (quality == SpeechQuality.ACCURATE) "ggml-base.bin" else if (language.multilingual) "ggml-tiny.bin" else "ggml-tiny.en.bin"
         val expected = if (quality == SpeechQuality.ACCURATE) BASE_HASH else if (language.multilingual) MULTILINGUAL_HASH else HASH
-        if (model.name in verified && model.exists()) return model
-        if (model.exists() && sha256(model) == expected) { verified += model.name; return model }
-        val temp = File(context.noBackupFilesDir, "speech-model.download")
-        try {
-            context.assets.open("models/${model.name}").use { input -> temp.outputStream().use(input::copyTo) }
-            check(sha256(temp) == expected) { "Speech model checksum mismatch." }
-            check(temp.renameTo(model)) { "Could not install speech model." }
-            verified += model.name
-        } finally { temp.delete() }
-        return model
+        verified[name]?.takeIf { it.isFile }?.let { return it }
+        return ModelPacks.ensure(context, name, expected).also { verified[name] = it }
     }
 
     private fun sha256(file: File): String {
@@ -110,6 +102,7 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
 
     companion object {
         private val gate = Mutex()
+        internal suspend fun <T> modelMaintenance(block: suspend () -> T): T = gate.withLock { block() }
         const val HASH = "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f"
         const val MULTILINGUAL_HASH = "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21"
         const val BASE_HASH = "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe"

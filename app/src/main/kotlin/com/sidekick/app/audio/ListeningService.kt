@@ -102,6 +102,7 @@ class ListeningService : Service() {
         val wake = getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SideKick:LiveNotes")
         wake.setReferenceCounted(false)
         try {
+            check(com.sidekick.app.speech.ModelPacks.missing(this, setupLanguage, app.guidance.speechQuality.value).isEmpty()) { "Install the selected speech model pack in Get started, or choose English Fast." }
             wake.acquire(10 * 60_000L)
             NativeVad.open(VadModel.install(this))
             currentCoroutineContext().ensureActive()

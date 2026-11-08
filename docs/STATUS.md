@@ -1,5 +1,22 @@
 # Handoff
 
+Current source: 0.26.0/code43. Added compact onboarding, separately imported and
+checksum-verified offline speech packs, a reproducible multilingual evaluation,
+and a local submission bundle. Normal APK is about 225 MB, down from 905 MB.
+English Fast stays bundled; existing imported models and voice profiles are reused.
+
+153 core tests, 83 benchmark emulator checks and two compact-install checks pass.
+The compact checks cover missing-pack setup and actual Whisper inference after
+pack import, plus corrupt-import rollback. Debug, benchmark and compactTest
+builds/lint pass. No new physical speech or battery accuracy claim is made.
+The 92-case authored text corpus reports 100% precision and 96.4% recall, with
+10 missed reminders; it is not a blind ASR or real-world accuracy study.
+See ACCURACY_REPORT.md, MODEL_PACKS.md and SUBMISSION_REPORT.md.
+Normal 0.26.0/code43 installed on the connected Pixel with install -r; version
+verified and MainActivity opened. Compact onboarding visually checked on emulator.
+
+Previous 0.25:
+
 Current source: 0.25.0/code42. Added Summary tab: a derived daily view of saved
 plans, information-only events, current history and explicitly undated items;
 temporary exact conversation highlights with clear control; editor access; explicit
