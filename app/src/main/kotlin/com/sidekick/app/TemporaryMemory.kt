@@ -88,6 +88,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         check(pending != null || mutableDrafts.value.size < 200) { "Review pending proposals first." }
         mutableDrafts.value = mutableDrafts.value.filterNot { it.id == candidate.id } + candidate
         updateTargets[candidate.id] = target.id
+        observations[key(candidate)] = at
     }
 
     /** Reset reference context on speaker changes; unknown voices never create personal promises. */
@@ -109,7 +110,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
             else ActivityTiming.extract(input.copy(speaker = Speaker.OTHER), informationalOnly = true)
         val attributed = proposals.map { it.copy(sourceKey = "voice:$voiceTurn:${speaker.name}",
             needsReview = (if (speaker == Speaker.USER) "Likely your voice; verify attribution. " else if (speaker == Speaker.OTHER) "Another voice; attendance unconfirmed. " else "Speaker unassigned; attendance unconfirmed. ") + it.needsReview) }
-        addProposals(attributed)
+        addProposals(attributed, capturedAt)
         if (ActivityTiming.looksLikeActivity(text)) {
             val activity = attributed.filter { it.activityStartAt != null }.singleOrNull()
             val candidates = mutableDrafts.value + reviewed.values.mapNotNull { it.saved }
@@ -125,7 +126,9 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
     private data class Reviewed(val saved: CommitmentEntity?, val detectedEnd: Long?, val detectedPlace: String?, val detectedAddress: String?, val source: CommitmentEntity)
     private val reviewed = linkedMapOf<String, Reviewed>()
     private val updateTargets = mutableMapOf<String, String>()
+    private val observations = linkedMapOf<String, Instant>()
     private fun key(item: CommitmentEntity) = item.evidence.substringBefore('\n').trim().trimEnd('.', '!').lowercase() + "|" + item.activityStartAt + "|" + item.sourceKey
+    @Synchronized fun observedAt(item: CommitmentEntity): Instant = observations[key(item)] ?: Instant.ofEpochMilli(item.capturedAt)
 
     @Synchronized fun appendLive(text: String, capturedAt: Instant, zone: ZoneId) {
         if (text.isBlank()) return
@@ -138,10 +141,10 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
 
     @Synchronized fun propose(input: Transcript, source: String? = null): Int {
         val prepared = prepareChanges(input, source ?: "typed")
-        return addProposals(ActivityTiming.merge(prepared, pipeline.process(prepared)).map { it.copy(sourceKey = source) })
+        return addProposals(ActivityTiming.merge(prepared, pipeline.process(prepared)).map { it.copy(sourceKey = source) }, input.capturedAt)
     }
 
-    @Synchronized fun addProposals(proposals: List<ProposedCommitment>): Int {
+    @Synchronized fun addProposals(proposals: List<ProposedCommitment>, observedAt: Instant? = null): Int {
         val incoming = proposals.filter { !it.informational || includeInformational() }.map {
             CommitmentEntity(UUID.randomUUID().toString(), it.title, it.evidence, it.capturedAt.toEpochMilli(),
                 it.zoneId.id, it.needsReview, activityStartAt = it.activityStartAt?.toEpochMilli(), activityEndAt = it.activityEndAt?.toEpochMilli(),
@@ -151,6 +154,8 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         var added = 0
         for (candidate in incoming) {
             val sourceKey = key(candidate)
+            observations[sourceKey] = observedAt ?: Instant.ofEpochMilli(candidate.capturedAt)
+            while (observations.size > 512) observations.remove(observations.keys.first())
             val incomplete = drafts.filter { it.activityStartAt == null && candidate.activityStartAt != null &&
                 it.sourceKey == candidate.sourceKey && it.evidence != "Manually added" &&
                 it.evidence.substringBefore('\n').trimEnd('.', '!') == candidate.evidence.substringBefore('\n').trimEnd('.', '!') }.singleOrNull()
@@ -180,6 +185,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
                     reviewNote = "Possible update · repeated speech. Confirm this repeated event refers to ‘${duplicate.title}’ before replacing its details. Original item stays unchanged until you approve.")
                 if (reviewed.containsKey(key(revision))) continue
                 updateTargets[revision.id] = duplicate.id
+                observations[key(revision)] = observedAt ?: Instant.ofEpochMilli(candidate.capturedAt)
                 if (pending >= 0) drafts[pending] = revision else { drafts += revision; added++ }
                 continue
             }
@@ -188,7 +194,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
                 val saved = previous.saved ?: continue // Dismissed source, not an accepted activity.
                 val attendanceChanged = candidate.informational != saved.informational &&
                     (candidate.sourceKey == null || candidate.sourceKey.endsWith(":USER")) &&
-                    candidate.evidence.lines().any { it !in saved.evidence.lines() && ConversationActivities.attendanceValue(it) != null }
+                    ConversationActivities.attendanceRevision(saved.evidence, candidate.evidence) != null
                 val endChanged = candidate.activityEndAt != null && candidate.activityEndAt != previous.detectedEnd && candidate.activityEndAt != saved.activityEndAt
                 val placeChanged = candidate.placeName != null && candidate.placeName != previous.detectedPlace && candidate.placeName != saved.placeName
                 val addressChanged = candidate.placeAddress != null && candidate.placeAddress != previous.detectedAddress && candidate.placeAddress != saved.placeAddress
@@ -202,6 +208,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
                     placeAddress = if (placeChanged || addressChanged) candidate.placeAddress else saved.placeAddress, evidence = candidate.evidence,
                     reviewNote = "Suggested activity update. Review before replacing saved details. " + candidate.reviewNote)
                 updateTargets[revision.id] = saved.id
+                observations[key(revision)] = observedAt ?: Instant.ofEpochMilli(candidate.capturedAt)
                 if (pending >= 0) drafts[pending] = revision else { drafts += revision; added++ }
             } else {
                 val existing = drafts.indexOfFirst { key(it) == sourceKey }
@@ -244,7 +251,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         trimReviewed(); remove(id)
     }
     /** Anchor fresh detail statements to the new time, while suppressing the old rolling transcript. */
-    @Synchronized fun changedEvent(saved: CommitmentEntity) {
+    @Synchronized fun changedEvent(saved: CommitmentEntity, observedAt: Instant) {
         retire(saved.id)
         if (saved.state != "ACCEPTED" || saved.activityStartAt == null) return
         val noun = Regex("\\b(party|meeting|appointment|class|lecture|concert|dinner|lunch|wedding|birthday|practice|workshop|movie|trip|shift|call)\\b", RegexOption.IGNORE_CASE).find(saved.title)?.value
@@ -252,7 +259,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         val local = Instant.ofEpochMilli(saved.activityStartAt).atZone(zone)
         val opening = if (noun != null) "There's a $noun on ${local.toLocalDate()} at ${local.toLocalTime().toString().take(5)}."
             else LocalizedActivities.referenceOpening(saved.title, Instant.ofEpochMilli(saved.activityStartAt), zone) ?: return
-        correctionContext = CorrectionContext(saved.id, opening, Instant.now(), zone, Instant.now(), saved)
+        correctionContext = CorrectionContext(saved.id, opening, observedAt, zone, observedAt, saved)
     }
     @Synchronized fun retire(id: String) {
         if (correctionContext?.id == id) correctionContext = null
@@ -260,7 +267,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         updateTargets.filterValues { it == id }.keys.toList().forEach(::remove)
     }
     private fun trimReviewed() { while (reviewed.size > 400) reviewed.remove(reviewed.keys.first()) }
-    @Synchronized fun clearText() { mutableText.value = ""; voiceContext = ""; correctionContext = null; changes.clear(); seenChanges.clear(); liveChanges.clear() }
+    @Synchronized fun clearText() { mutableText.value = ""; voiceContext = ""; correctionContext = null; changes.clear(); seenChanges.clear(); liveChanges.clear(); observations.clear() }
     @Synchronized fun beginSession() { clearText(); voiceContext = ""; voiceTurn = 0; reviewed.clear(); sessionBaseline = mutableDrafts.value.map { it.id }.toSet() }
     @Synchronized fun discardSession() {
         clearText()

@@ -17,6 +17,23 @@ import org.junit.Rule
 import org.junit.Test
 
 class AutomaticMemoryTest {
+    @Test fun namedAttendanceWithdrawalAndRejoiningUpdateOnlyTheMatchingEvent() = runBlocking { fixture { _, memory, db, _, auto ->
+        val now = Instant.now()
+        memory.appendAttributedLive("There's Alex's party tomorrow at 8pm. There's Emma's party tomorrow at 9pm.", now, zone, Speaker.USER, false); auto.process()
+        val original = db.commitments().all(); assertEquals(2, original.size)
+        val alex = original.single { it.evidence.startsWith("There's Alex") }
+        val emma = original.single { it.evidence.startsWith("There's Emma") }
+        memory.appendAttributedLive("I'll attend Alex's party.", now.plusSeconds(5), zone, Speaker.USER, false); auto.process()
+        val personal = db.commitments().get(alex.id)!!
+        assertFalse(personal.informational); assertEquals(personal.activityStartAt, personal.dueAt)
+        memory.appendAttributedLive("I won't attend Alex's party.", now.plusSeconds(10), zone, Speaker.USER, false); auto.process()
+        assertTrue(db.commitments().get(alex.id)!!.informational); assertNull(db.commitments().get(alex.id)!!.dueAt)
+        memory.appendAttributedLive("I'll attend Alex's party.", now.plusSeconds(15), zone, Speaker.USER, false); auto.process()
+        assertFalse(db.commitments().get(alex.id)!!.informational)
+        assertEquals(2, db.commitments().all().size); assertEquals(emma, db.commitments().get(emma.id))
+        assertTrue(auto.undo(alex.id, db.commitments().change(alex.id)!!.token))
+        assertTrue(db.commitments().get(alex.id)!!.informational)
+    } }
     @Test fun laterExplicitDateRefinesInferredDateOnSameSavedEvent() = runBlocking { fixture { _, memory, db, _, auto ->
         val now = Instant.now().atZone(zone).toLocalDate().atTime(12, 0).atZone(zone).toInstant()
         memory.appendAttributedLive("There's a party at 8pm.", now, zone, Speaker.UNKNOWN, false); auto.process()

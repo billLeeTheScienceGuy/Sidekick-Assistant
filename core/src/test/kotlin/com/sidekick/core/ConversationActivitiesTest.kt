@@ -5,6 +5,45 @@ import java.time.ZoneId
 import kotlin.test.*
 
 class ConversationActivitiesTest {
+    @Test fun `bounded attendance phrases work in every selected language without promoting other speakers`() {
+        val cases = listOf(
+            Triple("내일 오후 8시에 파티가 있어요.", "저도 갈게요.", "저는 못 가요."),
+            Triple("明天晚上八点有派对。", "我会去。", "我不去了。"),
+            Triple("Il y a une fête demain à 20 heures.", "J'y serai.", "Je ne viendrai pas."),
+            Triple("Morgen ist eine Party um 20 Uhr.", "Ich komme.", "Ich komme nicht."),
+            Triple("Завтра вечеринка в 20:00.", "Я приду.", "Я не приду."),
+            Triple("هناك حفلة غدا الساعة الثامنة مساء.", "سأحضر.", "لن أحضر.")
+        )
+        for ((event, yes, no) in cases) {
+            val text = "$event\n$yes"
+            assertFalse(ActivityTiming.extract(source(text)).single().informational, text)
+            assertTrue(ActivityTiming.extract(source("$text\n$no")).single().informational, no)
+            assertTrue(ActivityTiming.extract(source(text).copy(speaker = Speaker.OTHER), true).single().informational, text)
+            assertTrue(ActivityTiming.extract(source("$event\n\"$yes\"")).single().informational, text)
+        }
+        cases.zip(listOf("민수가 말했어요.", "他说。", "Elle a dit.", "Er sagte.", "Она сказала.", "قال علي.")).forEach { (case, report) ->
+            assertTrue(ActivityTiming.extract(source("${case.first}\n$report\n${case.second}")).single().informational, report)
+        }
+    }
+    @Test fun `named attendance updates one of several events without an untimed duplicate`() {
+        val text = "There's Alex's party tomorrow at 8pm. There's Emma's party tomorrow at 9pm. I'll attend Alex's party."
+        val items = AnalysisContext.local(source(text))
+        assertEquals(2, items.size)
+        assertFalse(items.single { it.evidence.startsWith("There's Alex") }.informational)
+        assertTrue(items.single { it.evidence.startsWith("There's Emma") }.informational)
+        assertTrue(items.all { it.activityStartAt != null })
+        val withdrawal = AnalysisContext.local(source(text + " I won't attend Alex's party."))
+        assertEquals(2, withdrawal.size); assertTrue(withdrawal.all { it.informational })
+    }
+    @Test fun `named and pronoun changes preserve chronological order and do not borrow another subject`() {
+        val text = "There's Alex's party tomorrow at 8pm. I'll be there. I won't attend Alex's party."
+        assertTrue(AnalysisContext.local(source(text)).single().informational)
+        assertFalse(AnalysisContext.local(source(text + " I'll be there.")).single().informational)
+        val other = ActivityTiming.extract(source("There's Alex's party tomorrow at 8pm. I'll attend Emma's party."))
+        assertTrue(other.single().informational)
+        assertTrue(ActivityTiming.extract(source("There's Alex's party tomorrow at 8pm. Emma said. I'll attend Alex's party.")).single().informational)
+        assertTrue(ActivityTiming.extract(source(text).copy(speaker = Speaker.OTHER), true).single().informational)
+    }
     private fun source(text: String) = Transcript(text, Instant.parse("2026-10-29T16:00:00Z"), ZoneId.of("America/New_York"), Speaker.USER, true)
     @Test fun `split date clock venue and ending stay grounded`() {
         val text = "There's a party. Tomorrow. At 8pm. It is at The James. It ends at midnight."

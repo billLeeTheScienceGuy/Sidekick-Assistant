@@ -22,6 +22,7 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         drafts.filter { draft -> saved.none { it.id == draft.id } } + saved
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val liveText = container.temporary.text
+    fun clearRecentConversation() { container.temporary.clearText() }
     val automaticChanges = combine(dao.observe(), dao.observeChanges()) { items, changes ->
         changes.mapNotNull { change -> runCatching {
             val item = items.singleOrNull { it.id == change.targetId } ?: return@runCatching null

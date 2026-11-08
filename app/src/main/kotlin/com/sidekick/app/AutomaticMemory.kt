@@ -23,8 +23,8 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
     private data class Anchor(val id: String, val at: Instant)
     private val anchors = linkedMapOf<String, Anchor>()
     private fun channel(source: String?) = if (source?.startsWith("voice:") == true) "voice" else source ?: "typed"
-    private fun remember(item: com.sidekick.app.data.CommitmentEntity) {
-        anchors[channel(item.sourceKey)] = Anchor(item.id, Instant.now())
+    private fun remember(item: com.sidekick.app.data.CommitmentEntity, observedAt: Instant) {
+        anchors[channel(item.sourceKey)] = Anchor(item.id, observedAt)
         while (anchors.size > 32) anchors.remove(anchors.keys.first())
     }
     private var cleanupChecked = false
@@ -70,7 +70,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
             if (!operation.cancel && start == null) { mutableStatus.value = "New event time is unclear. Saved time was left unchanged."; continue }
             try {
                 if (reminders.changeEvent(item, start, operation.cancel)) {
-                    dao.get(item.id)?.let { saved -> temporary.changedEvent(saved); remember(saved) }
+                    dao.get(item.id)?.let { saved -> temporary.changedEvent(saved, pending.at); remember(saved, pending.at) }
                     runCatching { notifyChange(item.id, item.title, true) }
                     mutableStatus.value = if (operation.cancel) "Event cancelled automatically" else "Event rescheduled automatically"
                 }
@@ -130,8 +130,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                 }
                 val old = dao.get(target)
                 if (old != null && channel(old.sourceKey) == channel(candidate.sourceKey) && (candidate.sourceKey == null || candidate.sourceKey.endsWith(":USER"))) {
-                    val freshAttendance = candidate.evidence.lines().filter { it !in old.evidence.lines() }
-                        .mapNotNull { com.sidekick.core.ConversationActivities.attendanceValue(it) }.lastOrNull()
+                    val freshAttendance = com.sidekick.core.ConversationActivities.attendanceRevision(old.evidence, candidate.evidence)
                     if (freshAttendance != null) {
                         attendance = freshAttendance && old.informational && !candidate.informational
                         withdrawal = !freshAttendance && !old.informational && candidate.informational
@@ -153,7 +152,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                     placeAddress = if (stalePlace) old.placeAddress else candidate.placeAddress ?: if (changedPlace) null else old.placeAddress) else candidate.copy(id = target)
                 if (linked && old != null) {
                     val unchanged = !attendance && !withdrawal && !timingUpgrade && source.activityEndAt == old.activityEndAt && source.placeName == old.placeName && source.placeAddress == old.placeAddress
-                    if (unchanged) { temporary.approve(candidate.id, old); remember(old); continue }
+                    if (unchanged) { temporary.approve(candidate.id, old); remember(old, temporary.observedAt(candidate)); continue }
                     // A manual edit invalidates automatic ownership; never overwrite it from a replay.
                     if (dao.change(target) == null) continue
                 }
@@ -166,7 +165,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                 wrote = true
                 val saved = dao.get(target) ?: error("Automatic save did not complete")
                 temporary.approve(candidate.id, saved)
-                remember(saved)
+                remember(saved, temporary.observedAt(candidate))
                 try { notifyChange(target, source.title, old != null) }
                 catch (e: CancellationException) { throw e }
                 catch (_: Exception) { /* Saving does not depend on notification permission. */ }

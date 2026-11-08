@@ -32,9 +32,13 @@ recovery are implemented. They remain prototype features with limited field test
    Version 0.24 integrates Yi Huang's shared English date parser and adds
    ambiguity/elapsed-time checks. Date, correction and Planner flows can also
    be tested in the saved Pixel emulator without the physical phone.
+   Version 0.25 adds named attendance updates across multiple activities and
+   bounded attendance/withdrawal phrases in all seven languages. Daily summaries
+   use saved facts; conversation highlights remain temporary exact excerpts.
 4. **Real integrations.** Validate actual messaging apps, grouped notifications,
    location/venue/address updates and reminder delivery under Doze. Calendar access
-   currently checks conflicts; calendar writing/sync is a separate product decision.
+   checks conflicts. Version 0.25 can hand an event to the calendar editor for
+   explicit review/save; automatic calendar writing/sync remains a separate decision.
 5. **Release readiness.** Reduce the large bundled-model package using model packs,
    simplify onboarding/settings, check accessibility, add retention/export controls,
    prepare a signed build and run remote CI before sharing a release.
