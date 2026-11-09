@@ -1,5 +1,11 @@
 # 0.28 integrated speaker turns, calendar mirrors and region guidance
 
+Final remote checks confirmed November 9, 2026: code commit `ade3797` passed
+both fresh Linux workflows, [main](https://github.com/billLeeTheScienceGuy/Sidekick-Assistant/actions/runs/42549902341)
+and [working branch](https://github.com/billLeeTheScienceGuy/Sidekick-Assistant/actions/runs/42549902361).
+The submission's 17 checksum entries and bundled segmentation model hash/license
+were independently verified; its build metadata records a clean source revision.
+
 November 8, 2026. All 175 core tests pass. Debug, benchmark and compactTest
 build/lint checks pass. The broader isolated emulator run passes all 116 checks
 in 311.917 seconds: the previous pipeline/UI/notification/location/reminder

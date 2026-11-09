@@ -25,6 +25,10 @@ This was USB-connected and opened no microphone. See VALIDATION.md,
 SPEAKER_TURNS.md, CALENDAR_SYNC.md and SUSTAINED_TURNS.md for exact limits.
 Normal 0.28.0/code46 is installed and its package version verified on the Pixel.
 No personal app instrumentation or data-clearing command was used.
+Final remote checks confirmed November 9: code commit ade3797 passed both Linux
+workflows (main 42549902341, branch 42549902361). Submission checksums and bundled
+model/license were verified. Remaining validation needs real conversations,
+unplugged screen-off endurance and actual messaging/calendar accounts.
 
 Previous 0.27:
 
