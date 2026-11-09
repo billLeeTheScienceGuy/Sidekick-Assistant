@@ -41,6 +41,7 @@ internal fun SetupStatus(settings: GuidanceSettings) {
         else Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners").orEmpty().split(':').contains(component.flattenToString())
     }
     val scanning by settings.messageNotifications.collectAsState()
+    val listenerConnected by MessageNotificationListener.connected.collectAsState()
     val apps by settings.messageApps.collectAsState()
     var checking by remember { mutableStateOf(false) }
     var result by remember(permission, locationOn) { mutableStateOf("") }
@@ -76,8 +77,12 @@ internal fun SetupStatus(settings: GuidanceSettings) {
         !scanning -> "Off"
         !notificationAccess -> "Needs Android notification access"
         apps.isEmpty() -> "Choose a messaging app"
+        !listenerConnected -> "Access allowed; waiting for Android listener connection"
         else -> "Ready for new notifications from ${apps.size} selected app(s)"
     }, modifier = Modifier.testTag("message-access-status"))
+    if (scanning && notificationAccess && !listenerConnected) TextButton(onClick = {
+        MessageNotificationListener.requestConnection(context)
+    }, modifier = Modifier.testTag("reconnect-messages")) { Text("Reconnect message notifications") }
     TextButton(enabled = permission && locationOn && !checking, modifier = Modifier.testTag("test-phone-location"), onClick = {
         scope.launch {
             checking = true; result = "Checking phone location…"

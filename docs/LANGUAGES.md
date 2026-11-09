@@ -1,5 +1,10 @@
 # Current model option
 
+Packaging since 0.26: English Fast is bundled; other speech modes require the
+appropriate verified offline packs. Existing installed models are reused. Use
+Get started for readiness and MODEL_PACKS.md for installation. Older version
+notes below describe the routing history, not a promise that all weights ship.
+
 Version 0.21 adds Arabic and evaluated Adaptive routing. Korean/Chinese use
 SenseVoice; Arabic uses Omnilingual int8. French uses Whisper base for short clear-queue
 phrases and Omnilingual for longer speech. German uses full-context Whisper tiny for

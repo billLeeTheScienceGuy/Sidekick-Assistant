@@ -30,6 +30,7 @@ class EmulatorIntegrationTest {
         val oldEnabled = app.guidance.messageNotifications.value
         val oldSelected = app.packageName in app.guidance.messageApps.value
         val oldInclude = app.guidance.includeInformational.value
+        val oldHandsOff = app.guidance.handsOffMode.value
         val before = app.temporary.drafts.value.map { it.id }.toSet()
         val hadAccess = manager.isNotificationListenerAccessGranted(ComponentName(app, MessageNotificationListener::class.java))
         fun shell(command: String) { android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand(command)).use { it.readBytes() } }
@@ -43,12 +44,15 @@ class EmulatorIntegrationTest {
                 .setCategory(Notification.CATEGORY_MESSAGE).setStyle(style).setOnlyAlertOnce(true).build())
         }
         try {
+            app.guidance.setHandsOff(false)
             instrumentation.uiAutomation.grantRuntimePermission(app.packageName, Manifest.permission.POST_NOTIFICATIONS)
             manager.createNotificationChannel(NotificationChannel("emulator-messages", "Emulator fixtures", NotificationManager.IMPORTANCE_DEFAULT))
             app.guidance.setMessageNotifications(false); app.guidance.setMessageNotifications(true)
             app.guidance.setMessageApp(app.packageName, true); app.guidance.setIncludeInformational(true)
             shell("cmd notification allow_listener $listener")
             withTimeout(10_000) { while (!manager.isNotificationListenerAccessGranted(ComponentName(app, MessageNotificationListener::class.java))) delay(100) }
+            MessageNotificationListener.requestConnection(app)
+            withTimeout(10_000) { while (!MessageNotificationListener.connected.value) delay(100) }
             // Access grant and service binding are separate asynchronous Android operations.
             post(first)
             withTimeout(15_000) {
@@ -69,6 +73,7 @@ class EmulatorIntegrationTest {
             if (!hadAccess) shell("cmd notification disallow_listener $listener")
             app.guidance.setMessageNotifications(oldEnabled); app.guidance.setMessageApp(app.packageName, oldSelected)
             app.guidance.setIncludeInformational(oldInclude)
+            app.guidance.setHandsOff(oldHandsOff)
             app.temporary.drafts.value.filter { it.id !in before }.forEach { app.temporary.remove(it.id) }
         }
     }

@@ -132,6 +132,13 @@ class ReminderCoordinator(private val context: Context, private val dao: Commitm
     suspend fun delete(id: String) = gate.withLock { dao.get(id)?.let { cancel(it); dao.delete(id); clearUndo(id) } }
     suspend fun deleteAll() = gate.withLock { val all = dao.all(); all.forEach(::cancel); dao.deleteAll(); all.forEach { clearUndo(it.id) } }
 
+    suspend fun prune(days: Int, now: Long = System.currentTimeMillis()): Int = gate.withLock {
+        val expired = dao.all().filter { com.sidekick.core.MemoryRetention.expired(days, now, it.state, it.capturedAt,
+            it.activityStartAt, it.activityEndAt, it.dueAt, it.deliveredAt) }
+        expired.forEach { cancel(it); dao.delete(it.id); clearUndo(it.id) }
+        expired.size
+    }
+
     suspend fun restore() = gate.withLock { dao.all().forEach(::arm) }
 
     @Suppress("MissingPermission")

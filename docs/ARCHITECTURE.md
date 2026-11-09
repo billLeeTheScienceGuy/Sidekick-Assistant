@@ -1,0 +1,60 @@
+# SideKick prototype architecture
+
+```mermaid
+flowchart TD
+  Start[Explicit start and consent controls] --> Capture[Android microphone foreground service]
+  Capture --> VAD[Silero speech detection]
+  VAD --> Buffer[Bounded speech chunks and overlap]
+  Buffer --> Voice[Local user / other / unknown voice matching]
+  Voice --> ASR[Sequential local speech recognition]
+  ASR --> Text[Temporary timestamped text]
+  Messages[Selected message notifications / shared text] --> Text
+  Text --> Parser[Grounded intent, time, ownership and place rules]
+  Text --> Risk[Local English risk advisories]
+  Parser --> Context[Event identity, corrections, duplicates and calendar conflicts]
+  Context --> Mode{Hands-off or Review}
+  Mode --> Room[Room saved events and bounded Undo journal]
+  Room --> Reminder[Android reminders]
+  Room --> Planner[Planner and derived daily summary]
+  Room --> Export[Explicit JSON export and opt-in retention]
+  Context --> Venue[Optional online geocoding with address review]
+```
+
+## Boundaries and invariants
+
+- `core` is pure Kotlin: segmentation, dates, intent validation, ownership/context,
+  changes, summaries, retention policy, model-pack validation and risk grammar.
+- `app` owns Android capture/services, permissions, native inference, Room, reminders,
+  notification messages, settings and Compose screens. JNI is behind speech/voice
+  interfaces; no cloud inference fallback is used.
+- Live audio uses 16 kHz PCM, a 16,384-sample recent history, bounded 160,000-sample
+  chunks, 4,096-sample pre-roll, 16,000-sample chunk overlap and a two-slot queue.
+  Silence and speech thresholds come from the segmenter/VAD. Listening can span
+  arbitrarily many chunks; it does not impose a five-minute session limit.
+- Inference is sequential and model import shares its maintenance lock. A slow
+  or full queue stops with an explicit error instead of silently losing speech.
+  Inputs are zeroed after processing/cancellation; the rolling buffer is not an
+  audio archive.
+- Source capture time and phone timezone anchor dates and later corrections.
+  Other and unknown voices cannot establish personal ownership. Unsupported or
+  conflicting dates stay unknown rather than creating guessed reminders.
+- Reminder writes, alarms, Undo and retention share a serialization lock. Undo
+  checks snapshots and tokens so it cannot overwrite a later manual edit.
+- Message context is bounded and separated by conversation; duplicate/grouped
+  notifications are handled chronologically. No message-history database exists.
+- Daily summaries derive from saved events. Temporary highlights are source
+  excerpts; optional Qwen assists manual analysis and is not the live planner.
+- Normal APK includes English Fast, VAD and speaker models. Optional packs use
+  trusted filenames, lengths, SHA-256 and staged atomic replacement. Failed
+  imports preserve the old valid pack. Device model storage is not Android backup.
+
+## Failure handling and limits
+
+Microphone/privacy/foreground restrictions, model absence, muted capture, inference
+timeouts and overload have visible stopped/error states. Reminder delivery is
+inexact and subject to Android permissions and Doze. Assistant recovery helps an
+already-enabled session; it cannot bypass force-stop or revoked microphone access.
+User/other/unknown matching is not full diarization. Legal-location automation,
+automatic calendar synchronization and production store signing are separate gaps.
+See VALIDATION.md for software checks and the dated physical measurements in
+STREAMING_BENCHMARK.md and ASR_EVALUATION.md.

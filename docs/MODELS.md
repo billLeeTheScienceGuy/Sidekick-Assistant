@@ -1,5 +1,10 @@
 # Free on-device model shortlist
 
+For current routing, packaging and measured limits, use LANGUAGES.md,
+MODEL_PACKS.md and ASR_EVALUATION.md. The original dated shortlist and early
+benchmark notes below are historical; Qwen is now an optional manual-analysis
+integration, and context reuse/adaptive speech routing are implemented.
+
 Researched 2026-10-21; implementation updated 2026-10-22. No inference subscription is needed. Build/download connectivity is different from runtime connectivity. Version 0.3 packages verified Whisper tiny.en and Silero v5.1.2 GGML weights with MIT notices. Other models remain candidates.
 
 Version 0.4 integrates optional Qwen3-0.6B Q4_K_M through llama.cpp b6000. This model

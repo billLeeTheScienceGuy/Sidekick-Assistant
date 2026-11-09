@@ -1,6 +1,6 @@
 # SideKick prototype implementation and evaluation
 
-Prepared November 8, 2026. Version 0.26.1. This describes a working Android
+Prepared November 8, 2026. Version 0.27.0. This describes a working Android
 prototype and its measured limits; it is not a claim that the entire Phase 1
 proposal or a production 24/7 assistant is complete.
 
@@ -22,6 +22,15 @@ LLM narratives. Optional Qwen assists manual analysis; live extraction uses
 bounded grammar and validated fields. Default-assistant recovery supports an
 enabled session subject to Android restrictions and explicit Stop.
 
+Version 0.27 adds opt-in 30/90/365-day retention, explicit JSON event export with
+saved excerpts excluded by default, labelled settings controls and large-font
+navigation checks. Pending reminders, future items and undated accepted plans are
+protected from retention cleanup. Local English risk advisories cover a small set
+of gift-card, private-code, remote-access and safe-account warning signs. They are
+nonblocking, dismissible and disableable, and never copy credentials into alerts.
+See [privacy and risk behavior](PRIVACY_AND_RISK.md), the
+[architecture](ARCHITECTURE.md) and [acceptance checklist](CAPSTONE_CHECKLIST.md).
+
 ## Independent evaluation
 
 The checked-in corpus contains 92 self-authored cases across English, Korean,
@@ -31,9 +40,9 @@ multiple events, unknown/alternative times, task deadlines, reported speech and
 broader language challenges. It is a development corpus, partly based on known
 functional examples, not a blind holdout, native-speaker audit or user study.
 
-On this corpus, event-subject precision is 100%, recall 97.6%, matched-event exact
+On this corpus, event-subject precision is 100%, recall 98.8%, matched-event exact
 time accuracy 100% and matched-event attendance accuracy 100%. There are no false
-or mistimed reminders in these cases; two expected reminders are missed. Failed language cases
+or mistimed reminders in these cases; one expected reminder is missed. Failed language cases
 remain in [the full report](ACCURACY_REPORT.md); the aggregate scores must not be
 presented as real-world speech accuracy. Speaker labels were supplied, not inferred.
 Optional Qwen and live action execution are not measured by this text benchmark.
@@ -45,8 +54,10 @@ spoken thirty-minute delays are supported, and historical “used to” statemen
 are excluded. Version 0.26.1 adds explicit spelled-out English clocks, heading-to
 plans, Chinese tomorrow-evening timing and bounded appointment ownership forms.
 Original evidence is retained; ambiguous clocks and third-person ownership remain
-guarded. Colloquial German and dialectal Arabic cases still fail. Broader wording
-remains limited. The original labels were retained; a Russian subject-token
+guarded. Version 0.27 handles explicit German evening attendance and fixes Arabic
+twelve-at-night parsing; small ambiguous night hours stay unknown. The dialectal
+Arabic challenge still fails. Broader wording remains limited. The original
+labels were retained; a Russian subject-token
 spelling was corrected to match the source's ё, without changing its semantics.
 
 Core unit checks additionally cover parsing, Undo semantics, date boundaries,
@@ -78,8 +89,9 @@ Play Store release or a promise of universal device compatibility.
 - Broader language understanding and independently audited evaluation data.
 - Real messaging-app and calendar-provider field testing, automatic calendar sync,
   release signing and fuller accessibility/user testing.
-- Scam detection and the proposed location/jurisdiction consent engine are not
-  implemented. Existing consent controls do not establish legal compliance.
+- General multilingual scam classification and the proposed location/jurisdiction
+  consent engine are not implemented. Local English advisories are a bounded rule
+  baseline. Existing consent controls do not establish legal compliance.
 
 The prototype supports a reproducible core-pipeline demonstration. Submission
 claims should match these limits and the course rubric. No user-study outcomes,

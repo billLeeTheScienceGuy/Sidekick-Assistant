@@ -9,6 +9,15 @@ enum class PlaceContext { CITY, PHONE }
 
 class GuidanceSettings(context: Context) {
     private val preferences = context.getSharedPreferences("guidance", Context.MODE_PRIVATE)
+    private val retentionValue = MutableStateFlow(preferences.getInt("retention_days", 0).takeIf { it in com.sidekick.core.MemoryRetention.choices } ?: 0)
+    val retentionDays = retentionValue.asStateFlow()
+    private val riskValue = MutableStateFlow(preferences.getBoolean("risk_advisories", true))
+    val riskAdvisories = riskValue.asStateFlow()
+    fun setRiskAdvisories(value: Boolean) { preferences.edit().putBoolean("risk_advisories", value).apply(); riskValue.value = value }
+    fun setRetentionDays(days: Int) {
+        require(days in com.sidekick.core.MemoryRetention.choices)
+        preferences.edit().putInt("retention_days", days).apply(); retentionValue.value = days
+    }
     private val handsOff = MutableStateFlow(preferences.getBoolean("hands_off", !context.packageName.endsWith(".benchmark")))
     val handsOffMode = handsOff.asStateFlow()
     fun setHandsOff(value: Boolean) { preferences.edit().putBoolean("hands_off", value).apply(); handsOff.value = value }

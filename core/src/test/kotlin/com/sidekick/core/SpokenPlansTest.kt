@@ -54,4 +54,24 @@ class SpokenPlansTest {
             assertTrue(AnalysisContext.local(source(text)).none { !it.informational }, text)
         }
     }
+
+    @Test fun `German evening attendance is explicit but midnight and hypothetical plans stay unknown`() {
+        for (hour in listOf("acht", "acht Uhr", "20 Uhr")) {
+            val text = "Ich bin morgen Abend um $hour bei Annas Geburtstag dabei."
+            val plan = AnalysisContext.local(source(text)).single()
+            assertEquals(Instant.parse("2026-11-10T01:00:00Z"), plan.activityStartAt, text)
+            assertFalse(plan.informational, text)
+        }
+        for (text in listOf("Ich bin morgen Abend um zwölf bei Annas Geburtstag dabei.",
+            "Ich bin morgen Abend um acht bei Annas Geburtstag vielleicht dabei.")) {
+            assertTrue(AnalysisContext.local(source(text)).none { !it.informational && it.activityStartAt != null }, text)
+        }
+        assertTrue(ActivityTiming.extract(source("Ich bin morgen Abend um acht bei Annas Geburtstag dabei.", Speaker.OTHER), true).single().informational)
+    }
+
+    @Test fun `Arabic twelve at night is midnight and small ambiguous night hours are not afternoon guesses`() {
+        val midnight = AnalysisContext.local(source("سأحضر حفلة غدا الساعة الثانية عشرة ليلا.")).single()
+        assertEquals(Instant.parse("2026-11-09T05:00:00Z"), midnight.activityStartAt)
+        assertTrue(AnalysisContext.local(source("سأحضر حفلة غدا الساعة الثانية ليلا.")).none { it.activityStartAt != null })
+    }
 }

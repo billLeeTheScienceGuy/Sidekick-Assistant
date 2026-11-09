@@ -114,6 +114,7 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     fun analyze() {
         if (busy.value) return
         val origin = analysisSource
+        container.risk.inspect(transcript.value)
         val input = container.temporary.prepareChanges(Transcript(transcript.value.trim(), capturedAt, capturedZone, Speaker.USER, true), origin ?: "typed")
         busy.value = true
         importJob = viewModelScope.launch {
@@ -142,6 +143,7 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     }
     fun analyzeSharedText(text: String) = mutate {
         if (!container.guidance.sharedMessages.value) { message.value = "Shared-message analysis is disabled in Settings."; return@mutate }
+        container.risk.inspect(text)
         val input = container.temporary.prepareChanges(Transcript(text.take(6000), Instant.now(), ZoneId.systemDefault(), Speaker.OTHER, true), "shared")
         val proposals = withContext(Dispatchers.Default) { ActivityTiming.extract(input, informationalOnly = true) }
             .map { it.copy(sourceKey = "shared", needsReview = "Shared message: attendance is unconfirmed. " + it.needsReview) }
