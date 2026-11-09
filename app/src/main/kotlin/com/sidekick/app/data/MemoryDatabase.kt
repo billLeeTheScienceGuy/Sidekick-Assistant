@@ -27,6 +27,19 @@ data class CommitmentEntity(
 @Entity(tableName = "automatic_changes")
 data class AutomaticChange(@PrimaryKey val targetId: String, val token: String, val before: String?, val after: String, val changedAt: Long)
 
+/** Recovery metadata only: never duplicates event titles, source excerpts or transcripts. */
+@Entity(tableName = "calendar_links")
+data class CalendarLink(@PrimaryKey val memoryId: String, val calendarId: Long, val eventId: Long?,
+    val appliedHash: String?, val pendingHash: String?, val state: String)
+
+@Dao
+interface CalendarLinkDao {
+    @Query("SELECT * FROM calendar_links") suspend fun all(): List<CalendarLink>
+    @Query("SELECT * FROM calendar_links WHERE memoryId = :id") suspend fun get(id: String): CalendarLink?
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun put(link: CalendarLink)
+    @Query("DELETE FROM calendar_links WHERE memoryId = :id") suspend fun delete(id: String)
+}
+
 @Dao
 interface CommitmentDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putChange(change: AutomaticChange)
@@ -59,10 +72,16 @@ interface CommitmentDao {
     @Transaction suspend fun deleteAll() { deleteRows(); clearChanges() }
 }
 
-@Database(entities = [CommitmentEntity::class, AutomaticChange::class], version = 5, exportSchema = true)
+@Database(entities = [CommitmentEntity::class, AutomaticChange::class, CalendarLink::class], version = 6, exportSchema = true)
 abstract class MemoryDatabase : RoomDatabase() {
     abstract fun commitments(): CommitmentDao
+    abstract fun calendarLinks(): CalendarLinkDao
     companion object {
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS calendar_links (memoryId TEXT NOT NULL PRIMARY KEY, calendarId INTEGER NOT NULL, eventId INTEGER, appliedHash TEXT, pendingHash TEXT, state TEXT NOT NULL)")
+            }
+        }
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS automatic_changes (targetId TEXT NOT NULL PRIMARY KEY, token TEXT NOT NULL, `before` TEXT, `after` TEXT NOT NULL, changedAt INTEGER NOT NULL)")

@@ -15,7 +15,9 @@ first. The speech/battery field trials are separate and can be done later.
 5. Demonstrate a time correction and cancellation without duplicate events.
 6. Open a known event in the calendar editor and review its fields. Cancel the
    calendar editor unless intentionally saving a demo event. This is a manual
-   handoff, not calendar synchronization.
+   handoff. Alternatively use a disposable local test calendar to demonstrate
+   explicitly enabled mirroring, time changes, cancellation and external-edit
+   protection. Do not enable writes to a personal account just for a demo.
 7. Show temporary conversation highlights and clear them. Saved events remain.
 8. Open Settings → Memory & privacy. Show that automatic cleanup is off by default,
    a finite retention period asks before destructive cleanup, and export excludes
@@ -25,8 +27,13 @@ first. The speech/battery field trials are separate and can be done later.
    the generic risk advisory, dismiss it, and show its settings switch. Do not
    type real credentials. Explain English-only rules, false positives and misses.
 10. Explain that live intent extraction is bounded grammar, optional Qwen supports
-    manual analysis, full diarization/general scam classification/legal-location
-    automation are unfinished, and summaries are grounded/extractive.
+    manual analysis, simultaneous-voice separation/general scam classification/legal
+    authorization are unfinished, and summaries are grounded/extractive.
+11. Show the optional speaker-turn view and explain temporary anonymous labels
+    versus independently enrolled owner identity. Use the controlled sustained
+    report without presenting repeated fixtures as natural-conversation accuracy.
+12. Show Listening privacy & region guidance, its explicit city/state fallback,
+    opt-in manually refreshed approximate location and everyone-agrees policy.
 
 Record failures alongside successes. Automated core/emulator tests establish
 software behavior; they are not measurements of natural speech, battery or

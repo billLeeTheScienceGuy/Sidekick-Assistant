@@ -12,8 +12,8 @@ with Undo, and phone timezone.
 |---|---|---|
 | Reproducible build | Core tests, Android build/lint, GitHub CI; versioned APK/checksum manifest | Development-signed prototype, not a store release |
 | Offline pipeline | Native fixture → ASR; VAD/voice tests; event/context integration | Controlled recordings do not establish natural speech accuracy |
-| Correct actions | Event → correction → cancellation → Undo → real reminder receiver | Inexact Android alarms; no automatic calendar sync |
-| Privacy controls | No recording archive, explicit start/consent, deletion, verified packs, opt-in retention/export | No legal-location engine or per-person consent verification |
+| Correct actions | Event → correction → cancellation → Undo → real reminder receiver; opt-in guarded calendar mirrors | Inexact Android alarms; one-way sync, actual cloud accounts need field checks |
+| Privacy controls | No recording archive, explicit start/consent, deletion, verified packs, opt-in retention/export; limited coarse-region guidance | No automated legal authorization or per-person consent verification |
 | Usability | Missing-pack setup, optional voice setup, date/time pickers, Planner/Summary, labelled settings and large-text test | Not a user study or full accessibility audit |
 | Measured quality | Reproducible 92-case text corpus including failures; dated physical ASR comparisons | Development data, not representative or native-audited accuracy |
 | Explainable risk support | Offline English warning signs, dismiss/disable, generic alerts and no credential copying | Not general multilingual fraud classification |
@@ -23,12 +23,12 @@ with Undo, and phone timezone.
 
 | Phase 1 module | Implemented evidence | Remaining limitation |
 |---|---|---|
-| Calibration & privacy | Per-language/model voice enrollment, permission/consent flow, deletion, retention/export | Jurisdiction lookup and per-person consent database absent |
+| Calibration & privacy | Per-language/model voice enrollment, permission/consent flow, deletion, retention/export; explicit city or opt-in phone-region hint | Limited jurisdiction catalog; no legal authorization or per-person consent database |
 | Background audio & detection | Foreground service, bounded VAD/chunks, sequential decode, assistant recovery | Android force-stop/permission restrictions; all-day endurance unproven |
-| Recording & diarization | No saved recording; user/other/unknown attribution and uncertainty handling | No overlapping-speaker diarization or named-person recognition |
+| Recording & diarization | No saved recording; neural turn segmentation, ephemeral anonymous voices, independent owner attribution, overlap uncertainty | No simultaneous-voice source separation or named-person recognition |
 | Local speech-to-text | Whisper/SenseVoice/Omnilingual routing, free weights, verified packs, offline fixtures | Natural/noisy/mixed speech and Korean numbers remain imperfect |
 | Intent/entities | Seven-language rules, evidence, dates/times/end/places, ownership/context | General semantics and dialects exceed the grammar |
-| Context/actions | Deduplication, corrections, cancellation, attendance, Undo, calendar conflict reads, reminders and risk advisories | Calendar writing requires explicit editor handoff |
+| Context/actions | Per-voice context, deduplication, corrections, cancellation, attendance, Undo, calendar conflicts/mirroring, reminders and risk advisories | One-way opt-in mirrors; external edits protected; real account behavior unproven |
 | Memory/summary | Room, Planner, derived summaries, temporary excerpts, deletion, retention, JSON export | Factual/extractive digest, not unrestricted LLM summarization |
 
 ## Reproduce and demonstrate

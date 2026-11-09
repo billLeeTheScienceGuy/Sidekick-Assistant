@@ -20,7 +20,7 @@ until the needed packs are installed. Text, Planner and Summary remain available
 
 ## Create and install
 
-Run the existing prepare_speech.py, prepare_speaker.py, prepare_sensevoice.py and
+Run the existing prepare_speech.py, prepare_speaker.py, prepare_diarization.py, prepare_sensevoice.py and
 prepare_omnilingual.py scripts, then:
 
 ```

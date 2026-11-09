@@ -22,9 +22,13 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
     val status = mutableStatus.asStateFlow()
     private data class Anchor(val id: String, val at: Instant)
     private val anchors = linkedMapOf<String, Anchor>()
+    private val voiceAnchors = linkedMapOf<String, Anchor>()
     private fun channel(source: String?) = if (source?.startsWith("voice:") == true) "voice" else source ?: "typed"
     private fun remember(item: com.sidekick.app.data.CommitmentEntity, observedAt: Instant) {
         anchors[channel(item.sourceKey)] = Anchor(item.id, observedAt)
+        if (item.sourceKey?.startsWith("voice:") == true) temporary.noteVoiceTarget(item.id)
+        com.sidekick.core.VoiceSource.track(item.sourceKey)?.let { voiceAnchors[it] = Anchor(item.id, observedAt) }
+        while (voiceAnchors.size > 16) voiceAnchors.remove(voiceAnchors.keys.first())
         while (anchors.size > 32) anchors.remove(anchors.keys.first())
     }
     private var cleanupChecked = false
@@ -51,12 +55,19 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
         for (pending in temporary.takeChanges()) {
             val operation = pending.change
             val origin = channel(pending.source)
+            val track = com.sidekick.core.VoiceSource.track(pending.source)
+            if (pending.speaker != com.sidekick.core.Speaker.USER && track?.contains("_unassigned") == true) {
+                mutableStatus.value = "Speaker uncertain. Saved events were left unchanged."
+                continue
+            }
             val all = dao.all().filter { item ->
                 item.state == "ACCEPTED" && item.activityStartAt?.let { it > pending.at.toEpochMilli() } == true &&
                     channel(item.sourceKey) == origin &&
+                    (pending.speaker == com.sidekick.core.Speaker.USER || track == null || com.sidekick.core.VoiceSource.track(item.sourceKey) == track) &&
                     (item.informational || pending.speaker == com.sidekick.core.Speaker.USER)
             }
-            val anchor = anchors[origin]?.takeIf { java.time.Duration.between(it.at, pending.at).seconds in -5..120 }
+            val anchor = (if (track != null && pending.speaker != com.sidekick.core.Speaker.USER) voiceAnchors[track] else anchors[origin])
+                ?.takeIf { java.time.Duration.between(it.at, pending.at).seconds in -5..120 }
             val candidates = if (operation.pronoun) {
                 all.filter { it.id == anchor?.id }
             } else all.filter { operation.matches(it.title) || (operation.localized && dao.change(it.id) != null && operation.matches(it.evidence.substringBefore('\n'))) }
@@ -99,7 +110,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                     fun opening(text: String) = java.text.Normalizer.normalize(text.substringBefore('\n').lowercase(java.util.Locale.ROOT), java.text.Normalizer.Form.NFKC).filter { it.isLetterOrDigit() }
                     val dateRefinements = mutableSetOf<String>()
                     val matches = dao.all().filter { it.state in setOf("ACCEPTED", "CANCELLED") }.filter {
-                        val sameOrigin = channel(candidate.sourceKey) == channel(it.sourceKey)
+                        val sameOrigin = channel(candidate.sourceKey) == channel(it.sourceKey) && !com.sidekick.core.VoiceSource.distinctPeople(candidate.sourceKey, it.sourceKey)
                         val baselineStart = com.sidekick.core.ActivityTiming.extract(com.sidekick.core.Transcript(it.evidence.substringBefore('\n'), Instant.ofEpochMilli(it.capturedAt), ZoneId.of(it.zoneId), com.sidekick.core.Speaker.OTHER, true), informationalOnly = true).singleOrNull()?.activityStartAt?.toEpochMilli()
                         val inferredDate = it.activityStartAt == baselineStart && com.sidekick.core.ActivityTiming.extract(
                             com.sidekick.core.Transcript(it.evidence, Instant.ofEpochMilli(it.capturedAt), ZoneId.of(it.zoneId), com.sidekick.core.Speaker.OTHER, true), true).singleOrNull()?.needsReview?.contains("Date inferred") == true
@@ -117,7 +128,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                     val subject = com.sidekick.core.ActivityIdentity.subject(candidate.evidence)
                     val matches = if (subject == null) emptyList() else dao.activitiesAt(candidate.activityStartAt).filter { item ->
                         val sameOrigin = if (candidate.sourceKey?.startsWith("voice:") == true) item.sourceKey?.startsWith("voice:") == true else candidate.sourceKey == item.sourceKey
-                        sameOrigin && subject == com.sidekick.core.ActivityIdentity.subject(item.evidence) &&
+                        sameOrigin && !com.sidekick.core.VoiceSource.distinctPeople(candidate.sourceKey, item.sourceKey) && subject == com.sidekick.core.ActivityIdentity.subject(item.evidence) &&
                             (item.placeName == null || candidate.placeName == null || item.placeName.equals(candidate.placeName, true)) &&
                             (item.placeAddress == null || candidate.placeAddress == null || item.placeAddress.equals(candidate.placeAddress, true))
                     }

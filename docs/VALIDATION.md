@@ -1,3 +1,44 @@
+# 0.28 integrated speaker turns, calendar mirrors and region guidance
+
+November 8, 2026. All 175 core tests pass. Debug, benchmark and compactTest
+build/lint checks pass. The broader isolated emulator run passes all 116 checks
+in 311.917 seconds: the previous pipeline/UI/notification/location/reminder
+coverage plus real neural segmentation, recorded owner/second-voice/overlap,
+short/padded ownership, sustained paced native inference, separate anonymous
+context, same-voice cancellation, calendar recovery/protection, real LOCAL
+CalendarProvider writes, v1→v6 migration and opt-in region privacy controls.
+
+Eight final isolated physical Pixel checks pass in 12.314 seconds: native speaker
+turns and ownership, anonymous correction isolation, opt-in coarse-region cache
+and URI validation, bundled offline ASR/input cleanup and full v1→v6 migration.
+No microphone or personal app instrumentation was used.
+
+All 27 compact-package checks pass in 46.896 seconds, including cold-start calendar
+source links, rejection of action-like link parameters, missing-pack setup,
+native imported-pack inference, 160% settings navigation and opt-in privacy controls.
+The link test restores its original launch Intent for ActivityScenario cleanup;
+changing it through onNewIntent had initially caused teardown failures despite
+passing the event-opening and no-write assertions. That harness issue is resolved.
+
+The separate ten-minute controlled physical replay passed in 686.933 seconds of
+test-suite time (686.709 seconds measured trial wall time). It emitted 180 segments,
+recognized all 60 party keyword segments and assigned none to the enrolled public
+owner voice. Processing work was 265.306 seconds; final drain 1.581 seconds.
+Maximum PSS was 408,888 KiB, thermal status remained zero, and observed battery
+temperature rose from 24.5 to 25.7 °C. USB was connected. Repeated public/synthetic
+audio does not establish natural conversation accuracy, microphone reliability,
+battery drain or 24/7 performance. See SUSTAINED_TURNS.md for reproduction/scope.
+
+The normal APK is 226,618,054 bytes, including the verified 1.54 MB segmentation
+weight and MIT notice. Optional speech packs remain separate. The unchanged
+authored text corpus retains 98.8% recall and one missed Arabic-dialect reminder;
+these metrics do not measure ASR or inferred-speaker accuracy.
+
+Normal 0.28.0/code46 was installed with install -r on the connected Pixel, package
+version verified and MainActivity opened. This upgrade did not instrument or clear
+the personal app. No app-process Room or AndroidRuntime errors were reported at
+the launch check. Calendar sync and phone-region lookup remain opt-in.
+
 # 0.27 capstone validation
 
 163 core tests pass. New retention cases check opt-in defaults, strict cutoff,

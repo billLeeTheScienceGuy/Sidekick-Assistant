@@ -20,8 +20,24 @@ class PrivacyScreenTest {
         compose.onNodeWithTag("retention-choice").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("export-memory").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("Include saved source excerpts in export").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("privacy-guidance").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("calendar-sync-setting").performScrollTo().assertExists()
         compose.onNodeWithContentDescription("Resume enabled listening after system restart").performScrollTo().assertExists()
         compose.onNodeWithText("Close").assertIsDisplayed()
+    }
+    @Test fun regionGuidanceDoesNotRequireLocationOrChangeListeningConsent() {
+        val app = compose.activity.application as SidekickApplication
+        check(app.packageName.endsWith(".compacttest") || app.packageName.endsWith(".benchmark"))
+        val city = app.guidance.city.value
+        try {
+            app.guidance.setCity("Madison, Wisconsin")
+            compose.onNodeWithTag("settings").performClick()
+            compose.onNodeWithTag("privacy-guidance").performScrollTo().performClick()
+            compose.onNodeWithText("Wisconsin hint").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag("privacy-phone-region").performScrollTo().assertIsOff()
+            assertNull(app.guidance.privacyRegion.value)
+            compose.onNodeWithText("Close").performClick()
+        } finally { app.guidance.setCity(city) }
     }
     @Test fun retentionNeedsExplicitDestructiveConfirmationAndExportsDefaultToNoExcerpts() {
         val app = compose.activity.application as SidekickApplication

@@ -57,6 +57,34 @@ access revocation. The callback lifecycle follows the
 
 The start flow requires agreement from everyone included. Stop if agreement is
 withdrawn or new participants have not agreed. Voice matching does not establish
-consent. Location is used for optional venue context, not a legal eligibility
-decision. The proposal's jurisdiction-law engine and per-person permission
-database remain unimplemented; the app does not claim legal compliance.
+consent. Settings → Listening privacy & region guidance provides limited contextual
+summaries without making a legal eligibility decision. An explicit city/state
+works offline. A bare city or ambiguous “IL” is not assigned a jurisdiction.
+
+Optional phone-region refresh is off by default and manually triggered with
+approximate-location permission. Android's location/address provider may send
+coordinates online. Only country/admin area and the refresh time are cached
+locally for a 24-hour display lifetime; no coordinates, street or history are
+stored. Turning this off clears the cache. There is no background location
+permission, continuous tracking, automatic legal permission or per-person
+consent database. Borders, remote participants and setting-specific rules
+cannot be resolved by a phone location.
+
+The limited catalog links [Wisconsin DWD guidance](https://dwd.wisconsin.gov/dvr/policy-guidance/legal/recording-conversations.htm)
+(reviewed May 2014, explicitly identified as dated),
+[Illinois law](https://ilga.gov/documents/legislation/ilcs/documents/072000050K14-2.htm)
+and the [federal statute](https://uscode.house.gov/us/usc/119-118/t18/s2511/).
+Sources were checked November 8, 2026. Participant-consent exceptions, private
+conversation rules and other restrictions differ; these summaries never relax
+SideKick's everyone-agrees start policy. Other regions are explicitly not covered.
+This is educational guidance, not a compliance engine or legal authorization.
+
+Anonymous speaker keys and bounded centroids are session-only, not named-person
+profiles. The last twelve optional speaker excerpts remain temporary. Independent
+owner matching cannot prove consent. See SPEAKER_TURNS.md.
+
+Optional calendar mirroring can send titles, times and places through the chosen
+calendar account. It requires separate confirmation and never copies source
+excerpts, transcripts or profiles. Disabling pauses writes and leaves copies;
+revoked permission can leave ID/hash cleanup records until access returns.
+See CALENDAR_SYNC.md for deletion and external-edit protection.

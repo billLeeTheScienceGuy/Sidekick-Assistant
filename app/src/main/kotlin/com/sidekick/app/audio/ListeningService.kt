@@ -33,6 +33,7 @@ data class ListeningState(
     val userVoiceChunks: Int = 0, val otherVoiceChunks: Int = 0, val unknownVoiceChunks: Int = 0,
     val voiceDiagnostics: List<String> = emptyList(),
     val recognitionDiagnostics: List<String> = emptyList(),
+    val diarizationMs: Long = 0, val speakerParts: Int = 0,
     val note: String = "Microphone is off",
 )
 
@@ -98,6 +99,7 @@ class ListeningService : Service() {
         app.voiceProfile.selectLanguage(setupLanguage)
         val setupModel = app.voiceProfile.model.value
         val speaker = SpeakerEngine(this, app.voiceProfile)
+        val turns = com.sidekick.app.speaker.SpeakerTurnEngine(this, app.voiceProfile, speaker) { app.guidance.diarization.value }
         val enrollmentSamples = mutableListOf<FloatArray>()
         val wake = getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SideKick:LiveNotes")
         wake.setReferenceCounted(false)
@@ -118,8 +120,30 @@ class ListeningService : Service() {
             if (!enrollment) app.temporary.beginSession()
             coroutineScope {
                 var identified = Speaker.UNKNOWN
+                var voiceTrack = "spk_session_unassigned0"
+                var voiceLabel = "Unassigned voice"
                 var continuation = false
-                val pipeline = LiveSpeechProcessor(app.speech, onBoundary = { continuation = it }, contextKey = { if (identified == Speaker.USER) "user" else null }, inspect = { samples ->
+                val pipeline = LiveSpeechProcessor(app.speech, onBoundary = { continuation = it }, contextKey = { if (identified == Speaker.USER) voiceTrack else null },
+                    partition = { samples ->
+                        val parts = if (enrollment) listOf(com.sidekick.core.SpeakerPart(0, samples.size, null, false)) else turns.partition(samples)
+                        ensureActive()
+                        mutableState.update { it.copy(diarizationMs = turns.lastSeparationMs, speakerParts = parts.size) }
+                        parts
+                    }, onPart = { samples, part ->
+                        if (!enrollment) {
+                            val attributed = turns.classify(samples, part)
+                            identified = attributed.speaker; voiceTrack = attributed.key; voiceLabel = attributed.label
+                            mutableState.update { it.copy(userVoiceChunks = it.userVoiceChunks + if (identified == Speaker.USER) 1 else 0,
+                                voiceDiagnostics = (it.voiceDiagnostics + attributed.diagnostic).takeLast(20),
+                                otherVoiceChunks = it.otherVoiceChunks + if (identified == Speaker.OTHER) 1 else 0,
+                                unknownVoiceChunks = it.unknownVoiceChunks + if (identified == Speaker.UNKNOWN) 1 else 0,
+                                voiceStatus = when (identified) {
+                                    Speaker.USER -> "Likely your voice · $voiceLabel"
+                                    Speaker.OTHER -> "$voiceLabel · information only"
+                                    Speaker.UNKNOWN -> "$voiceLabel · identity unassigned"
+                                }) }
+                        }
+                    }, inspect = { samples ->
                     if (enrollment) {
                         if (!discard && enrollmentSamples.size < 3 && samples.size >= 48_000) {
                             enrollmentSamples += speaker.embedding(samples)
@@ -130,23 +154,13 @@ class ListeningService : Service() {
                         }
                         false
                     } else {
-                        identified = speaker.identify(samples)
-                        mutableState.update { it.copy(userVoiceChunks = it.userVoiceChunks + if (identified == Speaker.USER) 1 else 0,
-                            voiceDiagnostics = (it.voiceDiagnostics + speaker.lastDiagnostic).takeLast(20),
-                            otherVoiceChunks = it.otherVoiceChunks + if (identified == Speaker.OTHER) 1 else 0,
-                            unknownVoiceChunks = it.unknownVoiceChunks + if (identified == Speaker.UNKNOWN) 1 else 0,
-                            voiceStatus = when (identified) {
-                            Speaker.USER -> "Likely your voice"
-                            Speaker.OTHER -> "Another voice · information only"
-                            Speaker.UNKNOWN -> "Speaker unassigned · information only"
-                        }) }
                         true
                     }
                 }) { text, startSample, latency ->
                     ensureActive()
                     if (!discard) {
                         app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text)
-                        app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified, continuation)
+                        app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified, continuation, voiceTrack, voiceLabel)
                         app.automation.process()
                     }
                     mutableState.update { it.copy(chunks = it.chunks + 1, lastLatencyMs = latency,
@@ -213,7 +227,7 @@ class ListeningService : Service() {
                 note = e.message ?: "Listening failed. Review the text captured so far, then try again.") }
         } finally {
             runCatching { recorder?.stop() }; recorder?.release()
-            processor?.close(); raw.fill(0); speaker.close(); enrollmentSamples.forEach { it.fill(0f) }
+            processor?.close(); raw.fill(0); turns.close(); speaker.close(); enrollmentSamples.forEach { it.fill(0f) }
             NativeVad.close()
             if (wake.isHeld) wake.release()
             if (discard && !enrollment) app.temporary.discardSession()

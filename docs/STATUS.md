@@ -1,5 +1,33 @@
 # Handoff
 
+Current source: 0.28.0/code46, Room schema6. Added offline neural speaker turns,
+bounded session-only anonymous centroids, temporary labelled excerpts, per-voice
+event context/anchors and protection against another voice's cancellation or
+identical announcement. Pause-heavy matching now expands continuous windows
+without lowering owner thresholds. Overlap stays unassigned; no simultaneous
+source separation or named identity is claimed.
+
+Opt-in calendar mirroring has provider-ID/hash journaling, interrupted-write
+recovery, guarded edits/deletions, informational-as-free selection and external
+edit/guest/recurrence/deletion protection. No excerpts, attendees, invitations or
+calendar alarms are written. Real emulator LOCAL-provider operations pass;
+actual cloud accounts remain a field-validation dependency.
+
+Limited regional privacy guidance supports an explicit city/state offline or
+manually refreshed opt-in approximate phone region. Cached country/admin area
+expires after 24 hours and is cleared when disabled. Everyone-agrees listening
+policy is unchanged; this does not authorize recording or certify compliance.
+
+175 core tests, 116 full emulator checks and 27 compact checks pass; eight final physical fixture
+checks pass. Ten-minute physical public/synthetic replay passes with bounded
+memory/queue, zero party-as-owner matches, thermal status0 and 1.581s final drain.
+This was USB-connected and opened no microphone. See VALIDATION.md,
+SPEAKER_TURNS.md, CALENDAR_SYNC.md and SUSTAINED_TURNS.md for exact limits.
+Normal 0.28.0/code46 is installed and its package version verified on the Pixel.
+No personal app instrumentation or data-clearing command was used.
+
+Previous 0.27:
+
 Current source: 0.27.0/code45. Capstone goals and proposal mapping are recorded in
 CAPSTONE_CHECKLIST.md. Added opt-in 30/90/365-day cleanup, explicit JSON event
 export (saved excerpts off by default), local English risk advisories and labelled

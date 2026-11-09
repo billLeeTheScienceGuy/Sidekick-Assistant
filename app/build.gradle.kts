@@ -12,8 +12,8 @@ android {
         applicationId = "com.sidekick.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 45
-        versionName = "0.27.0"
+        versionCode = 46
+        versionName = "0.28.0"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -53,6 +53,7 @@ android {
 kotlin { jvmToolchain(17) }
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 val verifySpeechModel by tasks.registering {
+    inputs.file(layout.projectDirectory.file("src/main/assets/models/diarization.int8.onnx"))
     val modelFile = layout.projectDirectory.file("src/main/assets/models/ggml-tiny.en.bin")
     val vadFile = layout.projectDirectory.file("src/main/assets/models/ggml-silero-v5.1.2.bin")
     val multilingualFile = layout.projectDirectory.file("src/main/assets/models/ggml-tiny.bin")
@@ -69,6 +70,7 @@ val verifySpeechModel by tasks.registering {
     inputs.file(layout.projectDirectory.file("src/main/assets/models/campplus-advanced.onnx"))
     inputs.file(baseFile)
     doLast {
+        check(layout.projectDirectory.file("src/main/assets/models/diarization.int8.onnx").asFile.length() == 1_540_506L) { "Run scripts/prepare_diarization.py." }
         check(layout.projectDirectory.file("src/main/assets/models/omni-model.int8.onnx").asFile.length() == 365_352_120L) { "Run scripts/prepare_omnilingual.py." }
         check(layout.projectDirectory.file("src/main/assets/models/omni-tokens.txt").asFile.length() == 86_423L) { "Run scripts/prepare_omnilingual.py." }
         check(layout.projectDirectory.file("src/main/assets/models/sensevoice-ko.int8.onnx").asFile.length() == 239_233_841L) { "Run scripts/prepare_sensevoice.py." }

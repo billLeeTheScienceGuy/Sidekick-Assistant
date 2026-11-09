@@ -16,14 +16,15 @@ class BundledOfflineTest {
         migration.createDatabase("capstone-upgrade", 1).use { db ->
             db.execSQL("INSERT INTO commitments (id,title,evidence,capturedAt,zoneId,reviewNote,state) VALUES ('capstone-old','Call Emma','Original excerpt',123,'America/Chicago','Review','ACCEPTED')")
         }
-        migration.runMigrationsAndValidate("capstone-upgrade", 5, true, MemoryDatabase.MIGRATION_1_2,
-            MemoryDatabase.MIGRATION_2_3, MemoryDatabase.MIGRATION_3_4, MemoryDatabase.MIGRATION_4_5).use { db ->
+        migration.runMigrationsAndValidate("capstone-upgrade", 6, true, MemoryDatabase.MIGRATION_1_2,
+            MemoryDatabase.MIGRATION_2_3, MemoryDatabase.MIGRATION_3_4, MemoryDatabase.MIGRATION_4_5, MemoryDatabase.MIGRATION_5_6).use { db ->
             db.query("SELECT evidence,dueAt,state,informational,placeName FROM commitments WHERE id='capstone-old'").use {
                 assertTrue(it.moveToFirst()); assertEquals("Original excerpt", it.getString(0))
                 assertTrue(it.isNull(1)); assertEquals("ACCEPTED", it.getString(2))
                 assertEquals(0, it.getInt(3)); assertTrue(it.isNull(4))
             }
             db.query("SELECT count(*) FROM automatic_changes").use { assertTrue(it.moveToFirst()); assertEquals(0, it.getInt(0)) }
+            db.query("SELECT count(*) FROM calendar_links").use { assertTrue(it.moveToFirst()); assertEquals(0, it.getInt(0)) }
         }
     }
 

@@ -20,10 +20,12 @@ with zipfile.ZipFile(apk) as archive:
     assert 'assets/models/ggml-silero-v5.1.2.bin' in names
     assert not any(name.startswith('assets/') and name.lower().endswith(('.wav', '.pcm', '.db', '.jks', '.keystore')) for name in names), 'Unexpected audio/database/key asset in APK'
     assert 'assets/licenses/whisper-MIT.txt' in names
+    assert 'assets/models/diarization.int8.onnx' in names
+    assert 'assets/licenses/diarization-MIT.txt' in names
 out = root / 'dist' / f'SideKick-{version}'
 out.mkdir(parents=True, exist_ok=True)
 shutil.copy2(apk, out / f'SideKick-{version}.apk')
-for name in ['SUBMISSION_REPORT.md', 'CAPSTONE_CHECKLIST.md', 'ARCHITECTURE.md', 'PRIVACY_AND_RISK.md', 'ACCURACY_REPORT.md', 'ASR_EVALUATION.md', 'STREAMING_BENCHMARK.md', 'DEMO.md', 'MODEL_PACKS.md', 'SUMMARIES.md', 'VALIDATION.md']:
+for name in ['SUBMISSION_REPORT.md', 'CAPSTONE_CHECKLIST.md', 'ARCHITECTURE.md', 'PRIVACY_AND_RISK.md', 'SPEAKER_TURNS.md', 'SUSTAINED_TURNS.md', 'CALENDAR_SYNC.md', 'ACCURACY_REPORT.md', 'ASR_EVALUATION.md', 'STREAMING_BENCHMARK.md', 'DEMO.md', 'MODEL_PACKS.md', 'SUMMARIES.md', 'VALIDATION.md']:
     shutil.copy2(root / 'docs' / name, out / name)
 (out / 'README.txt').write_text(f'''SideKick {version} prototype
 

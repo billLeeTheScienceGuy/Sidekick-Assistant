@@ -1,6 +1,6 @@
 # SideKick prototype implementation and evaluation
 
-Prepared November 8, 2026. Version 0.27.0. This describes a working Android
+Prepared November 8, 2026. Version 0.28.0. This describes a working Android
 prototype and its measured limits; it is not a claim that the entire Phase 1
 proposal or a production 24/7 assistant is complete.
 
@@ -16,7 +16,8 @@ temporary. Event evidence is retained with saved items.
 
 The action layer includes reminders, optional incoming-message notifications,
 shared text, venue lookup with address confirmation, calendar conflict reads and
-explicit handoff to the calendar editor. Daily summaries derive from saved facts;
+explicit handoff to the calendar editor, plus opt-in one-way mirroring with
+interruption recovery and external-edit protection. Daily summaries derive from saved facts;
 conversation highlights are bounded source excerpts. These are not unrestricted
 LLM narratives. Optional Qwen assists manual analysis; live extraction uses
 bounded grammar and validated fields. Default-assistant recovery supports an
@@ -30,6 +31,24 @@ of gift-card, private-code, remote-access and safe-account warning signs. They a
 nonblocking, dismissible and disableable, and never copy credentials into alerts.
 See [privacy and risk behavior](PRIVACY_AND_RISK.md), the
 [architecture](ARCHITECTURE.md) and [acceptance checklist](CAPSTONE_CHECKLIST.md).
+
+Version 0.28 adds neural speaker-turn segmentation and bounded RAM-only anonymous
+voices with separate correction context. Owner attribution remains an independent
+enrollment match. Overlap stays unassigned; this is not simultaneous source
+separation. A controlled ten-minute Pixel replay passed with 180 transcript
+segments, 60 party mentions and zero second-voice party segments assigned to the
+owner. Aggregate processing work was 265.306 seconds and final queue drain 1.581
+seconds; maximum process PSS was 399.3 MiB and reported thermal status stayed zero.
+USB was connected and public/synthetic fixtures were repeated. This does not
+measure microphone accuracy, battery drain or population speaker error rates.
+See [speaker turns](SPEAKER_TURNS.md) and [the sustained trial](SUSTAINED_TURNS.md).
+
+Calendar mirroring is separately confirmed and can expose event metadata through
+the selected calendar account. It never copies excerpts or creates invitations.
+A real emulator LOCAL-provider test validates its writes, corrections, cancellation,
+recovery and guest protection without using personal calendars. Optional manually
+refreshed coarse region guidance is informational; everyone-agrees consent remains
+the app policy. A limited jurisdiction catalog is not a legal-compliance engine.
 
 ## Reproducible evaluation
 
@@ -73,7 +92,7 @@ phone behavior.
 Get started provides compact language/quality selectors, model readiness, optional
 voice setup and explicit Android permission controls. It never starts listening
 automatically. Missing packs are explained, and typed workflows remain usable.
-The normal APK is about 225 MB instead of about 905 MB (approximately 75% smaller).
+The normal APK is about 227 MB instead of about 905 MB (approximately 75% smaller).
 Optional verified packs are installed once and reused locally. All packs together
 still require substantial storage, and the inference workload remains unchanged.
 The submission script packages a development-signed APK, this report, evaluation,
@@ -82,16 +101,16 @@ Play Store release or a promise of universal device compatibility.
 
 ## Remaining work
 
-- Natural-speech and multilingual speaker calibration, overlapping speakers and
-  full speaker diarization beyond user/other/unknown matching.
+- Natural-speech and multilingual speaker calibration, simultaneous-voice audio
+  separation and independently measured diarization/identity error rates.
 - Sustained screen-off battery, thermal, missed-speech and interruption testing
   on the physical Pixel 7a; emulator timing is not device performance evidence.
 - Broader language understanding and independently audited evaluation data.
-- Real messaging-app and calendar-provider field testing, automatic calendar sync,
+- Real messaging-app and calendar-account field testing, bidirectional calendar editing,
   release signing and fuller accessibility/user testing.
-- General multilingual scam classification and the proposed location/jurisdiction
-  consent engine are not implemented. Local English advisories are a bounded rule
-  baseline. Existing consent controls do not establish legal compliance.
+- General multilingual scam classification and automatic legal/participant-consent
+  verification are not implemented. Local English advisories and coarse-region
+  guidance are bounded baselines. Existing controls do not establish legal compliance.
 
 The prototype supports a reproducible core-pipeline demonstration. Submission
 claims should match these limits and the course rubric. No user-study outcomes,

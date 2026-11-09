@@ -23,9 +23,9 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Isolated app installation failed.' }
     & $adb -s $DeviceSerial install -r "app/build/outputs/apk/androidTest/$variantDir/app-$variantDir-androidTest.apk"
     if ($LASTEXITCODE -ne 0) { throw 'Test installation failed.' }
-    $classes = @('ActivityTimingTest','MemoryPrivacyTest','PrivacyScreenTest','MessageRiskTest','BundledOfflineTest')
+    $classes = @('ActivityTimingTest','MemoryPrivacyTest','PrivacyScreenTest','PrivacyRegionSettingsTest','MessageRiskTest','BundledOfflineTest','CalendarMirrorTest','CalendarProviderSyncTest','CalendarTargetScreenTest','TrackedVoiceChangesTest')
     if ($Suite -eq 'Compact') { $classes += 'CompactSetupTest' }
-    else { $classes += @('FoundationTest','PlannerScreenTest','SummaryScreenTest','CalendarDraftTest','AutomaticScreenTest','CalendarTest','AutomaticMemoryTest','EventChangeTest','LocalizedChangesTest','MessageInboxTest','CopiedSpeechTest','ReminderTest','ReminderRecoveryTest','EventReminderJourneyTest','UndoPlannerTest','UncertainUpdateTest','UncertainUpdateScreenTest','VoiceDuplicateTest','LanguageVoiceProfileTest','EmulatorIntegrationTest') }
+    else { $classes += @('FoundationTest','PlannerScreenTest','SummaryScreenTest','CalendarDraftTest','AutomaticScreenTest','CalendarTest','AutomaticMemoryTest','EventChangeTest','LocalizedChangesTest','MessageInboxTest','CopiedSpeechTest','ReminderTest','ReminderRecoveryTest','EventReminderJourneyTest','UndoPlannerTest','UncertainUpdateTest','UncertainUpdateScreenTest','VoiceDuplicateTest','LanguageVoiceProfileTest','EmulatorIntegrationTest','NeuralDiarizationTest','SpeakerTurnsTest','SpeakerIdentityTest','SpeakerPaddingTest') }
     $qualified = ($classes | ForEach-Object { "com.sidekick.app.$_" }) -join ','
     $arguments = @('-s',$DeviceSerial,'shell','am','instrument','-w','-e','class',$qualified)
     $arguments += "$package.test/androidx.test.runner.AndroidJUnitRunner"

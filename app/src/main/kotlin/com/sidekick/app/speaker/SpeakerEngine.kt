@@ -17,6 +17,7 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
     private val anchors = com.sidekick.core.VoiceAnchors()
     private var profileLanguage = profile.language.value
     private fun clearRecent() = anchors.clear()
+    fun newTurn() { clearRecent() }
     private fun extractor(): SpeakerEmbeddingExtractor {
         val selected = profile.model.value
         if (extractorModel != selected) { extractor?.release(); extractor = null; clearRecent(); extractorModel = selected }
@@ -86,7 +87,8 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
                     return Speaker.UNKNOWN
                 }
                 return try {
-                    val vector = embedding(samples)
+                    // identify() already trimmed the utterance; preserve this validated window.
+                    val vector = computeEmbedding(samples)
                     try {
                         val score = VoiceMatch.similarity(reference, vector)
                         val support = anchors.support(vector, nowMs) ?: return Speaker.UNKNOWN
@@ -109,8 +111,11 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
             val vectors = mutableListOf<FloatArray>()
             return try {
                 for (start in starts) {
-                    val window = samples.copyOfRange(start, start + width)
-                    try { vectors += embedding(window) } finally { window.fill(0f) }
+                    val range = com.sidekick.core.SpeakerAudio.matchingWindow(samples, start, width)
+                    if (range == null) { clearRecent(); lastDiagnostic = "${seconds}s: not enough voiced speech in a matching window"; return Speaker.UNKNOWN }
+                    val window = samples.copyOfRange(range.first, range.last + 1)
+                    // Re-trimming each window can shrink a long turn below 1.5 seconds at a pause.
+                    try { vectors += computeEmbedding(window) } finally { window.fill(0f) }
                 }
                 val result = VoiceMatch.identifyTurn(reference, vectors)
                 if (result == Speaker.USER) anchors.remember(vectors, nowMs) else clearRecent()
