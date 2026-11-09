@@ -9,6 +9,38 @@ enum class PlaceContext { CITY, PHONE }
 
 class GuidanceSettings(context: Context) {
     private val preferences = context.getSharedPreferences("guidance", Context.MODE_PRIVATE)
+    private val phoneRegionValue = MutableStateFlow(preferences.getBoolean("privacy_phone_region", false))
+    val privacyPhoneRegion = phoneRegionValue.asStateFlow()
+    private val regionValue = MutableStateFlow(runCatching {
+        if (!phoneRegionValue.value) null else com.sidekick.core.CachedPrivacyRegion(
+            com.sidekick.core.PrivacyRegion(preferences.getString("privacy_country", "").orEmpty(), preferences.getString("privacy_area", "").orEmpty()),
+            preferences.getLong("privacy_region_at", 0))
+    }.getOrNull())
+    val privacyRegion = regionValue.asStateFlow()
+    fun setPrivacyPhoneRegion(enabled: Boolean) {
+        preferences.edit().putBoolean("privacy_phone_region", enabled).apply(); phoneRegionValue.value = enabled
+        if (!enabled) setPrivacyRegion(null)
+    }
+    fun setPrivacyRegion(region: com.sidekick.core.PrivacyRegion?) {
+        val value = region?.takeIf { phoneRegionValue.value }?.let { com.sidekick.core.CachedPrivacyRegion(it, System.currentTimeMillis()) }
+        preferences.edit().apply {
+            if (value == null) { remove("privacy_country"); remove("privacy_area"); remove("privacy_region_at") }
+            else { putString("privacy_country", value.region.country); putString("privacy_area", value.region.area); putLong("privacy_region_at", value.checkedAt) }
+        }.apply()
+        regionValue.value = value
+    }
+    private val syncValue = MutableStateFlow(CalendarSyncConfig(preferences.getBoolean("calendar_sync", false),
+        preferences.getLong("calendar_sync_id", -1).takeIf { it > 0 }, preferences.getBoolean("calendar_sync_information", false)))
+    val calendarSync = syncValue.asStateFlow()
+    fun setCalendarSync(config: CalendarSyncConfig) {
+        require(!config.enabled || config.calendarId != null && config.calendarId > 0)
+        preferences.edit().putBoolean("calendar_sync", config.enabled).putLong("calendar_sync_id", config.calendarId ?: -1)
+            .putBoolean("calendar_sync_information", config.includeInformational).apply()
+        syncValue.value = config
+    }
+    private val diarizationValue = MutableStateFlow(preferences.getBoolean("diarization", true))
+    val diarization = diarizationValue.asStateFlow()
+    fun setDiarization(value: Boolean) { preferences.edit().putBoolean("diarization", value).apply(); diarizationValue.value = value }
     private val retentionValue = MutableStateFlow(preferences.getInt("retention_days", 0).takeIf { it in com.sidekick.core.MemoryRetention.choices } ?: 0)
     val retentionDays = retentionValue.asStateFlow()
     private val riskValue = MutableStateFlow(preferences.getBoolean("risk_advisories", true))

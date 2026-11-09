@@ -3,6 +3,7 @@ package com.sidekick.app.audio
 import com.sidekick.app.speech.SpeechEngine
 import com.sidekick.app.speech.NativeVad
 import com.sidekick.core.SpeechSegmenter
+import com.sidekick.core.SpeakerPart
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import java.util.concurrent.atomic.AtomicInteger
@@ -13,6 +14,9 @@ class LiveSpeechProcessor(
     private val inspect: (FloatArray) -> Boolean = { true },
     private val contextKey: () -> String? = { null },
     private val onBoundary: (Boolean) -> Unit = {},
+    private val partition: ((FloatArray) -> List<SpeakerPart>)? = null,
+    private val onPart: (FloatArray, SpeakerPart) -> Unit = { _, _ -> },
+    private val onChunkProcessed: (Long, Int) -> Unit = { _, _ -> },
     private val onText: suspend (String, Long, Long) -> Unit,
 ) {
     private val segmenter = SpeechSegmenter(160_000, 4_096, 16_384, 3_072, overlapSamples = 16_000)
@@ -31,16 +35,29 @@ class LiveSpeechProcessor(
                 val start = android.os.SystemClock.elapsedRealtime()
                 try {
                     if (!inspect(chunk.samples)) { speechContext.clear(); continue }
+                    val parts = partition?.invoke(chunk.samples) ?: listOf(SpeakerPart(0, chunk.samples.size, null, false))
+                    require(parts.isNotEmpty() && parts.size <= 4 && parts.first().start == 0 && parts.last().end == chunk.samples.size &&
+                        parts.all { it.start >= 0 && it.end > it.start && it.end <= chunk.samples.size } &&
+                        parts.zipWithNext().all { (a,b) -> a.end == b.start }) { "Invalid speaker partition" }
+                    for ((index, part) in parts.withIndex()) {
+                    currentCoroutineContext().ensureActive()
+                    val audio = if (parts.size == 1) chunk.samples else chunk.samples.copyOfRange(part.start, part.end)
+                    try {
+                    onPart(audio, part)
                     transcriptions.incrementAndGet()
-                    if (!chunk.continuesPrevious) speechContext.clear()
-                    val window = speechContext.prepare(chunk.samples, chunk.startSample, contextKey())
-                    // Boost isolated short English phrases; let tiny catch up when speech is queued.
-                    val shortBoost = chunk.samples.size < speech.shortBoostLimit() && queued.get() == 0
+                    val continues = index == 0 && chunk.continuesPrevious && !part.ambiguous
+                    if (!continues) speechContext.clear()
+                    val sourceStart = chunk.startSample + part.start
+                    val window = speechContext.prepare(audio, sourceStart, contextKey())
+                    val shortBoost = audio.size < speech.shortBoostLimit() && queued.get() == 0 && parts.size == 1
                     val text = try { withTimeout(30_000) { speech.transcribe(window, 2, true, speech.liveContext(shortBoost), shortPhrase = shortBoost) } }
                         catch (_: TimeoutCancellationException) { error("Transcription timed out. Listening stopped; review text captured so far.") }
                         finally { if (window !== chunk.samples) window.fill(0f) }
-                    onBoundary(chunk.continuesPrevious)
-                    onText(text, chunk.startSample, android.os.SystemClock.elapsedRealtime() - start)
+                    onBoundary(continues)
+                    onText(text, sourceStart, android.os.SystemClock.elapsedRealtime() - start)
+                    } finally { if (audio !== chunk.samples) audio.fill(0f) }
+                    }
+                    onChunkProcessed(android.os.SystemClock.elapsedRealtime() - start, chunk.samples.size)
                 } finally { chunk.samples.fill(0f) }
             }
         } finally { speechContext.clear(); withContext(NonCancellable) { speech.release() } }

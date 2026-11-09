@@ -9,21 +9,29 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /** Recent live text and unapproved proposals exist only in this process's memory. */
+data class LiveSpeakerTurn(val at: Instant, val label: String, val speaker: Speaker, val text: String)
+
 class TemporaryMemory(private val includeInformational: () -> Boolean = { true }) {
     private val mutableText = MutableStateFlow("")
     val text = mutableText.asStateFlow()
+    private val mutableSpeakerTurns = MutableStateFlow<List<LiveSpeakerTurn>>(emptyList())
+    val speakerTurns = mutableSpeakerTurns.asStateFlow()
     private val mutableDrafts = MutableStateFlow<List<CommitmentEntity>>(emptyList())
     val drafts = mutableDrafts.asStateFlow()
     data class PendingChange(val change: EventChange, val at: Instant, val zone: ZoneId, val source: String, val speaker: Speaker)
     private val changes = ArrayDeque<PendingChange>()
     private val seenChanges = linkedMapOf<String, String>()
     private val liveChanges = linkedSetOf<String>()
+    private var voiceCommandTarget: String? = null
+    @Synchronized fun noteVoiceTarget(id: String) {
+        if (voiceCommandTarget != id) { seenChanges.keys.removeAll { it == "voice" || it.startsWith("voice:") }; voiceCommandTarget = id }
+    }
     @Synchronized fun prepareChanges(input: Transcript, source: String): Transcript {
         if (!input.processingAllowed) return input
         val ordinary = Sentences.split(input.text).filter { sentence ->
             if (!EventChange.looksLikeChange(sentence)) true else {
                 EventChange.parse(sentence)?.let { change ->
-                    val channel = if (source.startsWith("voice:")) "voice" else source
+                    val channel = if (source.startsWith("voice:")) VoiceSource.track(source)?.let { "voice:$it" } ?: "voice" else source
                     val key = sentence.trim().lowercase(java.util.Locale.ROOT)
                     val replay = source == "voice:copied" && key in liveChanges
                     if (source.startsWith("voice:") && source != "voice:copied") {
@@ -47,14 +55,18 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
     private var contextZone = ZoneId.systemDefault()
     private var sessionBaseline = emptySet<String>()
     private var voiceSpeaker = Speaker.UNKNOWN
+    private var voiceTrack: String? = null
     private var voiceContext = ""
     private var voiceTurn = 0
     private var voiceAt = Instant.now()
     private var lastVoiceAt = Instant.EPOCH
     private data class CorrectionContext(val id: String, val opening: String, val at: Instant, val zone: ZoneId, val lastAt: Instant, val changed: CommitmentEntity? = null)
+    private data class VoiceContext(val text: String, val at: Instant, val lastAt: Instant, val turn: Int, val speaker: Speaker, val correction: CorrectionContext?)
+    private val voiceContexts = linkedMapOf<String, VoiceContext>()
     private var correctionContext: CorrectionContext? = null
 
     private fun sameVoiceActivity(item: CommitmentEntity, evidence: String, start: Long?, capturedAt: Long, source: String?): Boolean {
+        if (VoiceSource.distinctPeople(item.sourceKey, source)) return false
         if (item.sourceKey?.startsWith("voice:") != true || source?.startsWith("voice:") != true) return false
         if (start == null || item.activityStartAt != start || kotlin.math.abs(item.capturedAt - capturedAt) > 120_000) return false
         fun opening(value: String) = java.text.Normalizer.normalize(value.substringBefore('\n').lowercase(java.util.Locale.ROOT), java.text.Normalizer.Form.NFKC).filter { it.isLetterOrDigit() }
@@ -92,9 +104,25 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
     }
 
     /** Reset reference context on speaker changes; unknown voices never create personal promises. */
-    @Synchronized fun appendAttributedLive(text: String, capturedAt: Instant, zone: ZoneId, speaker: Speaker, continuation: Boolean = true) {
+    @Synchronized fun appendAttributedLive(text: String, capturedAt: Instant, zone: ZoneId, speaker: Speaker, continuation: Boolean = true,
+        speakerTrack: String? = null, speakerLabel: String = speaker.name) {
         if (text.isBlank()) return
-        val source = "voice:$voiceTurn:${speaker.name}"
+        require(speakerTrack == null || VoiceSource.track("voice:0:$speakerTrack:${speaker.name}") == speakerTrack)
+        mutableSpeakerTurns.value = (mutableSpeakerTurns.value + LiveSpeakerTurn(capturedAt, speakerLabel.take(80), speaker, text.take(500))).takeLast(12)
+        if (voiceTrack != speakerTrack) {
+            voiceTrack?.takeUnless { it.contains("_unassigned") }?.let { previous ->
+                if (voiceContext.isNotBlank()) voiceContexts[previous] = VoiceContext(voiceContext.takeLast(1500), voiceAt, lastVoiceAt, voiceTurn, voiceSpeaker, correctionContext)
+            }
+            voiceContexts.entries.removeAll { java.time.Duration.between(it.value.lastAt, capturedAt).seconds !in 0..120 }
+            val returning = speakerTrack?.let(voiceContexts::remove)?.takeIf { it.speaker == speaker &&
+                it.at.atZone(zone).toLocalDate() == capturedAt.atZone(zone).toLocalDate() }
+            if (returning == null) { voiceContext = ""; correctionContext = null }
+            else { voiceContext = returning.text; voiceAt = returning.at; lastVoiceAt = returning.lastAt; voiceTurn = returning.turn; voiceSpeaker = returning.speaker; correctionContext = returning.correction }
+            while (voiceContexts.size > 3) voiceContexts.remove(voiceContexts.keys.first())
+            voiceTrack = speakerTrack
+        }
+        fun sourceKey() = "voice:$voiceTurn:" + (speakerTrack?.let { "$it:" } ?: "") + speaker.name
+        val source = sourceKey()
         val fresh = prepareChanges(Transcript(text, capturedAt, zone, speaker, true), source)
         if (fresh.text.isBlank()) { mutableText.value = LiveText.append(mutableText.value, text, !continuation).takeLast(6000); return }
         if (speaker == Speaker.UNKNOWN || (correctionContext?.changed != null && (speaker == Speaker.USER || correctionContext?.changed?.informational == true))) offerUncertainUpdate(fresh.text, capturedAt)
@@ -104,11 +132,11 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
             voiceContext = ""; voiceAt = capturedAt; voiceTurn++; voiceSpeaker = speaker
         }
         lastVoiceAt = capturedAt
-        voiceContext = LiveText.append(voiceContext, fresh.text, !continuation).takeLast(6000)
+        voiceContext = LiveText.append(voiceContext, fresh.text, !continuation).takeLast(if (speakerTrack == null) 6000 else 1500)
         val input = Transcript(voiceContext, voiceAt, zone, speaker, true)
         val proposals = if (speaker == Speaker.USER) ActivityTiming.merge(input, pipeline.process(input))
             else ActivityTiming.extract(input.copy(speaker = Speaker.OTHER), informationalOnly = true)
-        val attributed = proposals.map { it.copy(sourceKey = "voice:$voiceTurn:${speaker.name}",
+        val attributed = proposals.map { it.copy(sourceKey = sourceKey(),
             needsReview = (if (speaker == Speaker.USER) "Likely your voice; verify attribution. " else if (speaker == Speaker.OTHER) "Another voice; attendance unconfirmed. " else "Speaker unassigned; attendance unconfirmed. ") + it.needsReview) }
         addProposals(attributed, capturedAt)
         if (ActivityTiming.looksLikeActivity(text)) {
@@ -267,7 +295,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         updateTargets.filterValues { it == id }.keys.toList().forEach(::remove)
     }
     private fun trimReviewed() { while (reviewed.size > 400) reviewed.remove(reviewed.keys.first()) }
-    @Synchronized fun clearText() { mutableText.value = ""; voiceContext = ""; correctionContext = null; changes.clear(); seenChanges.clear(); liveChanges.clear(); observations.clear() }
+    @Synchronized fun clearText() { mutableText.value = ""; mutableSpeakerTurns.value = emptyList(); voiceContext = ""; voiceTrack = null; voiceContexts.clear(); voiceCommandTarget = null; correctionContext = null; changes.clear(); seenChanges.clear(); liveChanges.clear(); observations.clear() }
     @Synchronized fun beginSession() { clearText(); voiceContext = ""; voiceTurn = 0; reviewed.clear(); sessionBaseline = mutableDrafts.value.map { it.id }.toSet() }
     @Synchronized fun discardSession() {
         clearText()

@@ -16,7 +16,7 @@ import java.time.Instant
 import java.time.ZoneId
 
 @Composable
-internal fun CalendarSection(start: String, end: String, zone: ZoneId, informational: Boolean = false, askAboutEnd: Boolean = false, onStart: (String) -> Unit, onEnd: (String) -> Unit) {
+internal fun CalendarSection(start: String, end: String, zone: ZoneId, informational: Boolean = false, askAboutEnd: Boolean = false, memoryId: String? = null, onStart: (String) -> Unit, onEnd: (String) -> Unit) {
     var expanded by remember { mutableStateOf(askAboutEnd && end.isBlank()) }
     var acknowledgedUnknown by remember { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("optional-activity")) {
@@ -36,12 +36,12 @@ internal fun CalendarSection(start: String, end: String, zone: ZoneId, informati
     if (informational) Text("Information-only event: overlaps do not block your calendar.")
     else {
         Text("Check visible calendars stored on this phone. Read access is optional; no calendar events are changed or copied into saved memory.")
-        key(start, end, zone) { CalendarQuery(start, end, zone) }
+        key(start, end, zone) { CalendarQuery(start, end, zone, memoryId) }
     }
 }
 
 @Composable
-private fun CalendarQuery(start: String, end: String, zone: ZoneId) {
+private fun CalendarQuery(start: String, end: String, zone: ZoneId, memoryId: String?) {
     val context = LocalContext.current
     var request by remember { mutableIntStateOf(0) }
     var running by remember { mutableStateOf(false) }
@@ -60,7 +60,7 @@ private fun CalendarQuery(start: String, end: String, zone: ZoneId) {
     LaunchedEffect(request) {
         if (request > 0) window.getOrNull()?.let { (from, until) ->
             running = true; result = null
-            try { result = PhoneCalendar(context).check(from, until, zone) }
+            try { result = PhoneCalendar(context).check(from, until, zone, memoryId) }
             finally { running = false }
         }
     }

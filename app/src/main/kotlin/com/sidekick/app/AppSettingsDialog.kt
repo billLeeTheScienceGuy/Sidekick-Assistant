@@ -30,6 +30,7 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
     val voiceReady by voice.ready.collectAsState()
     val speakerModel by voice.model.collectAsState()
     val voiceEnabled by voice.enabled.collectAsState()
+    val diarization by settings.diarization.collectAsState()
     val listening by com.sidekick.app.audio.ListeningService.state.collectAsState()
     var deleteVoice by remember { mutableStateOf(false) }
     val mode by settings.mode.collectAsState()
@@ -55,6 +56,8 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SetupStatus(settings)
             MemoryPrivacySection()
+            PrivacyGuidanceSection(settings)
+            CalendarSyncSection()
             ModelPackSection()
             Text("Default assistant", style = MaterialTheme.typography.titleMedium)
             Text(if (assistantSelected) "SideKick is your default assistant" else "SideKick is not your default assistant", modifier = Modifier.testTag("assistant-role-status"))
@@ -93,6 +96,12 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
             Text("Transcription keeps the spoken language. Basic event/date rules support English, Korean, Chinese, French, German, Russian and Modern Standard Arabic. Dialects and rapid language switches may be less reliable. Ambiguous phrases stay unknown.")
             HorizontalDivider()
             Text("My voice", style = MaterialTheme.typography.titleMedium)
+            Row {
+                Switch(diarization, settings::setDiarization, enabled = !listening.recording && !listening.processing,
+                    modifier = Modifier.testTag("diarization-setting").controlLabel("Separate speaker turns locally"))
+                Text("Separate speaker turns locally", Modifier.padding(top = 12.dp))
+            }
+            Text("Neural speaker-turn detection runs offline. Voice 1/2 labels last only for this session; they are not names or consent. Overlap and uncertain fragments stay unassigned. Turn this off for lower processing cost. Finish listening before changing it.")
             com.sidekick.app.speaker.SpeakerModel.entries.forEach { candidate ->
                 Row {
                     RadioButton(speakerModel == candidate, { voice.selectModel(candidate) }, enabled = !listening.recording && !listening.processing, modifier = Modifier.testTag("speaker-model-${candidate.name}").controlLabel("Voice model: ${candidate.label}"))

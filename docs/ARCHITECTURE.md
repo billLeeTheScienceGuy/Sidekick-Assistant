@@ -5,7 +5,8 @@ flowchart TD
   Start[Explicit start and consent controls] --> Capture[Android microphone foreground service]
   Capture --> VAD[Silero speech detection]
   VAD --> Buffer[Bounded speech chunks and overlap]
-  Buffer --> Voice[Local user / other / unknown voice matching]
+  Buffer --> Turns[Offline neural speaker-turn segmentation]
+  Turns --> Voice[Session voices plus independent user / other / unknown matching]
   Voice --> ASR[Sequential local speech recognition]
   ASR --> Text[Temporary timestamped text]
   Messages[Selected message notifications / shared text] --> Text
@@ -17,6 +18,7 @@ flowchart TD
   Room --> Reminder[Android reminders]
   Room --> Planner[Planner and derived daily summary]
   Room --> Export[Explicit JSON export and opt-in retention]
+  Room --> Mirror[Opt-in guarded one-way calendar mirroring]
   Context --> Venue[Optional online geocoding with address review]
 ```
 
@@ -54,7 +56,10 @@ Microphone/privacy/foreground restrictions, model absence, muted capture, infere
 timeouts and overload have visible stopped/error states. Reminder delivery is
 inexact and subject to Android permissions and Doze. Assistant recovery helps an
 already-enabled session; it cannot bypass force-stop or revoked microphone access.
-User/other/unknown matching is not full diarization. Legal-location automation,
-automatic calendar synchronization and production store signing are separate gaps.
+Neural segmentation does not separate simultaneous voices into individual audio
+streams or identify named people. Optional coarse region guidance is limited and
+never establishes applicable law or consent. Production store signing remains separate.
+Calendar mirroring is opt-in and one-way, with provider-ID/hash recovery and guarded
+updates; account-level cloud behavior still needs field evidence.
 See VALIDATION.md for software checks and the dated physical measurements in
 STREAMING_BENCHMARK.md and ASR_EVALUATION.md.

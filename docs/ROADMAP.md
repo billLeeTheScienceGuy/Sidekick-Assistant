@@ -8,6 +8,11 @@ automatic saves/corrections with Undo, reminders, optional message notifications
 and shared text, place lookup, optional calendar conflict reads, and default-assistant
 recovery are implemented. They remain prototype features with limited field testing.
 
+Version 0.28 adds neural speaker-turn segmentation, session-only anonymous voices
+and per-voice corrections, opt-in guarded calendar mirroring, and limited coarse-region
+privacy guidance. A controlled ten-minute USB-connected Pixel replay passed;
+SUSTAINED_TURNS.md distinguishes this from microphone/battery field evidence.
+
 ## Priorities
 
 1. **End-to-end reliability.** Exercise a real event from conversation/message to
@@ -20,7 +25,8 @@ recovery are implemented. They remain prototype features with limited field test
    longer listening remains deferred at the user's request.
 2. **Voice ownership.** Calibrate short, noisy and multilingual phrases against
    other people, overlapping speakers and TV audio. Current user/other/unknown
-   matching is not full diarization or named-speaker identification. A few successes
+   matching and neural turn segmentation are not simultaneous-voice source separation
+   or named-speaker identification. A few successes
    do not establish reliable personal-reminder attribution.
 3. **Event understanding.** Move beyond the limited live rules for names, places,
    relative dates, multiple activities and corrections across longer conversations.
@@ -38,7 +44,8 @@ recovery are implemented. They remain prototype features with limited field test
 4. **Real integrations.** Validate actual messaging apps, grouped notifications,
    location/venue/address updates and reminder delivery under Doze. Calendar access
    checks conflicts. Version 0.25 can hand an event to the calendar editor for
-   explicit review/save; automatic calendar writing/sync remains a separate decision.
+   explicit review/save; version 0.28 adds separately confirmed one-way mirroring.
+   Real Google/Exchange account behavior and bidirectional editing remain separate.
 5. **Release readiness.** Version 0.26 reduces the normal APK from about 905 MB to
    225 MB using verified optional model packs, adds a compact setup checklist,
    and prepares a reproducible submission bundle and evaluation report. Remaining:

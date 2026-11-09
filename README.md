@@ -1,5 +1,11 @@
 # SideKick
 
+0.28 adds [offline speaker-turn segmentation](docs/SPEAKER_TURNS.md), session-only
+anonymous voices, [opt-in calendar mirroring](docs/CALENDAR_SYNC.md) with edit
+protection, and optional [region privacy guidance](docs/PRIVACY_AND_RISK.md).
+A [ten-minute controlled Pixel trial](docs/SUSTAINED_TURNS.md) passed without
+queue overflow or second-voice owner matches; it is not a battery/field study.
+
 0.27 adds opt-in memory retention, private event export, local English risk
 advisories and labelled settings controls. Start with the
 [capstone checklist](docs/CAPSTONE_CHECKLIST.md), [architecture](docs/ARCHITECTURE.md)
@@ -103,8 +109,10 @@ Primary device: **Pixel 7a (Tensor G2, 8 GB RAM)**. Whisper tiny.en and optional
 
 ## Not implemented yet
 
-Full diarization, comprehensive event/date understanding, calendar writing/sync,
-automatic conflict resolution, summaries and retention expiry remain future work.
+Comprehensive event/date understanding, simultaneous-voice source separation,
+named-person recognition and automatic conflict resolution remain future work.
+Neural speaker turns, optional one-way calendar mirroring, derived summaries and
+retention expiry are implemented. Legal guidance is limited and never authorizes listening.
 Hands-off saving/corrections and optional default-assistant recovery are already
 implemented. All-day reliability, speaker attribution and real integrations still
 need broader evaluation. Qwen is an optional manual-analysis prototype. See the
@@ -123,7 +131,7 @@ matching means all live speakers are unassigned. Voice identity is not consent.
 1. Open this folder in Android Studio. Use **JDK 17** for Gradle (a newer IDE-bundled JDK may not be compatible with the pinned Gradle version).
 2. Install Android SDK platform **35** and build tools **35.0.0**. Set `ANDROID_HOME` or let Android Studio create the ignored `local.properties` file with `sdk.dir`.
 3. Run `scripts/prepare-speech.ps1` on Windows (or `python scripts/prepare_speech.py` with Python 3.11+). This downloads and verifies the speech/VAD models, including English tiny, multilingual tiny and base, into ignored assets. This workspace already has them.
-4. Run `python scripts/prepare_speaker.py` (Python 3.11+) to fetch the verified speaker model and Android AAR. Sync Gradle and run `app` on the phone. Gradle installs NDK **27.0.12077973** and CMake **3.22.1** when licenses are available. Native builds fetch checksum-pinned whisper.cpp source. Build/download steps need connectivity; inference does not.
+4. Run `python scripts/prepare_speaker.py` and `python scripts/prepare_diarization.py` (Python 3.11+) to fetch the verified speaker/segmentation models and Android AAR. Sync Gradle and run `app` on the phone. Gradle installs NDK **27.0.12077973** and CMake **3.22.1** when licenses are available. Native builds fetch checksum-pinned whisper.cpp source. Build/download steps need connectivity; inference does not.
 5. Optionally choose **Set up my voice** in Settings and complete setup alone. Tap **Start live notes**, confirm session consent, and grant notification/microphone permissions. Hands-off saves detected events and corrections automatically, with Undo in notifications. Personal plans with clear times get reminders; other/unassigned speech remains information-only. Select Review mode in Settings for manual approval. Typed/imported words still require the separate consent checkbox.
 
 Windows PowerShell:

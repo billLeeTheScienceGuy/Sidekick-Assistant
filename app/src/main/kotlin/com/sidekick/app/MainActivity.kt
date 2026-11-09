@@ -42,10 +42,13 @@ class MainActivity : ComponentActivity() {
         val app = application as SidekickApplication
         remindersReady = app.reminders.notificationsAllowed()
         MessageNotificationListener.requestConnection(app)
+        app.calendarMirror.requestSync()
         app.background.launch { runCatching { app.reminders.restore() } }
     }
     private var sharedText by mutableStateOf<String?>(null)
+    private var calendarTarget by mutableStateOf<String?>(null)
     private fun receiveShare(incoming: Intent?) {
+        if (incoming?.action == Intent.ACTION_VIEW) calendarTarget = CalendarTarget.parse(incoming.data, packageName)
         if (incoming?.action == Intent.ACTION_SEND && incoming.type == "text/plain")
             sharedText = runCatching { incoming.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.take(6000) }.getOrNull()?.takeIf { it.isNotBlank() }
         intent?.removeExtra(Intent.EXTRA_TEXT)
@@ -68,6 +71,7 @@ class MainActivity : ComponentActivity() {
         val transcript by model.transcript.collectAsStateWithLifecycle()
         val listening by ListeningService.state.collectAsStateWithLifecycle()
         val liveText by model.liveText.collectAsStateWithLifecycle()
+        val speakerTurns by (application as SidekickApplication).temporary.speakerTurns.collectAsStateWithLifecycle()
         val smartReady by model.smartReady.collectAsStateWithLifecycle()
         val editError by model.editError.collectAsStateWithLifecycle()
         val guidance by model.guidance.collectAsStateWithLifecycle()
@@ -83,6 +87,7 @@ class MainActivity : ComponentActivity() {
         var consent by remember { mutableStateOf(false) }
         var micDialog by remember { mutableStateOf(false) }
         var showVoiceDiagnostics by remember { mutableStateOf(false) }
+        var showSpeakerTurns by remember { mutableStateOf(false) }
         var deleteDialog by remember { mutableStateOf(false) }
         var edit by remember { mutableStateOf<CommitmentEntity?>(null) }
         var error by remember { mutableStateOf<String?>(null) }
@@ -133,6 +138,14 @@ class MainActivity : ComponentActivity() {
             model.reopen(); edit = item
             if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                 notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
+        LaunchedEffect(calendarTarget) {
+            val id = calendarTarget ?: return@LaunchedEffect
+            (application as SidekickApplication).database.commitments().get(id)?.let { item ->
+                model.reopen(); edit = item
+            }
+            if (calendarTarget == id) calendarTarget = null
         }
 
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -193,7 +206,10 @@ class MainActivity : ComponentActivity() {
                             if (listening.chunks > 0) Text("Voice chunks: likely you ${listening.userVoiceChunks} · other ${listening.otherVoiceChunks} · unassigned ${listening.unknownVoiceChunks}", style = MaterialTheme.typography.bodySmall)
                             if (listening.voiceDiagnostics.isNotEmpty()) {
                                 TextButton(onClick = { showVoiceDiagnostics = !showVoiceDiagnostics }) { Text(if (showVoiceDiagnostics) "Hide voice diagnostics" else "Voice diagnostics") }
-                                if (showVoiceDiagnostics) listening.voiceDiagnostics.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+                                if (showVoiceDiagnostics) {
+                                    Text("Last speaker separation: ${listening.diarizationMs} ms · ${listening.speakerParts} regions", style = MaterialTheme.typography.bodySmall)
+                                    listening.voiceDiagnostics.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+                                }
                             }
                             if (listening.recording) {
                                 Text(if (listening.speechActive) "Speech detected" else "Waiting for speech · microphone stays on")
@@ -213,6 +229,17 @@ class MainActivity : ComponentActivity() {
                             if (liveText.isNotBlank()) {
                                 Text("Recent live text", style = MaterialTheme.typography.titleMedium)
                                 Text(liveText.takeLast(3000), modifier = Modifier.testTag("live-text"))
+                                if (speakerTurns.isNotEmpty()) {
+                                    TextButton(onClick = { showSpeakerTurns = !showSpeakerTurns }, modifier = Modifier.testTag("speaker-turns-toggle")) { Text(if (showSpeakerTurns) "Hide speaker turns" else "Show speaker turns") }
+                                    if (showSpeakerTurns) {
+                                        Text("Anonymous voice labels last only for this session. They do not identify people or verify consent.", style = MaterialTheme.typography.bodySmall)
+                                        speakerTurns.forEachIndexed { index, turn ->
+                                            val time = turn.at.atZone(ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+                                            Text("$time · ${turn.label} · ${if (turn.speaker == com.sidekick.core.Speaker.USER) "likely you" else "identity unassigned"}", style = MaterialTheme.typography.labelLarge)
+                                            Text(turn.text, modifier = Modifier.testTag("speaker-turn-$index"))
+                                        }
+                                    }
+                                }
                                 TextButton(onClick = { model.copyLiveText(); consent = false }) { Text("Copy recent text for editing") }
                             }
                             Text(if (handsOff) "Events and matching corrections save automatically. Clear times on personal plans get reminders; others stay information-only. Use Undo in notifications to reverse a change. Stopping clears temporary text but keeps saved events. Set up your voice in Settings for personal plans."
@@ -390,6 +417,7 @@ private fun Editor(item: CommitmentEntity, entries: List<CommitmentEntity>, erro
                 }
                 CalendarSection(activityStart, activityEnd, zone, informational = informational, askAboutEnd = askAboutEnd &&
                     (activityStart.isNotBlank() || com.sidekick.core.ActivityTiming.looksLikeActivity(item.title)),
+                    memoryId = item.id,
                     onStart = { activityStart = it }, onEnd = { activityEnd = it })
                 PlaceSection(placeName, placeAddress, onName = {
                     if (!placeName.trim().equals(it.trim(), true)) placeAddress = ""
