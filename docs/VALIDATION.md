@@ -39,6 +39,12 @@ Normal 0.27.0/code45 was installed with install -r on the physical Pixel, its
 version verified and MainActivity opened. Field testing remains limited as
 described in CAPSTONE_CHECKLIST.md; no all-day or perfect-speaker claim.
 
+The final compact build/lint also passed, followed by all 15 compact-package
+checks in 42.805 seconds, including native English inference and the full database
+migration. Retention/export layout was visually inspected on the emulator. The
+distribution manifest and every SHA-256 entry were independently verified after
+packaging; source metadata recorded a clean checkout and the exact commit.
+
 # 0.26.1 text-understanding fixes
 
 157 core tests pass. Four new regression groups cover explicit spelled-out clocks
