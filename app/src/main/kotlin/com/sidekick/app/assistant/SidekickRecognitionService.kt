@@ -38,10 +38,20 @@ class SidekickRecognitionService : RecognitionService() {
                 var began = false
                 var lastSpeech = SystemClock.elapsedRealtime()
                 val started = lastSpeech
+                val health = com.sidekick.core.CaptureHealth(started)
+                val audioManager = getSystemService(AudioManager::class.java)
+                var privacyCheckAt = 0L
                 while (!stop && count < buffer.size) {
                     ensureActive()
-                    val read = audio.read(frame, 0, minOf(frame.size, buffer.size - count))
-                    check(read > 0)
+                    val clock = SystemClock.elapsedRealtime()
+                    if (clock >= privacyCheckAt) {
+                        privacyCheckAt = clock + 250
+                        check(checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+                        check(!audioManager.isMicrophoneMute && (android.os.Build.VERSION.SDK_INT < 29 || audio.activeRecordingConfiguration?.isClientSilenced != true))
+                    }
+                    val read = audio.read(frame, 0, minOf(frame.size, buffer.size - count), AudioRecord.READ_NON_BLOCKING)
+                    health.check(read, SystemClock.elapsedRealtime())
+                    if (read == 0) { delay(10); continue }
                     val level = sqrt((0 until read).sumOf { frame[it].toDouble() * frame[it] } / read) / 32768
                     for (i in 0 until read) buffer[count + i] = frame[i] / 32768f
                     count += read; frame.fill(0)

@@ -40,6 +40,7 @@ class SpeakerTurnsTest {
             val owner = engine.classify(own, single.single())
             println("DIARIZATION_OWNER $owner")
             assertEquals(owner.diagnostic, Speaker.USER, owner.speaker)
+            assertTrue(owner.key.endsWith("_owner"))
             val mixed = own + other.copyOfRange(0, minOf(64_000, other.size))
             try {
                 val parts = engine.partition(mixed)
@@ -67,6 +68,9 @@ class SpeakerTurnsTest {
                     finally { samples.fill(0f) }
                 }
             } finally { overlap.fill(0f) }
+            val returning = engine.classify(own, engine.partition(own).single())
+            assertEquals(Speaker.USER, returning.speaker)
+            assertEquals("The independently matched owner keeps one context across other turns", owner.key, returning.key)
         } finally {
             engine.close(); speaker.close(); profile.delete(); recording.fill(0f); own.fill(0f); other.fill(0f)
             folder.deleteRecursively(); root.deleteSharedPreferences("turns-$id-voice")

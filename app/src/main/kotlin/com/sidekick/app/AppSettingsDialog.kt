@@ -83,7 +83,8 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                 }
             }
             Text("Base uses more memory and processing for a possible accuracy gain. All recognition runs offline. Finish listening before switching.")
-            Text("Adaptive uses SenseVoice for Korean/Chinese, Omnilingual for Arabic and longer French/German speech, and Whisper for the remaining paths. Short French/Russian phrases use Whisper base when the queue is clear. Arabic was much less accurate in the explicit Whisper modes in our fixtures. Models run sequentially on this phone.")
+            Text("Adaptive uses Omnilingual in Automatic mode, SenseVoice for selected Korean/Chinese, and Omnilingual for Arabic or at least five seconds of French/German/Russian speech. Quiet edges do not count toward that threshold. Short French/Russian phrases use Whisper base when the queue is clear. Explicit Fast and Larger model choices retain Whisper. Models run sequentially on this phone.")
+            if (speechLanguage == com.sidekick.core.SpeechLanguage.AUTO) Text("Adaptive is recommended for Automatic on Pixel 7a. Brief speech can use a second local model when the queue is clear and optional Whisper/SenseVoice packs are installed. Language hints do not supply missing dates or numbers. Short Arabic clocks remain imperfect.")
             Text("SenseVoiceSmall and Omnilingual weights: Apache 2.0. Whisper weights: MIT. All recognition is offline; no raw audio is saved.")
             com.sidekick.core.SpeechLanguage.entries.forEach { language ->
                 Row {

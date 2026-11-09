@@ -45,6 +45,7 @@ internal fun ModelPackSection(initiallyExpanded: Boolean = true) {
     if (expanded || missing.isNotEmpty()) {
     Text("English Fast and voice matching are included. Install other packs once from .skmodels files; recognition stays offline. Existing installed models are reused.")
     Text("Korean clock retries can also use the Whisper and Omnilingual packs when installed.")
+    Text("Adaptive Automatic uses Omni. Installing Whisper and SenseVoice also enables queue-aware refinement of brief speech; unclear Arabic clocks may still remain unknown.")
     ModelPacks.labels.forEach { (id, label) ->
         val rows = remember(revision) { ModelPacks.catalog(context).filter { it.pack == id } }
         val ready = remember(revision) { rows.all { ModelPacks.available(context, it.name) } }

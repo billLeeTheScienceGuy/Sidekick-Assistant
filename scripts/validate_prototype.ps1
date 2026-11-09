@@ -23,6 +23,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Isolated app installation failed.' }
     & $adb -s $DeviceSerial install -r "app/build/outputs/apk/androidTest/$variantDir/app-$variantDir-androidTest.apk"
     if ($LASTEXITCODE -ne 0) { throw 'Test installation failed.' }
+    $sdk = [int]((& $adb -s $DeviceSerial shell getprop ro.build.version.sdk) -join '')
+    if ($sdk -ge 33) {
+        & $adb -s $DeviceSerial shell pm grant $package android.permission.POST_NOTIFICATIONS
+        if ($LASTEXITCODE -ne 0) { throw 'Could not prepare isolated notification test permission.' }
+    }
     $classes = @('ActivityTimingTest','MemoryPrivacyTest','PrivacyScreenTest','PrivacyRegionSettingsTest','MessageRiskTest','BundledOfflineTest','CalendarMirrorTest','CalendarProviderSyncTest','CalendarTargetScreenTest','TrackedVoiceChangesTest')
     if ($Suite -eq 'Compact') { $classes += 'CompactSetupTest' }
     else { $classes += @('FoundationTest','PlannerScreenTest','SummaryScreenTest','CalendarDraftTest','AutomaticScreenTest','CalendarTest','AutomaticMemoryTest','EventChangeTest','LocalizedChangesTest','MessageInboxTest','CopiedSpeechTest','ReminderTest','ReminderRecoveryTest','EventReminderJourneyTest','UndoPlannerTest','UncertainUpdateTest','UncertainUpdateScreenTest','VoiceDuplicateTest','LanguageVoiceProfileTest','EmulatorIntegrationTest','NeuralDiarizationTest','SpeakerTurnsTest','SpeakerIdentityTest','SpeakerPaddingTest') }

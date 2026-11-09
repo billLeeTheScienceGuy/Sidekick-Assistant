@@ -6,13 +6,22 @@ class SpeechQualityTest {
     @Test fun `Omnilingual is adaptive only and routing preserves explicit choices`() {
         assertTrue(SpeechQuality.ADAPTIVE.usesOmni(SpeechLanguage.ARABIC, true))
         assertTrue(SpeechQuality.ADAPTIVE.usesOmni(SpeechLanguage.ARABIC, false))
-        for (language in listOf(SpeechLanguage.FRENCH, SpeechLanguage.GERMAN)) {
+        assertTrue(SpeechQuality.ADAPTIVE.usesOmni(SpeechLanguage.AUTO, true))
+        assertTrue(SpeechQuality.ADAPTIVE.usesOmni(SpeechLanguage.AUTO, false))
+        for (language in listOf(SpeechLanguage.FRENCH, SpeechLanguage.GERMAN, SpeechLanguage.RUSSIAN)) {
             assertTrue(SpeechQuality.ADAPTIVE.usesOmni(language, false))
             assertFalse(SpeechQuality.ADAPTIVE.usesOmni(language, true))
         }
         for (language in SpeechLanguage.entries) for (quality in listOf(SpeechQuality.FAST, SpeechQuality.ACCURATE))
             assertFalse(quality.usesOmni(language, false))
         assertFalse(SpeechQuality.ADAPTIVE.usesOmni(SpeechLanguage.KOREAN, true))
+    }
+    @Test fun `longer European speech uses the noise-robust model while brief commands keep Whisper`() {
+        for (language in listOf(SpeechLanguage.FRENCH, SpeechLanguage.GERMAN, SpeechLanguage.RUSSIAN)) {
+            assertFalse(SpeechQuality.ADAPTIVE.usesOmni(language, false, 79_999))
+            assertTrue(SpeechQuality.ADAPTIVE.usesOmni(language, true, 80_000))
+            for (quality in listOf(SpeechQuality.FAST, SpeechQuality.ACCURATE)) assertFalse(quality.usesOmni(language, false, 160_000))
+        }
     }
     @Test fun `SenseVoice is used for adaptive Korean and Chinese while explicit preferences stay on Whisper`() {
         assertTrue(SpeechQuality.ADAPTIVE.usesSenseVoice(SpeechLanguage.KOREAN))

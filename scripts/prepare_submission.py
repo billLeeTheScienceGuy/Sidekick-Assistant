@@ -25,8 +25,13 @@ with zipfile.ZipFile(apk) as archive:
 out = root / 'dist' / f'SideKick-{version}'
 out.mkdir(parents=True, exist_ok=True)
 shutil.copy2(apk, out / f'SideKick-{version}.apk')
-for name in ['SUBMISSION_REPORT.md', 'CAPSTONE_CHECKLIST.md', 'ARCHITECTURE.md', 'PRIVACY_AND_RISK.md', 'SPEAKER_TURNS.md', 'SUSTAINED_TURNS.md', 'CALENDAR_SYNC.md', 'ACCURACY_REPORT.md', 'ASR_EVALUATION.md', 'STREAMING_BENCHMARK.md', 'DEMO.md', 'MODEL_PACKS.md', 'SUMMARIES.md', 'VALIDATION.md']:
+for name in ['SUBMISSION_REPORT.md', 'CAPSTONE_CHECKLIST.md', 'ARCHITECTURE.md', 'PRIVACY_AND_RISK.md', 'SPEAKER_TURNS.md', 'SUSTAINED_TURNS.md', 'CALENDAR_SYNC.md', 'ACCURACY_REPORT.md', 'ASR_EVALUATION.md', 'ROBUSTNESS_EVALUATION.md', 'STREAMING_BENCHMARK.md', 'DEMO.md', 'MODEL_PACKS.md', 'SUMMARIES.md', 'VALIDATION.md']:
     shutil.copy2(root / 'docs' / name, out / name)
+evidence = out / 'evaluation'
+evidence.mkdir(exist_ok=True)
+for source in (root / 'docs/evaluation').iterdir():
+    if source.is_file() and source.suffix in {'.json', '.md'}:
+        shutil.copy2(source, evidence / source.name)
 (out / 'README.txt').write_text(f'''SideKick {version} prototype
 
 Install SideKick-{version}.apk on an Android device that permits sideloading.
@@ -49,6 +54,6 @@ def digest(file):
     'apkSha256': digest(apk),
     'signing': 'Android development key; not a production store release',
 }, indent=2) + '\n', encoding='utf-8')
-(out / 'SHA256SUMS.txt').write_text(''.join(f'{digest(p)}  {p.name}\n' for p in sorted(out.iterdir()) if p.is_file() and p.name != 'SHA256SUMS.txt'), encoding='utf-8')
+(out / 'SHA256SUMS.txt').write_text(''.join(f'{digest(p)}  {p.relative_to(out).as_posix()}\n' for p in sorted(out.rglob('*')) if p.is_file() and p.name != 'SHA256SUMS.txt'), encoding='utf-8')
 print(f'Submission folder: {out}')
 print(f'APK: {apk.stat().st_size:,} bytes; optional packs: {root / ".deps/model-packs"}')

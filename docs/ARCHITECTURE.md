@@ -50,6 +50,23 @@ flowchart TD
   trusted filenames, lengths, SHA-256 and staged atomic replacement. Failed
   imports preserve the old valid pack. Device model storage is not Android backup.
 
+## Recognition and capture health
+
+Adaptive Automatic uses Omnilingual int8; short queue-clear speech may receive a
+second acoustic read with an installed language-specific model. Language clues
+never supply event facts, and decoders are not selected for producing an event.
+French/German/Russian routing measures voiced span, so quiet padding cannot make
+a short negative command select the longer-speech route. Models run sequentially.
+The runtime reports the last actual backend in the existing voice diagnostics.
+
+Nonblocking PCM capture and assistant dictation detect native errors or five
+seconds with no reads. Valid zero-valued PCM remains healthy silence. Permission,
+global mute and Android silencing are checked every 250 ms. Revocation clears the
+armed recovery state; regranting alone never starts capture. Unexpected failures
+post a generic private notification if notification access allows it.
+Recognized owner context has one session key independent of anonymous clustering;
+text overlap is never merged across changed speaker attribution.
+
 ## Failure handling and limits
 
 Microphone/privacy/foreground restrictions, model absence, muted capture, inference

@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.withLock
 object ModelPacks {
     val revision = MutableStateFlow(0)
     private val gate = Mutex()
-    val labels = linkedMapOf("whisper" to "Whisper multilingual + Base", "sensevoice" to "Korean / Chinese Adaptive", "omni" to "Arabic + longer French / German Adaptive")
+    val labels = linkedMapOf("whisper" to "Whisper multilingual + Base", "sensevoice" to "Korean / Chinese Adaptive", "omni" to "Automatic / Arabic + longer French / German / Russian Adaptive")
     fun catalog(context: Context) = context.assets.open("model-packs.tsv").bufferedReader().use { ModelPackCatalog.parse(it.readText()) }
     private fun store(context: Context) = ModelPackStore(File(context.noBackupFilesDir, "model-packs"), catalog(context))
     fun available(context: Context, name: String): Boolean {
@@ -25,8 +25,8 @@ object ModelPacks {
     }
     fun required(language: SpeechLanguage, quality: SpeechQuality): Set<String> = when {
         quality.usesSenseVoice(language) -> setOf("sensevoice")
-        quality == SpeechQuality.ADAPTIVE && language == SpeechLanguage.ARABIC -> setOf("omni")
-        quality == SpeechQuality.ADAPTIVE && language in setOf(SpeechLanguage.FRENCH, SpeechLanguage.GERMAN) -> setOf("whisper", "omni")
+        quality == SpeechQuality.ADAPTIVE && language in setOf(SpeechLanguage.ARABIC, SpeechLanguage.AUTO) -> setOf("omni")
+        quality == SpeechQuality.ADAPTIVE && language in setOf(SpeechLanguage.FRENCH, SpeechLanguage.GERMAN, SpeechLanguage.RUSSIAN) -> setOf("whisper", "omni")
         language == SpeechLanguage.ENGLISH && quality == SpeechQuality.FAST -> emptySet()
         else -> setOf("whisper")
     }

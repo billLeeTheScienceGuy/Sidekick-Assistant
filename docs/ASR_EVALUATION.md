@@ -1,4 +1,18 @@
-# Pixel language quality evaluation — 2026-10-28
+# 0.29 broader robustness evaluation — 2026-11-09
+
+The current [robustness report](ROBUSTNESS_EVALUATION.md) supersedes the older
+routing recommendations below. It includes 28 additional public readings in
+seven languages, clean/noisy comparisons, Automatic-language measurements,
+short-command failures and controlled speaker/microphone recovery checks.
+Automatic Adaptive now uses Omnilingual, with optional original-audio short
+refinement. French, German and Russian switch to Omni at five seconds of detected
+speech; quiet padding does not trigger the switch. Korean clock cross-checks also
+apply to short Automatic refinement. Missing optional Whisper no longer blocks an
+independent installed Omni clock retry. No missing numeral is guessed.
+
+Previous evaluation (historical):
+
+# Pixel language quality evaluation â€” 2026-10-28
 
 Physical Pixel 7a, two configured CPU threads, local inference. Fixtures comprise
 34 synthetic event/correction phrases across English, Korean, Chinese, French,
@@ -21,8 +35,8 @@ differences and number spelling differences still count.
 | Russian | 4.3% | 9.9% | unsupported | 7.5% |
 | Arabic | 46.6% | 38.4% | unsupported | 9.6% |
 
-Omnilingual processed these clips in 3.36–6.48 seconds; tiny took about 5.5–5.8
-seconds, base 12.6–13.0 seconds. SenseVoice took 0.57s for Korean and 1.12s for
+Omnilingual processed these clips in 3.36â€“6.48 seconds; tiny took about 5.5â€“5.8
+seconds, base 12.6â€“13.0 seconds. SenseVoice took 0.57s for Korean and 1.12s for
 Chinese. Clip lengths differ across languages. Post-call whole-process PSS reached
 about 300 MiB (tiny), 413 MiB (base), 435 MiB (SenseVoice), 846 MiB (Omnilingual).
 These are snapshots, not peak/model-only memory, battery or long-session measurements.
@@ -59,7 +73,7 @@ grammar tests independently cover explicit times, two digit styles, diacritics,
 ordinals/cardinals, source preservation, locations, duration/end, corrections and
 negative/ambiguous inputs. Native/dialect speakers still need to validate real use.
 
-Whisper small Q5 was also tested. Its short Arabic calls took about 26.4–26.7s;
+Whisper small Q5 was also tested. Its short Arabic calls took about 26.4â€“26.7s;
 the run was stopped early because that latency is unsuitable for continuous input.
 Moonshine Arabic decoded synthetic commands quickly but missed the public clip.
 It also carries Community License restrictions. Neither model is shipped.

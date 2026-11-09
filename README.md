@@ -1,5 +1,10 @@
 # SideKick
 
+0.29 improves Automatic and longer multilingual speech using measured local-model
+routing, adds explicit microphone-stall/interruption handling, and keeps owner
+context stable across anonymous speaker clusters. See the [broader evaluation](docs/ROBUSTNESS_EVALUATION.md)
+for noisy public speech, short Arabic limits and recovery measurements.
+
 0.28 adds [offline speaker-turn segmentation](docs/SPEAKER_TURNS.md), session-only
 anonymous voices, [opt-in calendar mirroring](docs/CALENDAR_SYNC.md) with edit
 protection, and optional [region privacy guidance](docs/PRIVACY_AND_RISK.md).

@@ -12,8 +12,8 @@ android {
         applicationId = "com.sidekick.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 46
-        versionName = "0.28.0"
+        versionCode = 47
+        versionName = "0.29.0"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -37,6 +37,7 @@ android {
     androidResources { noCompress += "bin" }
     sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/language-fixtures"))
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/robustness-fixtures"))
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/quality-fixtures"))
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/speaker-evaluation"))
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/korean-evaluation/assets"))

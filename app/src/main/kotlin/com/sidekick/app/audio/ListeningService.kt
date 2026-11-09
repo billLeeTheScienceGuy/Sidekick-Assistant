@@ -34,6 +34,7 @@ data class ListeningState(
     val voiceDiagnostics: List<String> = emptyList(),
     val recognitionDiagnostics: List<String> = emptyList(),
     val diarizationMs: Long = 0, val speakerParts: Int = 0,
+    val recognizer: String? = null,
     val note: String = "Microphone is off",
 )
 
@@ -53,13 +54,14 @@ class ListeningService : Service() {
             CANCEL -> { app.assistant.disarm(); discard = true; capture?.cancel(); if (capture == null) stopSelf(); return START_NOT_STICKY }
         }
         val recovering = intent == null || intent.action == RESUME
-        if (recovering && !app.assistant.canRecover()) { stopSelf(); return START_NOT_STICKY }
-        if (capture != null) return if (app.assistant.armed && !enrollment) START_STICKY else START_NOT_STICKY
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             mutableState.value = ListeningState(note = "Microphone permission is required")
             app.assistant.disarm("Microphone permission is required")
+            if (recovering) CaptureStatusAlerts.stopped(this)
             stopSelf(); return START_NOT_STICKY
         }
+        if (recovering && !app.assistant.canRecover()) { stopSelf(); return START_NOT_STICKY }
+        if (capture != null) return if (app.assistant.armed && !enrollment) START_STICKY else START_NOT_STICKY
         finish = false; discard = false
         enrollment = intent?.getBooleanExtra(ENROLL, false) == true
         if (!enrollment && !recovering) app.assistant.rememberUserStart()
@@ -68,9 +70,11 @@ class ListeningService : Service() {
                 NotificationChannel(CHANNEL, "Listening and transcription", NotificationManager.IMPORTANCE_LOW))
             if (Build.VERSION.SDK_INT >= 30) startForeground(1, notification(true), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
             else startForeground(1, notification(true))
+            CaptureStatusAlerts.clear(this)
             mutableState.value = ListeningState(processing = true, enrolling = enrollment, note = "Preparing local speech detection…")
             capture = scope.launch { runSession() }
         } catch (_: Exception) {
+            CaptureStatusAlerts.stopped(this)
             app.assistant.disarm("Android could not resume listening. Open SideKick and start again.")
             mutableState.value = ListeningState(note = "Android could not start listening. Open the app and try again.")
             stopSelf()
@@ -123,7 +127,8 @@ class ListeningService : Service() {
                 var voiceTrack = "spk_session_unassigned0"
                 var voiceLabel = "Unassigned voice"
                 var continuation = false
-                val pipeline = LiveSpeechProcessor(app.speech, onBoundary = { continuation = it }, contextKey = { if (identified == Speaker.USER) voiceTrack else null },
+                var changedVoice = true
+                val pipeline = LiveSpeechProcessor(app.speech, onBoundary = { continuation = it && !changedVoice }, contextKey = { if (identified == Speaker.USER) voiceTrack else null },
                     partition = { samples ->
                         val parts = if (enrollment) listOf(com.sidekick.core.SpeakerPart(0, samples.size, null, false)) else turns.partition(samples)
                         ensureActive()
@@ -132,6 +137,7 @@ class ListeningService : Service() {
                     }, onPart = { samples, part ->
                         if (!enrollment) {
                             val attributed = turns.classify(samples, part)
+                            changedVoice = voiceTrack != attributed.key || identified != attributed.speaker
                             identified = attributed.speaker; voiceTrack = attributed.key; voiceLabel = attributed.label
                             mutableState.update { it.copy(userVoiceChunks = it.userVoiceChunks + if (identified == Speaker.USER) 1 else 0,
                                 voiceDiagnostics = (it.voiceDiagnostics + attributed.diagnostic).takeLast(20),
@@ -164,6 +170,7 @@ class ListeningService : Service() {
                         app.automation.process()
                     }
                     mutableState.update { it.copy(chunks = it.chunks + 1, lastLatencyMs = latency,
+                        recognizer = app.speech.lastBackend,
                         recognitionDiagnostics = (it.recognitionDiagnostics + listOfNotNull(app.speech.lastClockDiagnostic)).takeLast(5),
                         note = if (it.recording) { if (app.guidance.handsOffMode.value) "Listening · saving events automatically" else "Listening · live text is ready for review" } else "Finishing remaining speech…") }
                 }
@@ -173,6 +180,9 @@ class ListeningService : Service() {
                 check(finish || audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "Microphone did not start." }
                 mutableState.update { it.copy(recording = !finish, processing = false, note = "Listening · waiting for speech") }
                 var filled = 0
+                val captureHealth = com.sidekick.core.CaptureHealth(SystemClock.elapsedRealtime())
+                val audioManager = getSystemService(AudioManager::class.java)
+                var privacyCheckAt = 0L
                 var renewAt = SystemClock.elapsedRealtime() + 5 * 60_000L
                 while (!finish) {
                     ensureActive()
@@ -181,11 +191,15 @@ class ListeningService : Service() {
                         wake.acquire(10 * 60_000L)
                         renewAt = SystemClock.elapsedRealtime() + 5 * 60_000L
                     }
-                    if (Build.VERSION.SDK_INT >= 29) check(audio.activeRecordingConfiguration?.isClientSilenced != true) {
-                        "Android muted the microphone. Listening stopped; check other audio apps and microphone privacy settings."
+                    if (SystemClock.elapsedRealtime() >= privacyCheckAt) {
+                        privacyCheckAt = SystemClock.elapsedRealtime() + 250
+                        check(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) { "Microphone access was removed. Listening stopped." }
+                        check(!audioManager.isMicrophoneMute && (Build.VERSION.SDK_INT < 29 || audio.activeRecordingConfiguration?.isClientSilenced != true)) {
+                            "Android muted the microphone. Listening stopped; check other audio apps and microphone privacy settings."
+                        }
                     }
                     val read = audio.read(raw, filled, raw.size - filled, AudioRecord.READ_NON_BLOCKING)
-                    check(read >= 0) { "Microphone disconnected. Listening stopped." }
+                    captureHealth.check(read, SystemClock.elapsedRealtime())
                     filled += read
                     if (filled == raw.size) {
                         val samples = FloatArray(filled) { raw[it] / 32768f }
@@ -218,10 +232,12 @@ class ListeningService : Service() {
                     else "Voice setup incomplete. Speak in longer phrases and try again; any previous profile is unchanged."
                 } else if (it.chunks == 0) "No speech detected. Try speaking closer to the microphone." else if (app.guidance.handsOffMode.value) app.automation.status.value else "Session finished. Review and approve commitments below.") }
         } catch (e: CancellationException) {
+            if (!discard && !finish) CaptureStatusAlerts.stopped(this)
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
                 note = if (discard) "Session discarded" else "Listening interrupted. Review text captured so far.") }
             throw e
         } catch (e: Exception) {
+            CaptureStatusAlerts.stopped(this)
             if (!enrollment) app.assistant.disarm("Listening paused after an error. Start again when ready.")
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
                 note = e.message ?: "Listening failed. Review the text captured so far, then try again.") }
@@ -235,7 +251,7 @@ class ListeningService : Service() {
         }
     }
 
-    override fun onTimeout(startId: Int) { app.assistant.disarm("Android stopped listening"); capture?.cancel(); stopSelf() }
+    override fun onTimeout(startId: Int) { CaptureStatusAlerts.stopped(this); app.assistant.disarm("Android stopped listening"); capture?.cancel(); stopSelf() }
     override fun onDestroy() { scope.cancel(); stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy() }
     companion object {
         private const val CHANNEL = "listening"

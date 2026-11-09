@@ -1,3 +1,14 @@
+# 0.29 measured routing and capture reliability — 2026-11-09
+
+See [ROBUSTNESS_EVALUATION.md](ROBUSTNESS_EVALUATION.md) for current public
+speech/noise, Automatic short-command and speaker results. Voice diagnostics now
+show the actual recognizer used on this phone. Generic private notifications
+report unexpected capture interruption; missing PCM reads are distinguished from
+valid silent PCM. Permission revocation disarms recovery, and regranting access
+does not restart capture. Explicit Finish/Discard do not raise interruption alerts.
+
+Previous evaluations (historical):
+
 # 0.17.0 speaker-model evaluation — 2026-10-27
 
 User chose following the phone timezone, with clear labels. Capture now names the

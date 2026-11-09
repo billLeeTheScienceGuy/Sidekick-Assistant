@@ -1,8 +1,15 @@
 # SideKick prototype implementation and evaluation
 
-Prepared November 8, 2026. Version 0.28.0. This describes a working Android
+Prepared November 9, 2026. Version 0.29.0. This describes a working Android
 prototype and its measured limits; it is not a claim that the entire Phase 1
 proposal or a production 24/7 assistant is complete.
+
+Version 0.29 adds a frozen public-speech robustness evaluation, measured Automatic
+and longer multilingual routing, private capture-interruption alerts, PCM-stall
+detection and permission-revocation recovery protection. Owner context remains
+stable across anonymous cluster changes; continuous Chinese/Korean overlap is
+removed without altering numerals. See [broader quality evidence](ROBUSTNESS_EVALUATION.md).
+Short Arabic clocks remain imperfect, and no all-day battery claim is made.
 
 ## Implemented system
 
@@ -92,7 +99,7 @@ phone behavior.
 Get started provides compact language/quality selectors, model readiness, optional
 voice setup and explicit Android permission controls. It never starts listening
 automatically. Missing packs are explained, and typed workflows remain usable.
-The normal APK is about 227 MB instead of about 905 MB (approximately 75% smaller).
+The normal APK is about 226 MB instead of about 905 MB (approximately 75% smaller).
 Optional verified packs are installed once and reused locally. All packs together
 still require substantial storage, and the inference workload remains unchanged.
 The submission script packages a development-signed APK, this report, evaluation,

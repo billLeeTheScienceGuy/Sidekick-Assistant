@@ -40,7 +40,8 @@ class SpeakerTurnEngine(context: Context, profile: VoiceProfile, private val spe
         if (previous != key || part.ambiguous) speaker.newTurn()
         val identified = if (part.ambiguous) Speaker.UNKNOWN else speaker.identify(samples)
         previous = key
-        return Attribution(identified, key, label, "$label · ${lastError ?: if (part.ambiguous) "attribution withheld" else speaker.lastDiagnostic}")
+        val contextKey = if (identified == Speaker.USER) "spk_${session}_owner" else key
+        return Attribution(identified, contextKey, label, "$label · ${lastError ?: if (part.ambiguous) "attribution withheld" else speaker.lastDiagnostic}")
     }
     fun close() { diarizer.close(); voices.clear(); speaker.newTurn(); previous = null }
 }

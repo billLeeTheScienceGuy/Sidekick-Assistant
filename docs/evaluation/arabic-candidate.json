@@ -1,0 +1,94 @@
+{
+  "source": "https://huggingface.co/nvidia/stt_ar_fastconformer_hybrid_large_pc_v1.0",
+  "export": "https://huggingface.co/OpenVoiceOS/stt_ar_fastconformer_hybrid_large_pc_v1.0_onnx",
+  "revision": "41ddc50c387c4b0f94cdc3c781f33f177fdf19ff",
+  "license": "CC-BY-4.0",
+  "modelSha256": "8a8f9bf632e26dc9e19f44a253db3cc8bb25678e36a3535c73407bc4be5e2533",
+  "conditions": "Host CPU, public/synthetic clips only; not Pixel latency or natural-conversation evidence",
+  "results": [
+    {
+      "file": "ar-ar-SA-ZariyahNeural-0.wav",
+      "reference": "سأحضر الاجتماع غدا الساعة السادسة مساء.",
+      "recognized": "سأحضر الاجتماع غدا الساعة ستادة مساء.",
+      "elapsedMs": 125,
+      "action": "create"
+    },
+    {
+      "file": "ar-ar-SA-ZariyahNeural-1.wav",
+      "reference": "انقل الاجتماع إلى غدا الساعة السابعة مساء.",
+      "recognized": "انقل الاجتماع الى غدا الساعة السابعة مساء",
+      "elapsedMs": 125,
+      "action": "move"
+    },
+    {
+      "file": "ar-ar-SA-ZariyahNeural-2.wav",
+      "reference": "ألغي الاجتماع.",
+      "recognized": "ألغي الاجتماع",
+      "elapsedMs": 62,
+      "action": "cancel"
+    },
+    {
+      "file": "ar-ar-SA-ZariyahNeural-3.wav",
+      "reference": "لا تلغي الاجتماع.",
+      "recognized": "لا تلغي الاجتماع",
+      "elapsedMs": 78,
+      "action": "negative"
+    },
+    {
+      "file": "ar-ar-SA-HamedNeural-0.wav",
+      "reference": "سأحضر الاجتماع غدا الساعة السادسة مساء.",
+      "recognized": "سأحضر الاجتماع غدا الساعة ستادة مساء.",
+      "elapsedMs": 125,
+      "action": "create"
+    },
+    {
+      "file": "ar-ar-SA-HamedNeural-1.wav",
+      "reference": "انقل الاجتماع إلى غدا الساعة السابعة مساء.",
+      "recognized": "انقل الاجتماع إلى غدا الساعة سبععة مساء.",
+      "elapsedMs": 110,
+      "action": "move"
+    },
+    {
+      "file": "ar-ar-SA-HamedNeural-2.wav",
+      "reference": "ألغي الاجتماع.",
+      "recognized": "ألغي الاجتماع.",
+      "elapsedMs": 78,
+      "action": "cancel"
+    },
+    {
+      "file": "ar-ar-SA-HamedNeural-3.wav",
+      "reference": "لا تلغي الاجتماع.",
+      "recognized": "لا تلغي الاجتماع.",
+      "elapsedMs": 62,
+      "action": "negative"
+    },
+    {
+      "file": "robust-ar-14.wav",
+      "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+      "recognized": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريبا.",
+      "elapsedMs": 125,
+      "action": null
+    },
+    {
+      "file": "robust-ar-17.wav",
+      "reference": "وبالتالي أي تصريح دخول للريف الخلفي بأي تاريخ بدء في أيار يصبح متاحاً في 1 كانون الثاني",
+      "recognized": "وبالتالي، أي تصريح دخول الريف الخلفي بأي تاريخ بدأ في إيار، يصبح متاحا في واحد كانون الثاني.",
+      "elapsedMs": 157,
+      "action": null
+    },
+    {
+      "file": "robust-ar-19.wav",
+      "reference": "بالرغم من ذلك يجب توجيه أي تعديلات أو طلبات عبر وكيل السفر أولاً وليس مباشرة إلى الفندق",
+      "recognized": "بالرغم من ذلك، يجب توجيه أي تعديلات أو طلبات عبر وكيل السفر أولا وليس مباشرة إلى الفندق.",
+      "elapsedMs": 172,
+      "action": null
+    },
+    {
+      "file": "robust-ar-20.wav",
+      "reference": "إن القوة الشاملة التي امتلكتها أثّرت على الجميع بدءاً من الملك وحتى عوامّ الناس",
+      "recognized": "إن القوة الشاملة التي امتلكتها أثرت على الجميع بدءا من الملك وحتى عوام الناس.",
+      "elapsedMs": 140,
+      "action": null
+    }
+  ]
+}
