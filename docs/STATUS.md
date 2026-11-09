@@ -19,6 +19,9 @@ Normal builds now succeed without any optional weights; benchmark builds still
 verify them. CI prepares only bundled inputs and cancels superseded branch runs.
 The normal APK remains byte-for-byte identical to the installed build.
 
+Fresh Linux checks passed for 0f7ebbc on main (42701865061) and working branch
+(42701864828). The final bundle has 29 verified checksum entries.
+
 Remaining meaningful validation requires independent natural speech/speakers,
 unplugged all-day use and actual messaging/calendar accounts. Controlled tests
 do not establish perfect recognition, legal authorization, a grade or 24/7 reliability.
