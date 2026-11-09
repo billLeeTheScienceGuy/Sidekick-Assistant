@@ -39,6 +39,14 @@ personal app data was cleared or instrumented. The normal APK is 226,238,474 byt
 optional speech packs remain separate. The submission includes raw public fixture
 evidence and recursively checksummed artifacts.
 
+A separate build check temporarily moved all six optional weight/token files out
+of the assets directory, prepared `--compact`, and successfully built/linted the
+normal app and its test APK in 43 seconds. The benchmark task graph retained its
+optional-input guard, which rejected missing weights; restoring the files made
+verification pass. The rebuilt normal APK is byte-for-byte identical to the one
+installed on the Pixel. CI now skips optional packs, cancels obsolete same-branch
+runs and has a 20-minute job bound. This changes build requirements, not inference.
+
 Previous validation (historical):
 
 # 0.28 integrated speaker turns, calendar mirrors and region guidance

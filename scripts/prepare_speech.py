@@ -1,7 +1,12 @@
 """Download a pinned-by-hash, MIT-licensed speech model for APK packaging."""
 from pathlib import Path
+import argparse
 import hashlib
 import urllib.request
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--compact', action='store_true', help='Prepare bundled English/VAD only; optional language packs are separate.')
+args = parser.parse_args()
 
 EXPECTED = "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f"
 target = Path(__file__).resolve().parents[1] / "app/src/main/assets/models/ggml-tiny.en.bin"
@@ -29,6 +34,10 @@ if not vad.exists() or digest(vad) != vad_hash:
         raise RuntimeError("Speech detector checksum mismatch")
     temporary.replace(vad)
 print("Verified speech detector ready for APK packaging.")
+
+if args.compact:
+    print("Compact inputs ready; optional Whisper packs were not downloaded.")
+    raise SystemExit(0)
 
 multilingual = target.with_name("ggml-tiny.bin")
 multilingual_hash = "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21"
