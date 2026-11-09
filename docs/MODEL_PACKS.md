@@ -19,6 +19,14 @@ quality choices and installed weights are retained on upgrade; a fresh install
 starts with English Fast. Choosing a mode with missing weights disables Start
 until the needed packs are installed. Text, Planner and Summary remain available.
 
+## Build without optional weights
+
+Normal debug/release and compactTest builds need only
+`python scripts/prepare_speech.py --compact`, `prepare_speaker.py` and
+`prepare_diarization.py`. The Gradle benchmark variant separately verifies all
+optional weights. CI builds the compact app and cancels superseded runs on the
+same branch. Full pack creation and benchmark builds still use the commands below.
+
 ## Create and install
 
 Run the existing prepare_speech.py, prepare_speaker.py, prepare_diarization.py, prepare_sensevoice.py and

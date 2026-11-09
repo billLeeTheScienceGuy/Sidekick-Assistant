@@ -135,7 +135,7 @@ matching means all live speakers are unassigned. Voice identity is not consent.
 
 1. Open this folder in Android Studio. Use **JDK 17** for Gradle (a newer IDE-bundled JDK may not be compatible with the pinned Gradle version).
 2. Install Android SDK platform **35** and build tools **35.0.0**. Set `ANDROID_HOME` or let Android Studio create the ignored `local.properties` file with `sdk.dir`.
-3. Run `scripts/prepare-speech.ps1` on Windows (or `python scripts/prepare_speech.py` with Python 3.11+). This downloads and verifies the speech/VAD models, including English tiny, multilingual tiny and base, into ignored assets. This workspace already has them.
+3. Run `python scripts/prepare_speech.py --compact` with Python 3.11+. This downloads and verifies only the bundled English/VAD models into ignored assets; optional speech packs are not needed to build the normal app.
 4. Run `python scripts/prepare_speaker.py` and `python scripts/prepare_diarization.py` (Python 3.11+) to fetch the verified speaker/segmentation models and Android AAR. Sync Gradle and run `app` on the phone. Gradle installs NDK **27.0.12077973** and CMake **3.22.1** when licenses are available. Native builds fetch checksum-pinned whisper.cpp source. Build/download steps need connectivity; inference does not.
 5. Optionally choose **Set up my voice** in Settings and complete setup alone. Tap **Start live notes**, confirm session consent, and grant notification/microphone permissions. Hands-off saves detected events and corrections automatically, with Undo in notifications. Personal plans with clear times get reminders; other/unassigned speech remains information-only. Select Review mode in Settings for manual approval. Typed/imported words still require the separate consent checkbox.
 
@@ -144,6 +144,10 @@ Windows PowerShell:
 ```powershell
 # Point JAVA_HOME to your JDK 17 and ANDROID_HOME to your Android SDK.
 .\gradlew.bat :core:test :app:assembleDebug :app:lintDebug
+# For full benchmark/device tests, first prepare all optional weights:
+# python scripts/prepare_speech.py
+# python scripts/prepare_sensevoice.py
+# python scripts/prepare_omnilingual.py
 # Device tests must use the isolated benchmark app to protect normal app data.
 .\gradlew.bat -PspeechBenchmark :app:assembleBenchmark :app:assembleBenchmarkAndroidTest
 ```

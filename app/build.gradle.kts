@@ -53,46 +53,43 @@ android {
 }
 kotlin { jvmToolchain(17) }
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }
+// Normal builds require only bundled models; optional language packs are benchmark inputs.
+val bundledModels = mapOf(
+    "diarization.int8.onnx" to 1_540_506L,
+    "ggml-tiny.en.bin" to 77_704_715L,
+    "ggml-silero-v5.1.2.bin" to 885_098L,
+    "voxceleb_resnet34_LM.onnx" to 26_530_550L,
+    "campplus-advanced.onnx" to 28_281_164L,
+)
+val optionalModels = mapOf(
+    "ggml-tiny.bin" to 77_691_713L,
+    "ggml-base.bin" to 147_951_465L,
+    "sensevoice-ko.int8.onnx" to 239_233_841L,
+    "sensevoice-tokens.txt" to 315_894L,
+    "omni-model.int8.onnx" to 365_352_120L,
+    "omni-tokens.txt" to 86_423L,
+)
 val verifySpeechModel by tasks.registering {
-    inputs.file(layout.projectDirectory.file("src/main/assets/models/diarization.int8.onnx"))
-    val modelFile = layout.projectDirectory.file("src/main/assets/models/ggml-tiny.en.bin")
-    val vadFile = layout.projectDirectory.file("src/main/assets/models/ggml-silero-v5.1.2.bin")
-    val multilingualFile = layout.projectDirectory.file("src/main/assets/models/ggml-tiny.bin")
-    val speakerFile = layout.projectDirectory.file("src/main/assets/models/voxceleb_resnet34_LM.onnx")
-    val baseFile = layout.projectDirectory.file("src/main/assets/models/ggml-base.bin")
-    inputs.file(modelFile)
-    inputs.file(vadFile)
-    inputs.file(multilingualFile)
-    inputs.file(speakerFile)
-    inputs.file(layout.projectDirectory.file("src/main/assets/models/sensevoice-ko.int8.onnx"))
-    inputs.file(layout.projectDirectory.file("src/main/assets/models/sensevoice-tokens.txt"))
-    inputs.file(layout.projectDirectory.file("src/main/assets/models/omni-model.int8.onnx"))
-    inputs.file(layout.projectDirectory.file("src/main/assets/models/omni-tokens.txt"))
-    inputs.file(layout.projectDirectory.file("src/main/assets/models/campplus-advanced.onnx"))
-    inputs.file(baseFile)
+    inputs.files(bundledModels.keys.map { layout.projectDirectory.file("src/main/assets/models/$it") })
     doLast {
-        check(layout.projectDirectory.file("src/main/assets/models/diarization.int8.onnx").asFile.length() == 1_540_506L) { "Run scripts/prepare_diarization.py." }
-        check(layout.projectDirectory.file("src/main/assets/models/omni-model.int8.onnx").asFile.length() == 365_352_120L) { "Run scripts/prepare_omnilingual.py." }
-        check(layout.projectDirectory.file("src/main/assets/models/omni-tokens.txt").asFile.length() == 86_423L) { "Run scripts/prepare_omnilingual.py." }
-        check(layout.projectDirectory.file("src/main/assets/models/sensevoice-ko.int8.onnx").asFile.length() == 239_233_841L) { "Run scripts/prepare_sensevoice.py." }
-        check(layout.projectDirectory.file("src/main/assets/models/sensevoice-tokens.txt").asFile.length() == 315_894L) { "Run scripts/prepare_sensevoice.py." }
-        check(layout.projectDirectory.file("src/main/assets/models/campplus-advanced.onnx").asFile.length() == 28_281_164L) { "Run scripts/prepare_speaker.py to prepare CAM++." }
-        check(baseFile.asFile.isFile && baseFile.asFile.length() == 147_951_465L) { "Run scripts/prepare_speech.py to prepare Whisper base." }
-        check(multilingualFile.asFile.isFile && multilingualFile.asFile.length() == 77_691_713L) {
-            "Run python scripts/prepare_speech.py to prepare multilingual transcription."
-        }
-        check(speakerFile.asFile.isFile && speakerFile.asFile.length() == 26_530_550L) {
-            "Run python scripts/prepare_speaker.py to prepare the speaker model and Android runtime."
-        }
-        val model = modelFile.asFile
-        check(model.isFile && model.length() == 77_704_715L) {
-            "Missing or incomplete speech model. Run scripts/prepare-speech.ps1 (or scripts/prepare_speech.py) before building."
-        }
-        check(vadFile.asFile.isFile && vadFile.asFile.length() == 885_098L) {
-            "Missing speech detector. Run scripts/prepare-speech.ps1 or scripts/prepare_speech.py."
+        bundledModels.forEach { (name, bytes) ->
+            check(layout.projectDirectory.file("src/main/assets/models/$name").asFile.length() == bytes) {
+                "Missing or incomplete bundled model $name. Run prepare_speech.py --compact, prepare_speaker.py and prepare_diarization.py."
+            }
         }
     }
 }
+val verifyOptionalSpeechModels by tasks.registering {
+    inputs.files(optionalModels.keys.map { layout.projectDirectory.file("src/main/assets/models/$it") })
+    doLast {
+        optionalModels.forEach { (name, bytes) ->
+            check(layout.projectDirectory.file("src/main/assets/models/$name").asFile.length() == bytes) {
+                "Missing or incomplete benchmark model $name. Run prepare_speech.py, prepare_sensevoice.py and prepare_omnilingual.py."
+            }
+        }
+    }
+}
+tasks.matching { it.name == "preBenchmarkBuild" }.configureEach { dependsOn(verifyOptionalSpeechModels) }
 val prepareCompactAssets by tasks.registering(Sync::class) {
     from("src/main/assets")
     into(layout.buildDirectory.dir("generated/compactAssets"))
