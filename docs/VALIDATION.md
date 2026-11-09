@@ -1,3 +1,46 @@
+# 0.29 broader speech and recovery validation
+
+November 9, 2026. All 186 core tests pass. Normal debug, benchmark and compactTest
+builds/lint pass. The final isolated emulator suite passes **117 checks in
+325.575 seconds**; the compact-package suite passes **27 in 54.461 seconds**.
+Fresh isolated installs now explicitly prepare notification permission so Android's
+permission sheet cannot obstruct Compose checks. An initial unprepared full run
+failed five notification/UI checks; the harness was fixed and the entire suite rerun.
+
+The final isolated physical Pixel run passes **nine checks in 403.939 seconds**:
+Automatic command safety, combined seven-language paced VAD/turns/ASR, selected
+Adaptive commands, padded/repeated negations, Korean quiet-boundary/action flows
+and neural speaker context. No physical microphone or personal app instrumentation
+was used. Automatic short commands meet the measured **31/34** baseline; three
+Arabic clock cases remain unresolved. All 34 reject wrong times/actions. This
+baseline records a newly measured limitation, not a claim of complete recognition.
+
+The broader recorded evaluation adds 28 public FLEURS readings, selected-language
+clean/noisy trials, paired model candidates, 112 Automatic raw-model comparisons
+and 87 owner/unfamiliar/overlap audio trials. Zero unfamiliar/overlap regions were
+assigned USER; noisy owner recall remains weak. These are development recordings,
+not population accuracy or a native-speaker audit. Report, raw public outputs,
+provenance and reproduction are in ROBUSTNESS_EVALUATION.md and evaluation/.
+
+A six-minute silent screen-off emulator check passed (367.673 seconds suite time),
+with zero ASR chunks. Global mute stopped/disarmed capture with a generic private
+notification (one check, 8.863 seconds). A verified host-driven process kill recovered
+an armed assistant session after 2.074 seconds; mic revocation stopped/disarmed it
+after 2.757 seconds and regrant did not rearm it. Digital silence is valid PCM;
+no-read stalls and native errors explicitly stop. No host microphone was enabled.
+
+The seven-language combined physical replay emitted eight regions and drained its
+final backlog in 0.864 seconds. USB remained connected. No unplugged battery,
+within-sentence code-switching or natural-conversation performance is claimed.
+
+Normal 0.29.0/code47 was installed with `install -r` on the physical Pixel;
+Android package version and successful MainActivity launch were verified. No
+personal app data was cleared or instrumented. The normal APK is 226,238,474 bytes;
+optional speech packs remain separate. The submission includes raw public fixture
+evidence and recursively checksummed artifacts.
+
+Previous validation (historical):
+
 # 0.28 integrated speaker turns, calendar mirrors and region guidance
 
 Final remote checks confirmed November 9, 2026: code commit `ade3797` passed

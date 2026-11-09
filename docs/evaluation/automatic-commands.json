@@ -1,0 +1,345 @@
+{
+  "results": [
+    {
+      "file": "en-en-US-AriaNeural-0.wav",
+      "language": "en",
+      "reference": "I'll attend a meeting tomorrow at 6pm.",
+      "recognized": "I'll attend a meeting tomorrow at 6pm.",
+      "action": "create",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "en-en-US-AriaNeural-1.wav",
+      "language": "en",
+      "reference": "Move the meeting to tomorrow at 7pm.",
+      "recognized": "Move the meeting to tomorrow at 7pm.",
+      "action": "move",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "en-en-US-AriaNeural-2.wav",
+      "language": "en",
+      "reference": "Cancel the meeting.",
+      "recognized": "Cancel the meeting.",
+      "action": "cancel",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "en-en-US-AriaNeural-3.wav",
+      "language": "en",
+      "reference": "Don't cancel the meeting.",
+      "recognized": "Don't cancel the meeting.",
+      "action": "negative",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ko-ko-KR-SunHiNeural-0.wav",
+      "language": "ko",
+      "reference": "내일 오후 6시에 회의가 있어요.",
+      "recognized": "내일 오후 6 시에 회의가 있 어요.",
+      "action": "create",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ko-ko-KR-SunHiNeural-1.wav",
+      "language": "ko",
+      "reference": "회의를 내일 오후 7시로 변경해줘.",
+      "recognized": "회의 를 내일 오후 7 시로 변경 해줘.",
+      "action": "move",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ko-ko-KR-SunHiNeural-2.wav",
+      "language": "ko",
+      "reference": "회의를 취소해줘.",
+      "recognized": "회의 를 취소 해 줘.",
+      "action": "cancel",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ko-ko-KR-SunHiNeural-3.wav",
+      "language": "ko",
+      "reference": "회의를 취소하지 마세요.",
+      "recognized": "회의 를 취소 하지 마세요.",
+      "action": "negative",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ko-ko-KR-SunHiNeural-4.wav",
+      "language": "ko",
+      "reference": "저는 내일 오후 8시에 파티에 갈 거예요.",
+      "recognized": "저는 내일 오후 8 시에 파티 티에 갈 거.",
+      "action": "create",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ko-ko-KR-SunHiNeural-5.wav",
+      "language": "ko",
+      "reference": "저는 내일 오후 여덟 시에 파티에 갈 거예요.",
+      "recognized": "저는 내일 오후 8 시에 파티 티에 갈 거예요.",
+      "action": "create",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "zh-zh-CN-XiaoxiaoNeural-0.wav",
+      "language": "zh",
+      "reference": "明天下午六点有会议。",
+      "recognized": "明天下午6点有会议。",
+      "action": "create",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "zh-zh-CN-XiaoxiaoNeural-1.wav",
+      "language": "zh",
+      "reference": "把会议改到明天下午七点。",
+      "recognized": "把会议改到明天下午7点。",
+      "action": "move",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "zh-zh-CN-XiaoxiaoNeural-2.wav",
+      "language": "zh",
+      "reference": "取消会议。",
+      "recognized": "取消会议。",
+      "action": "cancel",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "zh-zh-CN-XiaoxiaoNeural-3.wav",
+      "language": "zh",
+      "reference": "不要取消会议。",
+      "recognized": "不要取消会议。",
+      "action": "negative",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "fr-fr-FR-DeniseNeural-0.wav",
+      "language": "fr",
+      "reference": "Je participerai à une réunion demain à 18h.",
+      "recognized": "Je participerai à une réunion demain à 18h.",
+      "action": "create",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "fr-fr-FR-DeniseNeural-1.wav",
+      "language": "fr",
+      "reference": "Déplace la réunion à demain à 19h.",
+      "recognized": "Déplace la réunion à demain à 19h.",
+      "action": "move",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "fr-fr-FR-DeniseNeural-2.wav",
+      "language": "fr",
+      "reference": "Annule la réunion.",
+      "recognized": "Annule la réunion.",
+      "action": "cancel",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "fr-fr-FR-DeniseNeural-3.wav",
+      "language": "fr",
+      "reference": "N’annule pas la réunion.",
+      "recognized": "N'annule pas la réunion.",
+      "action": "negative",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "de-de-DE-KatjaNeural-0.wav",
+      "language": "de",
+      "reference": "Ich nehme morgen um 18 Uhr an einem Treffen teil.",
+      "recognized": "Ich nehme morgen um 18 Uhr an einem Treffen Teil.",
+      "action": "create",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "de-de-DE-KatjaNeural-1.wav",
+      "language": "de",
+      "reference": "Verschiebe das Treffen auf morgen um 19 Uhr.",
+      "recognized": "Verschiebe das Treffen auf morgen um 19 Uhr.",
+      "action": "move",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "de-de-DE-KatjaNeural-2.wav",
+      "language": "de",
+      "reference": "Sag das Treffen ab.",
+      "recognized": "Sagt das Treffen ab.",
+      "action": "cancel",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "de-de-DE-KatjaNeural-3.wav",
+      "language": "de",
+      "reference": "Sag das Treffen nicht ab.",
+      "recognized": "Sag das Treffen nicht ab.",
+      "action": "negative",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ru-ru-RU-SvetlanaNeural-0.wav",
+      "language": "ru",
+      "reference": "Я пойду на встречу завтра в 18:00.",
+      "recognized": "Я пойду на встречу завтра 18 часов.",
+      "action": "create",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ru-ru-RU-SvetlanaNeural-1.wav",
+      "language": "ru",
+      "reference": "Перенеси встречу на завтра в 19:00.",
+      "recognized": "Перенеси встречи на завтра в 19 часов.",
+      "action": "move",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ru-ru-RU-SvetlanaNeural-2.wav",
+      "language": "ru",
+      "reference": "Отмени встречу.",
+      "recognized": "Отмени встречу.",
+      "action": "cancel",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ru-ru-RU-SvetlanaNeural-3.wav",
+      "language": "ru",
+      "reference": "Не отмени встречу.",
+      "recognized": "Не отмени встречу.",
+      "action": "negative",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ar-ar-SA-ZariyahNeural-0.wav",
+      "language": "ar",
+      "reference": "سأحضر الاجتماع غدا الساعة السادسة مساء.",
+      "recognized": "سأحضر الاجتماع غدا الساعة السادس مساه",
+      "action": "create",
+      "passed": false,
+      "safe": true,
+      "knownLimit": true
+    },
+    {
+      "file": "ar-ar-SA-ZariyahNeural-1.wav",
+      "language": "ar",
+      "reference": "انقل الاجتماع إلى غدا الساعة السابعة مساء.",
+      "recognized": "امقل الاجتماع إلى غد الساعة السابعة مساه",
+      "action": "move",
+      "passed": false,
+      "safe": true,
+      "knownLimit": true
+    },
+    {
+      "file": "ar-ar-SA-ZariyahNeural-2.wav",
+      "language": "ar",
+      "reference": "ألغي الاجتماع.",
+      "recognized": "ألغي الاجتماع",
+      "action": "cancel",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ar-ar-SA-ZariyahNeural-3.wav",
+      "language": "ar",
+      "reference": "لا تلغي الاجتماع.",
+      "recognized": "لا تلغي الاجتماعة",
+      "action": "negative",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ar-ar-SA-HamedNeural-0.wav",
+      "language": "ar",
+      "reference": "سأحضر الاجتماع غدا الساعة السادسة مساء.",
+      "recognized": "سأحضر الاجتماع غدا الساعة السادس مساء",
+      "action": "create",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ar-ar-SA-HamedNeural-1.wav",
+      "language": "ar",
+      "reference": "انقل الاجتماع إلى غدا الساعة السابعة مساء.",
+      "recognized": "أنقل الاجتماع إلى غدا الساعة السادع مساء",
+      "action": "move",
+      "passed": false,
+      "safe": true,
+      "knownLimit": true
+    },
+    {
+      "file": "ar-ar-SA-HamedNeural-2.wav",
+      "language": "ar",
+      "reference": "ألغي الاجتماع.",
+      "recognized": "ألغي الاجتماع",
+      "action": "cancel",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    },
+    {
+      "file": "ar-ar-SA-HamedNeural-3.wav",
+      "language": "ar",
+      "reference": "لا تلغي الاجتماع.",
+      "recognized": "لا تلغي الاجتماع",
+      "action": "negative",
+      "passed": true,
+      "safe": true,
+      "knownLimit": false
+    }
+  ],
+  "conditions": "Synthetic commands, no forced language, no physical microphone; not natural-conversation accuracy"
+}

@@ -47,6 +47,12 @@ class AssistantControl(private val context: Context) {
         context.getSystemService(NotificationManager::class.java).areNotificationsEnabled()
     fun recover(): Boolean {
         refresh()
+        if (armed && context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            disarm("Microphone access was removed. Open SideKick and start a new session after restoring access.")
+            com.sidekick.app.audio.CaptureStatusAlerts.stopped(context)
+            context.stopService(Intent(context, ListeningService::class.java))
+            return false
+        }
         if (!canRecover()) return false
         if (ListeningService.state.value.recording || ListeningService.state.value.processing) return true
         return try {

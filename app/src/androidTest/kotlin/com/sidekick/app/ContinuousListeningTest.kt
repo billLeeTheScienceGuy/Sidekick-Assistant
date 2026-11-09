@@ -15,6 +15,7 @@ import com.sidekick.app.speech.NativeVad
 import com.sidekick.app.speech.VadModel
 import com.sidekick.core.WavAudio
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -43,12 +44,8 @@ class ContinuousListeningTest {
         val activity = ActivityScenario.launch(MainActivity::class.java)
         try {
             activity.onActivity { it.startForegroundService(Intent(it, ListeningService::class.java)) }
-            withTimeout(20_000) {
-                while (!ListeningService.state.value.recording) {
-                    check(ListeningService.state.value.processing || ListeningService.state.value.note == "Microphone is off") { ListeningService.state.value.note }
-                    delay(100)
-                }
-            }
+            // startForegroundService posts work; the previous session's stopped note can still be visible.
+            withTimeout(20_000) { ListeningService.state.first { it.recording } }
             val cpuStart = android.os.Process.getElapsedCpuTime()
             val memoryStart = Debug.MemoryInfo().also { Debug.getMemoryInfo(it) }.totalPss
             shell("input keyevent KEYCODE_SLEEP")

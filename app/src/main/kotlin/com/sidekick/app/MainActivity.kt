@@ -207,6 +207,7 @@ class MainActivity : ComponentActivity() {
                             if (listening.voiceDiagnostics.isNotEmpty()) {
                                 TextButton(onClick = { showVoiceDiagnostics = !showVoiceDiagnostics }) { Text(if (showVoiceDiagnostics) "Hide voice diagnostics" else "Voice diagnostics") }
                                 if (showVoiceDiagnostics) {
+                                    listening.recognizer?.let { Text("Last recognizer: $it · on this phone", style = MaterialTheme.typography.bodySmall) }
                                     Text("Last speaker separation: ${listening.diarizationMs} ms · ${listening.speakerParts} regions", style = MaterialTheme.typography.bodySmall)
                                     listening.voiceDiagnostics.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
                                 }

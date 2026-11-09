@@ -15,7 +15,7 @@ with Undo, and phone timezone.
 | Correct actions | Event → correction → cancellation → Undo → real reminder receiver; opt-in guarded calendar mirrors | Inexact Android alarms; one-way sync, actual cloud accounts need field checks |
 | Privacy controls | No recording archive, explicit start/consent, deletion, verified packs, opt-in retention/export; limited coarse-region guidance | No automated legal authorization or per-person consent verification |
 | Usability | Missing-pack setup, optional voice setup, date/time pickers, Planner/Summary, labelled settings and large-text test | Not a user study or full accessibility audit |
-| Measured quality | Reproducible 92-case text corpus including failures; dated physical ASR comparisons | Development data, not representative or native-audited accuracy |
+| Measured quality | 92-case text corpus; 28 additional public readings clean/noisy; 34 Automatic commands including failures; dated physical comparisons | Development data, not representative or native-audited accuracy |
 | Explainable risk support | Offline English warning signs, dismiss/disable, generic alerts and no credential copying | Not general multilingual fraud classification |
 | Reviewable submission | Architecture, demo script, proposal mapping, limits and reproducible build/test commands | Final course materials/user studies may require student participation |
 
@@ -24,7 +24,7 @@ with Undo, and phone timezone.
 | Phase 1 module | Implemented evidence | Remaining limitation |
 |---|---|---|
 | Calibration & privacy | Per-language/model voice enrollment, permission/consent flow, deletion, retention/export; explicit city or opt-in phone-region hint | Limited jurisdiction catalog; no legal authorization or per-person consent database |
-| Background audio & detection | Foreground service, bounded VAD/chunks, sequential decode, assistant recovery | Android force-stop/permission restrictions; all-day endurance unproven |
+| Background audio & detection | Foreground service, bounded VAD/chunks, sequential decode, assistant recovery | Mute/revocation/regrant and process-kill checks pass in isolated emulator; Android force-stop restrictions and all-day endurance remain |
 | Recording & diarization | No saved recording; neural turn segmentation, ephemeral anonymous voices, independent owner attribution, overlap uncertainty | No simultaneous-voice source separation or named-person recognition |
 | Local speech-to-text | Whisper/SenseVoice/Omnilingual routing, free weights, verified packs, offline fixtures | Natural/noisy/mixed speech and Korean numbers remain imperfect |
 | Intent/entities | Seven-language rules, evidence, dates/times/end/places, ownership/context | General semantics and dialects exceed the grammar |

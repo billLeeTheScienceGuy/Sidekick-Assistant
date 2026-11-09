@@ -1,0 +1,46 @@
+{
+  "results": [
+    {
+      "recognized": "as soon as you get out of the current swimming back is no more difficult than normally",
+      "sourceStart": 28800,
+      "elapsedMs": 4912
+    },
+    {
+      "recognized": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다.",
+      "sourceStart": 178624,
+      "elapsedMs": 6027
+    },
+    {
+      "recognized": "他称 他制作了一个歪菲门龄",
+      "sourceStart": 321792,
+      "elapsedMs": 3011
+    },
+    {
+      "recognized": "La police est déclarée qu'il semblerait que le corps se trouvait là depuis un jour environ.",
+      "sourceStart": 453504,
+      "elapsedMs": 5771
+    },
+    {
+      "recognized": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+      "sourceStart": 580160,
+      "elapsedMs": 3575
+    },
+    {
+      "recognized": "как только вы выйдете из течения плыте братно будет нетр",
+      "sourceStart": 718464,
+      "elapsedMs": 1305
+    },
+    {
+      "recognized": "ne čemа byčnа",
+      "sourceStart": 777549,
+      "elapsedMs": 1984
+    },
+    {
+      "recognized": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريبا",
+      "sourceStart": 849088,
+      "elapsedMs": 2143
+    }
+  ],
+  "queueDrainMs": 864,
+  "conditions": "Real-time-paced public recordings, seven languages with quiet gaps, no microphone; not within-sentence code switching"
+}

@@ -1,0 +1,9 @@
+{
+  "device": "emulator-5554",
+  "package": "com.sidekick.app.benchmark",
+  "conditions": "Silent emulator; no physical microphone; verified debug UID; not a force-stop bypass",
+  "completed": true,
+  "processRecoveryObservedMs": 2074,
+  "revocationStoppedAndDisarmedMs": 2757,
+  "regrantDidNotRearm": true
+}

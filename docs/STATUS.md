@@ -1,5 +1,26 @@
 # Handoff
 
+Current source: **0.29.0/code47**, Room schema6. Measured Adaptive Automatic and
+longer French/German/Russian routing, optional short original-audio refinement,
+Korean retry fallback, stable owner context, exact CJK overlap and allocation-free
+voice cosine are implemented. Capture detects no-read stalls, handles mute and
+permission removal explicitly, and raises generic private interruption notices.
+
+Final checks: 186 core; 117 full emulator; 27 compact; nine physical fixture checks.
+Automatic commands: 31/34 expected results, three unresolved Arabic cases, no wrong
+times/actions in those 34 fixtures. Controlled recovery/mute and six-minute silent
+screen-off checks pass. ROBUSTNESS_EVALUATION.md includes public clean/noisy speech,
+Automatic comparisons, speaker trials and rejected Arabic-model evidence.
+
+Normal 0.29.0/code47 is installed and its package version/launch verified on the
+Pixel. The normal APK is 226,238,474 bytes; optional packs remain separate.
+
+Remaining meaningful validation requires independent natural speech/speakers,
+unplugged all-day use and actual messaging/calendar accounts. Controlled tests
+do not establish perfect recognition, legal authorization, a grade or 24/7 reliability.
+
+Previous 0.28:
+
 Current source: 0.28.0/code46, Room schema6. Added offline neural speaker turns,
 bounded session-only anonymous centroids, temporary labelled excerpts, per-voice
 event context/anchors and protection against another voice's cancellation or

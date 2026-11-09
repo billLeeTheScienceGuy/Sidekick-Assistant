@@ -28,7 +28,15 @@ object VoiceMatch {
     }
     fun similarity(a: FloatArray, b: FloatArray): Float {
         require(a.size == b.size) { "Voice signatures belong to different model dimensions." }
-        return normalized(a).zip(normalized(b)).sumOf { (x, y) -> (x * y).toDouble() }.toFloat()
+        require(a.size in setOf(192, 256))
+        var dot = 0.0; var squareA = 0.0; var squareB = 0.0
+        for (index in a.indices) {
+            val x = a[index].toDouble(); val y = b[index].toDouble()
+            require(x.isFinite() && y.isFinite())
+            dot += x * y; squareA += x * x; squareB += y * y
+        }
+        require(squareA > 0.00000001 && squareB > 0.00000001)
+        return (dot / sqrt(squareA * squareB)).toFloat().coerceIn(-1f, 1f)
     }
     fun identify(profile: FloatArray?, first: FloatArray, second: FloatArray): Speaker {
         if (profile == null) return Speaker.UNKNOWN

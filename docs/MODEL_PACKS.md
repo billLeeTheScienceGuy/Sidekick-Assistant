@@ -7,13 +7,14 @@ The full benchmark variant still bundles all weights for repeatable testing.
 
 | Pack | Approximate file size | Use |
 |---|---:|---|
-| whisper.skmodels | 226 MB | Whisper multilingual Tiny and Base; larger English, Auto, explicit Whisper modes, French/German/Russian paths |
-| sensevoice.skmodels | 240 MB | Adaptive Korean/Chinese |
-| omni.skmodels | 365 MB | Adaptive Arabic and longer French/German; optional Korean clock retry |
+| whisper.skmodels | 226 MB | Whisper multilingual Tiny and Base; larger English, explicit Whisper modes, short French/German/Russian and optional Automatic refinement |
+| sensevoice.skmodels | 240 MB | Adaptive Korean/Chinese; optional short Automatic refinement |
+| omni.skmodels | 365 MB | Adaptive Automatic/Arabic and longer French/German/Russian; optional Korean clock retry |
 
-Adaptive French/German needs Whisper and Omni. Adaptive Russian and English need
-Whisper. Korean/Chinese needs SenseVoice; Whisper/Omni provide optional Korean
-clock retries. English Fast works immediately after a fresh install. Existing
+Adaptive French/German/Russian needs Whisper and Omni. Adaptive Automatic and
+Arabic need Omni; installing SenseVoice and Whisper also improves short Automatic
+commands. Adaptive English needs Whisper. Korean/Chinese needs SenseVoice;
+Whisper/Omni provide optional Korean clock retries. English Fast works immediately after a fresh install. Existing
 quality choices and installed weights are retained on upgrade; a fresh install
 starts with English Fast. Choosing a mode with missing weights disables Start
 until the needed packs are installed. Text, Planner and Summary remain available.

@@ -13,6 +13,14 @@ and per-voice corrections, opt-in guarded calendar mirroring, and limited coarse
 privacy guidance. A controlled ten-minute USB-connected Pixel replay passed;
 SUSTAINED_TURNS.md distinguishes this from microphone/battery field evidence.
 
+Version 0.29 adds a frozen 28-reading clean/noisy evaluation, Automatic model
+comparisons and a combined seven-language paced pipeline test. Controlled mute,
+permission revocation/regrant and process-kill recovery now have independent
+checks. See ROBUSTNESS_EVALUATION.md: three of 34 short synthetic Automatic
+commands remain unresolved in Arabic; noisy owner recall also remains limited.
+Further threshold/model tuning needs independent natural speech and speakers,
+not repeated tuning on these development recordings.
+
 ## Priorities
 
 1. **End-to-end reliability.** Exercise a real event from conversation/message to

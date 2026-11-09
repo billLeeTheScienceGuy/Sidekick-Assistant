@@ -38,3 +38,8 @@ first. The speech/battery field trials are separate and can be done later.
 Record failures alongside successes. Automated core/emulator tests establish
 software behavior; they are not measurements of natural speech, battery or
 user-study outcomes. Use VALIDATION.md for the exact tested scope.
+
+13. Use ROBUSTNESS_EVALUATION.md to explain the measured 0.29 routing changes,
+    seven-language paced pipeline and 31/34 short Automatic command result.
+    Show the three Arabic misses rather than describing synthetic-fixture coverage
+    as perfect recognition. The last actual recognizer appears in Voice diagnostics.
