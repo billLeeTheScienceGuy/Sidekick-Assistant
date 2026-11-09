@@ -31,7 +31,7 @@ nonblocking, dismissible and disableable, and never copy credentials into alerts
 See [privacy and risk behavior](PRIVACY_AND_RISK.md), the
 [architecture](ARCHITECTURE.md) and [acceptance checklist](CAPSTONE_CHECKLIST.md).
 
-## Independent evaluation
+## Reproducible evaluation
 
 The checked-in corpus contains 92 self-authored cases across English, Korean,
 Chinese, French, German, Russian and Arabic, with expected subjects, times,

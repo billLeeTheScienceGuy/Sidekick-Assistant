@@ -19,6 +19,7 @@ bundled offline English inference/audio-buffer cleanup, full v1→v5 migration,
 private export and retention/Undo cleanup. No microphone was opened by those tests.
 Normal debug build/lint and benchmark build/lint pass. Final integration outcomes
 are in VALIDATION.md: all 95 broader emulator checks pass in 205.305 seconds.
+Final compact build/lint and all 15 compact checks pass in 42.805 seconds.
 Normal 0.27.0/code45 is installed on the Pixel and its package version verified.
 Submission script includes source/build metadata, hashes,
 architecture, acceptance checklist and dated physical measurements.
