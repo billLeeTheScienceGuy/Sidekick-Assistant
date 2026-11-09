@@ -145,6 +145,7 @@ class ListeningService : Service() {
                 }) { text, startSample, latency ->
                     ensureActive()
                     if (!discard) {
+                        app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text)
                         app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified, continuation)
                         app.automation.process()
                     }

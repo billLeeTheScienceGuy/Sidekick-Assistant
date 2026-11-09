@@ -17,9 +17,16 @@ first. The speech/battery field trials are separate and can be done later.
    calendar editor unless intentionally saving a demo event. This is a manual
    handoff, not calendar synchronization.
 7. Show temporary conversation highlights and clear them. Saved events remain.
-8. Explain that current live intent extraction is bounded grammar, optional Qwen
-   supports manual analysis, full diarization/scam detection/legal-location
-   automation are unfinished, and summaries are grounded/extractive.
+8. Open Settings → Memory & privacy. Show that automatic cleanup is off by default,
+   a finite retention period asks before destructive cleanup, and export excludes
+   saved source excerpts by default. Cancel the file picker unless creating a demo
+   export. Temporary transcript/audio/voice profiles are never included.
+9. Analyze synthetic message text: “Pay the overdue tax using gift cards.” Show
+   the generic risk advisory, dismiss it, and show its settings switch. Do not
+   type real credentials. Explain English-only rules, false positives and misses.
+10. Explain that live intent extraction is bounded grammar, optional Qwen supports
+    manual analysis, full diarization/general scam classification/legal-location
+    automation are unfinished, and summaries are grounded/extractive.
 
 Record failures alongside successes. Automated core/emulator tests establish
 software behavior; they are not measurements of natural speech, battery or

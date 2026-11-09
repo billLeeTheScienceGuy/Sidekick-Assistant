@@ -42,8 +42,11 @@ recovery are implemented. They remain prototype features with limited field test
 5. **Release readiness.** Version 0.26 reduces the normal APK from about 905 MB to
    225 MB using verified optional model packs, adds a compact setup checklist,
    and prepares a reproducible submission bundle and evaluation report. Remaining:
-   broader accessibility checks, retention/export controls, production signing,
-   distribution and release CI verification.
+   broader accessibility checks, production signing and distribution. Version
+   0.27 adds labelled selection controls, 160% text navigation checks, opt-in
+   retention and explicit event export. A local English warning-sign baseline
+   now provides dismissible risk advisories; general scam classification remains
+   open. CAPSTONE_CHECKLIST.md maps the proposal to testable acceptance evidence.
 
 ## Known quality limits
 

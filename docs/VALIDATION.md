@@ -1,3 +1,44 @@
+# 0.27 capstone validation
+
+163 core tests pass. New retention cases check opt-in defaults, strict cutoff,
+latest evidence/activity/reminder timestamp, future items, undated accepted items,
+pending reminders and terminal states. Local risk-rule cases check requests,
+defensive advice, ordinary gifts, deduplication and absence of credential copying.
+Additional language regressions cover German evening attendance, third/unknown
+speakers, optional Uhr, midnight ambiguity and Arabic twelve-at-night behavior.
+
+The unchanged 92-case text corpus now reports 100% precision, 98.8% recall and
+one missed reminder; no false/mistimed reminders in these authored cases.
+This is a development text corpus, not a representative ASR or user study.
+
+13 compact emulator checks passed in 38.542 seconds, including JSON export's
+Unicode/null/schema behavior and privacy exclusions; retention removing both
+rows and Undo evidence; explicit destructive-cleanup confirmation; 160% text
+settings navigation; dismiss/disable/rate-limit behavior; and selected-app/new
+message gating. Setup never opens the microphone and blocks missing-pack modes.
+
+Four isolated benchmark-package checks on the physical Pixel passed in 5.763
+seconds: native bundled English transcription with zeroed input, full v1→v5
+database migration preserving source data, export privacy, and retention cleanup.
+They use synthetic/public test files and temporary test databases; no personal
+app instrumentation or microphone capture occurred. The total is suite duration,
+not a per-model latency, peak memory or battery measurement.
+
+The broader run initially passed 94/95 and exposed a notification ingestion
+timeout. Listener connection state/rebind handling was added, and that test now
+explicitly selects Review mode and awaits the real Android binding callback.
+All 12 targeted notification/location/activity/localized checks then passed in
+34.457 seconds. Debug and benchmark build/lint pass. Previous main dd80165 also
+passed both remote workflows (42533675565 and 42533675514).
+
+The final broader rerun passed all 95 checks in 205.305 seconds, including real
+notification ingestion, network-location fallback/geocoder behavior, recorded
+VAD/ASR corrections, native bundled inference, migration, Planner/Summary,
+calendar drafts, alarm receiver delivery, Undo/rollback, privacy and settings.
+Normal 0.27.0/code45 was installed with install -r on the physical Pixel, its
+version verified and MainActivity opened. Field testing remains limited as
+described in CAPSTONE_CHECKLIST.md; no all-day or perfect-speaker claim.
+
 # 0.26.1 text-understanding fixes
 
 157 core tests pass. Four new regression groups cover explicit spelled-out clocks

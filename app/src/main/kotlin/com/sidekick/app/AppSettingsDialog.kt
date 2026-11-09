@@ -54,19 +54,20 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
     AlertDialog(onDismissRequest = onClose, title = { Text("Settings") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SetupStatus(settings)
+            MemoryPrivacySection()
             ModelPackSection()
             Text("Default assistant", style = MaterialTheme.typography.titleMedium)
             Text(if (assistantSelected) "SideKick is your default assistant" else "SideKick is not your default assistant", modifier = Modifier.testTag("assistant-role-status"))
             TextButton(onClick = { assistantPicker.launch(assistant.picker()) }, modifier = Modifier.testTag("assistant-picker")) { Text("Choose default assistant") }
             Row {
-                Switch(recoveryEnabled, assistant::setEnabled, modifier = Modifier.testTag("assistant-recovery"))
+                Switch(recoveryEnabled, assistant::setEnabled, modifier = Modifier.testTag("assistant-recovery").controlLabel("Resume enabled listening after system restart"))
                 Text("Resume enabled listening after system restart", Modifier.padding(top = 12.dp))
             }
             Text("Requires SideKick as default assistant. Start listening once; recovery remains enabled across reboots until you press Stop. Selecting SideKick alone does not start the microphone. Voice enrollment never resumes automatically. Force-stop and revoked permissions still apply. No screen contents or screenshots are requested.")
             Text(recoveryStatus)
             HorizontalDivider()
             Row {
-                Switch(handsOff, settings::setHandsOff, modifier = Modifier.testTag("hands-off"))
+                Switch(handsOff, settings::setHandsOff, modifier = Modifier.testTag("hands-off").controlLabel("Save events and apply corrections automatically"))
                 Text("Hands-off: save events and apply corrections automatically", Modifier.padding(top = 12.dp))
             }
             Text("No approval prompts in hands-off mode. Undo automatic changes from notifications. Personal plans with clear times get reminders; other voices stay information-only. Uncertain addresses stay as spoken. Review mode is available by switching this off.")
@@ -74,7 +75,7 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
             Text("Speech language", style = MaterialTheme.typography.titleMedium)
             com.sidekick.core.SpeechQuality.entries.forEach { quality ->
                 Row {
-                    RadioButton(speechQuality == quality, { settings.setSpeechQuality(quality) }, enabled = !listening.recording && !listening.processing)
+                    RadioButton(speechQuality == quality, { settings.setSpeechQuality(quality) }, enabled = !listening.recording && !listening.processing, modifier = Modifier.controlLabel("Speech quality: ${quality.label}"))
                     Text(quality.label, Modifier.padding(top = 12.dp))
                 }
             }
@@ -84,7 +85,7 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
             com.sidekick.core.SpeechLanguage.entries.forEach { language ->
                 Row {
                     RadioButton(speechLanguage == language, { voice.selectLanguage(language); settings.setSpeechLanguage(language) },
-                        enabled = !listening.recording && !listening.processing, modifier = Modifier.testTag("speech-language-${language.code}"))
+                        enabled = !listening.recording && !listening.processing, modifier = Modifier.testTag("speech-language-${language.code}").controlLabel("Speech language: ${language.label}"))
                     Text(language.label, Modifier.padding(top = 12.dp))
                 }
             }
@@ -94,7 +95,7 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
             Text("My voice", style = MaterialTheme.typography.titleMedium)
             com.sidekick.app.speaker.SpeakerModel.entries.forEach { candidate ->
                 Row {
-                    RadioButton(speakerModel == candidate, { voice.selectModel(candidate) }, enabled = !listening.recording && !listening.processing, modifier = Modifier.testTag("speaker-model-${candidate.name}"))
+                    RadioButton(speakerModel == candidate, { voice.selectModel(candidate) }, enabled = !listening.recording && !listening.processing, modifier = Modifier.testTag("speaker-model-${candidate.name}").controlLabel("Voice model: ${candidate.label}"))
                     Text(candidate.label, Modifier.padding(top = 12.dp))
                 }
             }
@@ -102,7 +103,7 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
             Text(if (voiceReady) "Local voice profile installed · ${speechLanguage.label}" else "No voice profile for ${speechLanguage.label}. Set up your voice in this language; live speech stays information-only until it matches.")
             Text("Each selected language keeps its own voice signature, so Korean setup preserves your English profile. Automatic mode uses the general English/automatic profile. Start a session with a longer natural phrase; short phrases still need a recent confident match.")
             Row {
-                Checkbox(voiceEnabled, voice::setEnabled, enabled = voiceReady && !listening.recording && !listening.processing)
+                Checkbox(voiceEnabled, voice::setEnabled, enabled = voiceReady && !listening.recording && !listening.processing, modifier = Modifier.controlLabel("Match my voice for personal plans"))
                 Text("Match my voice for personal plans", Modifier.padding(top = 12.dp))
             }
             Text("Others’ events remain informational suggestions. Quiet edges are excluded from voice matching. Short phrases need a strong voice match and a recent confident longer phrase within one minute; otherwise they stay unassigned. Matching can be wrong; it does not prove consent.")
@@ -115,27 +116,27 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
             HorizontalDivider()
             Text("Unknown times never block saving. These guidance options apply when you choose to edit an item; hands-off mode does not ask questions.")
             Row {
-                RadioButton(mode == GuidanceMode.PASSIVE, { settings.setMode(GuidanceMode.PASSIVE) }, modifier = Modifier.testTag("mode-passive"))
+                RadioButton(mode == GuidanceMode.PASSIVE, { settings.setMode(GuidanceMode.PASSIVE) }, modifier = Modifier.testTag("mode-passive").controlLabel("Passive mode"))
                 Text("Passive: suggest without asking.", Modifier.padding(top = 12.dp))
             }
             Row {
-                RadioButton(mode == GuidanceMode.ASK, { settings.setMode(GuidanceMode.ASK) }, modifier = Modifier.testTag("mode-ask"))
+                RadioButton(mode == GuidanceMode.ASK, { settings.setMode(GuidanceMode.ASK) }, modifier = Modifier.testTag("mode-ask").controlLabel("Ask about missing activity end times"))
                 Text("Ask about a missing end time when reviewing.", Modifier.padding(top = 12.dp))
             }
             Row {
-                Checkbox(informational, settings::setIncludeInformational, modifier = Modifier.testTag("include-informational"))
+                Checkbox(informational, settings::setIncludeInformational, modifier = Modifier.testTag("include-informational").controlLabel("Include events even when I am not attending"))
                 Text("Suggest events even if I’m not attending.", Modifier.padding(top = 12.dp))
             }
             Text("Information-only events do not count as calendar conflicts. You can mark an event as personal when reviewing it.")
             HorizontalDivider()
             Text("Places", style = MaterialTheme.typography.titleMedium)
             Row {
-                Checkbox(automatic, settings::setAutomaticPlaces)
+                Checkbox(automatic, settings::setAutomaticPlaces, modifier = Modifier.controlLabel("Look up places automatically"))
                 Text("Suggest addresses automatically when reviewing a place.", Modifier.padding(top = 12.dp))
             }
             Text("Lookup can send the venue and city or approximate location to the phone’s geocoding provider. Confirm an address before saving. Maps opens only when tapped.")
             Row {
-                RadioButton(placeContext == PlaceContext.CITY, { settings.setPlaceContext(PlaceContext.CITY) })
+                RadioButton(placeContext == PlaceContext.CITY, { settings.setPlaceContext(PlaceContext.CITY) }, modifier = Modifier.controlLabel("Use my chosen city"))
                 Text("Use my chosen city", Modifier.padding(top = 12.dp))
             }
             OutlinedTextField(city, settings::setCity, label = { Text("City, state or country") }, placeholder = { Text("For example, Madison, Wisconsin") }, modifier = Modifier.testTag("place-city"))
@@ -143,19 +144,19 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                 RadioButton(placeContext == PlaceContext.PHONE, {
                     if (context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) settings.setPlaceContext(PlaceContext.PHONE)
                     else permission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-                })
+                }, modifier = Modifier.controlLabel("Use approximate phone location"))
                 Text("Use the phone’s approximate location", Modifier.padding(top = 12.dp))
             }
             Text("Location is requested only for a place lookup while reviewing, never continuous tracking. The chosen city is a fallback if location is unavailable.")
             HorizontalDivider()
             Text("Incoming messages", style = MaterialTheme.typography.titleMedium)
             Row {
-                Checkbox(sharing, settings::setSharedMessages, modifier = Modifier.testTag("shared-messages"))
+                Checkbox(sharing, settings::setSharedMessages, modifier = Modifier.testTag("shared-messages").controlLabel("Analyze messages I share"))
                 Text("Accept messages I share into SideKick", Modifier.padding(top = 12.dp))
             }
             Text("Share selected text from a messaging app, then confirm analysis in SideKick. Shared text is temporary.")
             Row {
-                Checkbox(messages, settings::setMessageNotifications, modifier = Modifier.testTag("message-scanning"))
+                Checkbox(messages, settings::setMessageNotifications, modifier = Modifier.testTag("message-scanning").controlLabel("Read selected incoming message notifications"))
                 Text("Suggest activities from new message notifications", Modifier.padding(top = 12.dp))
             }
             Text("Enable Android notification access and select messaging apps below. SideKick ignores other apps. This reads new visible notification text, not message history. Senders’ plans are information-only, never your promises. Text and unapproved suggestions remain temporary.")
@@ -164,7 +165,7 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                 OutlinedTextField(filter, { filter = it }, label = { Text("Find a messaging app") })
                 apps.filter { it.second.contains(filter, true) }.forEach { (name, label) ->
                     Row {
-                        Checkbox(name in selectedApps, { settings.setMessageApp(name, it) })
+                        Checkbox(name in selectedApps, { settings.setMessageApp(name, it) }, modifier = Modifier.controlLabel("Read notifications from $label"))
                         Text(label, Modifier.padding(top = 12.dp))
                     }
                 }

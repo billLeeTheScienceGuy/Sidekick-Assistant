@@ -49,6 +49,8 @@ object LocalizedActivities {
         "тринадцать" to 13, "четырнадцать" to 14, "пятнадцать" to 15, "шестнадцать" to 16, "семнадцать" to 17, "восемнадцать" to 18, "девятнадцать" to 19,
         "двадцать один" to 21, "двадцать два" to 22, "двадцать три" to 23)
     private val numeral = "(?:\\d{1,2}|[零〇一二两兩三四五六七八九十]{1,3}|" + numberWords.keys.sortedByDescending { it.length }.joinToString("|") { Regex.escape(it) } + ")"
+    private val germanEvening = rx("\\b(?:morgen|heute)\\s+abend\\s+um\\s+($numeral)(?![\\p{L}\\d:])")
+    private val germanAttendance = rx("^ich bin\\s+(?:morgen|heute)\\s+abend\\s+um\\s+$numeral(?:\\s+uhr)?\\s+bei\\s+[^,;!?]{1,100}\\s+dabei[.!]?$")
     private val hourPattern = rx("(?:(오전|오후|아침|저녁|밤|새벽|上午|下午|晚上|早上)\\s*)?($numeral)\\s*(시(?!간)|点|點|heures?|h(?![a-z])|uhr|час[а-я]*)(?:\\s*(반|半)|\\s*(\\d{1,2})\\s*(?:분|分)?)?(?:\\s*(du soir|du matin|abends|morgens|вечера|утра))?")
     private val durationMarker = rx("동안|지속|持续|持續|\\b(?:dure|dauert|длится)\\b")
     private val duration = rx("($numeral)\\s*(시간|분|小时|小時|分钟|分鐘|heures?|minutes?|stunden?|minuten?|час[а-я]*|минут[а-я]*)")
@@ -101,6 +103,11 @@ object LocalizedActivities {
             else if (hour in 1..12) return@forEach // Do not guess morning versus evening.
             val minute = if (match.groupValues[4].isNotEmpty()) 30 else match.groupValues[5].toIntOrNull() ?: 0
             runCatching { LocalTime.of(hour, minute) }.getOrNull()?.let { values += Clock(it, match.range.first) }
+        }
+        germanEvening.findAll(text).forEach { match ->
+            val hour = number(match.groupValues[1]) ?: return@forEach
+            if (hour !in 6..11 && hour !in 13..23) return@forEach
+            if (values.none { it.position in match.range }) values += Clock(LocalTime.of(if (hour <= 11) hour + 12 else hour, 0), match.groups[1]!!.range.first)
         }
         return values.sortedBy { it.position }
     }
@@ -243,7 +250,8 @@ object LocalizedActivities {
                 }
                 if (foundEnd != null || foundPlace.name != null || foundPlace.address != null) evidence += following
             }
-            val attending = !informationalOnly && source.speaker == Speaker.USER && personal.containsMatchIn(sentence) && !reported.containsMatchIn(sentence)
+            val attending = !informationalOnly && source.speaker == Speaker.USER &&
+                (personal.containsMatchIn(sentence) || germanAttendance.matches(sentence)) && !reported.containsMatchIn(sentence)
             ProposedCommitment(sentence.trimEnd('.', '!', '。').take(500), evidence.distinct().joinToString("\n"), source.capturedAt, source.zoneId,
                 (if (attending) "Personal plan detected; verify ownership. " else "Attendance is unconfirmed. ") +
                     (if (explicit == null) "Date inferred from the next occurrence; check it. " else "") +

@@ -9,20 +9,19 @@ Event matches use the labeled subject token. Time, attendance and place accuracy
 
 | Group | Cases | TP / FP / FN | Precision | Recall | Exact time | Attendance | Known place | False / mistimed / missed reminders |
 |---|---:|---|---:|---:|---:|---:|---:|---:|
-| All | 92 | 81 / 0 / 2 | 100.0% | 97.6% | 100.0% | 100.0% | 100.0% | 0 / 0 / 2 |
+| All | 92 | 82 / 0 / 1 | 100.0% | 98.8% | 100.0% | 100.0% | 100.0% | 0 / 0 / 1 |
 | Baseline | 62 | 55 / 0 / 0 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 0 / 0 / 0 |
-| Challenge | 30 | 26 / 0 / 2 | 100.0% | 92.9% | 100.0% | 100.0% | n/a | 0 / 0 / 2 |
+| Challenge | 30 | 27 / 0 / 1 | 100.0% | 96.4% | 100.0% | 100.0% | n/a | 0 / 0 / 1 |
 | en | 26 | 23 / 0 / 0 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 0 / 0 / 0 |
 | ko | 11 | 10 / 0 / 0 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 0 / 0 / 0 |
 | zh | 11 | 10 / 0 / 0 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 0 / 0 / 0 |
 | fr | 11 | 10 / 0 / 0 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 0 / 0 / 0 |
-| de | 11 | 9 / 0 / 1 | 100.0% | 90.0% | 100.0% | 100.0% | 100.0% | 0 / 0 / 1 |
+| de | 11 | 10 / 0 / 0 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 0 / 0 / 0 |
 | ru | 11 | 10 / 0 / 0 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 0 / 0 / 0 |
 | ar | 11 | 9 / 0 / 1 | 100.0% | 90.0% | 100.0% | 100.0% | n/a | 0 / 0 / 1 |
 
 ## Cases needing work
 
-- ch09 (de, challenge): missed geburtstag; missing reminder
 - ch11 (ar, challenge): missed حفلة; missing reminder
 
 Reproduce with `gradlew :core:test --tests '*AccuracyEvaluationTest'`. The full case text and labels are in `core/src/test/resources/evaluation.tsv`. The generated report is `core/build/reports/accuracy.md`. Do not present these curated results as real-world accuracy or hide the challenge results.

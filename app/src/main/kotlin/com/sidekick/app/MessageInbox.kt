@@ -16,6 +16,7 @@ data class MessageEnvelope(val app: String, val conversation: String, val messag
 
 /** New notifications only. Separate bounded context per conversation; no inbox database. */
 class MessageInbox(private val settings: GuidanceSettings, private val temporary: TemporaryMemory, scope: CoroutineScope,
+    private val onRisk: (String) -> Unit = {},
     private val onDetected: suspend () -> Unit = {}) {
     private data class Context(var text: String, var capturedAt: Instant, var lastSeen: Long, var latestMessageAt: Long = Long.MIN_VALUE, val seen: MutableSet<String> = linkedSetOf())
     private val contexts = linkedMapOf<String, Context>()
@@ -56,6 +57,7 @@ class MessageInbox(private val settings: GuidanceSettings, private val temporary
             while (context.seen.size > 256) context.seen.remove(context.seen.first())
             val ordinary = temporary.prepareChanges(Transcript(text, Instant.ofEpochMilli(message.timestamp), ZoneId.systemDefault(), Speaker.OTHER, true), key)
             context.text = LiveText.append(context.text, ordinary.text, utteranceBreak = true).takeLast(6000)
+            onRisk(context.text)
             val source = Transcript(context.text, context.capturedAt, ZoneId.systemDefault(), Speaker.OTHER, true)
             val proposals = ActivityTiming.extract(source, informationalOnly = true).map {
                 it.copy(sourceKey = key, needsReview = "Incoming message: sender attendance does not imply yours. " + it.needsReview)

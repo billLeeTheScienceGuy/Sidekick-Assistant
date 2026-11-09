@@ -46,7 +46,10 @@ object ArabicActivities {
             val word = m.groupValues[1]; val parts = word.split(':')
             var hour = parts[0].toIntOrNull() ?: hourWords[word] ?: return@mapNotNull null
             val qualifier = m.groupValues[2]
-            if (qualifier.isNotEmpty()) { if (hour !in 1..12) return@mapNotNull null; hour = hour % 12 + if (qualifier == "صباحا") 0 else 12 }
+            if (qualifier.isNotEmpty()) {
+                if (hour !in 1..12 || qualifier == "ليلا" && hour in 1..5) return@mapNotNull null
+                hour = hour % 12 + if (qualifier == "صباحا" || qualifier == "ليلا" && hour == 12) 0 else 12
+            }
             else if (':' !in word && hour in 1..12) return@mapNotNull null
             runCatching { Time(LocalTime.of(hour, parts.getOrNull(1)?.toInt() ?: 0), m.range) }.getOrNull()
         }.toMutableList()

@@ -1,4 +1,11 @@
-# Try SideKick 0.3 on Pixel 7a
+# Try SideKick on Pixel 7a
+
+Current 0.27 setup: use **Get started** for language, model readiness, voice setup
+and permissions. English Fast is bundled; other speech modes use separately
+installed verified packs (MODEL_PACKS.md). Planner, text and Summary work without
+microphone permission. Use DEMO.md and CAPSTONE_CHECKLIST.md for the current demo.
+Settings → Memory & privacy provides opt-in retention, JSON export and local
+English risk advisories. Earlier version-specific notes below are historical.
 
 ## Version 0.4 smart analysis
 

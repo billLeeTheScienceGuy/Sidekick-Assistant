@@ -1,5 +1,30 @@
 # Handoff
 
+Current source: 0.27.0/code45. Capstone goals and proposal mapping are recorded in
+CAPSTONE_CHECKLIST.md. Added opt-in 30/90/365-day cleanup, explicit JSON event
+export (saved excerpts off by default), local English risk advisories and labelled
+selection controls. Large-text settings remain navigable at 160% font scale.
+Retention protects pending reminders, future items and undated accepted plans;
+deleted event evidence cannot return through Undo.
+
+Added Android notification-listener connection/rebind handling and actual status;
+access approval alone is no longer presented as a live connection. The real
+notification test explicitly selects Review mode and waits for binding. German
+evening attendance and Arabic midnight parsing are improved; ambiguous small
+night hours stay unknown. The unchanged 92-case corpus now has one missed reminder
+(98.8% recall); authored text results are not natural-speech accuracy.
+
+163 core tests pass. Four isolated physical Pixel checks passed in 5.763 seconds:
+bundled offline English inference/audio-buffer cleanup, full v1→v5 migration,
+private export and retention/Undo cleanup. No microphone was opened by those tests.
+Normal debug build/lint and benchmark build/lint pass. Final integration outcomes
+are in VALIDATION.md: all 95 broader emulator checks pass in 205.305 seconds.
+Normal 0.27.0/code45 is installed on the Pixel and its package version verified.
+Submission script includes source/build metadata, hashes,
+architecture, acceptance checklist and dated physical measurements.
+
+Previous 0.26.1:
+
 Current source: 0.26.1/code44. Fixed eight of the ten missed-reminder cases from
 the unchanged 92-case text corpus: spelled English clocks, heading-to plans,
 Chinese 明晚 and bounded French/German/Russian/Arabic appointment ownership.

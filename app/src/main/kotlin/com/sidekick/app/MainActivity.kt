@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         val app = application as SidekickApplication
         remindersReady = app.reminders.notificationsAllowed()
+        MessageNotificationListener.requestConnection(app)
         app.background.launch { runCatching { app.reminders.restore() } }
     }
     private var sharedText by mutableStateOf<String?>(null)
@@ -149,6 +150,7 @@ class MainActivity : ComponentActivity() {
                         FilterChip(selected = summaryOpen, onClick = { summaryOpen = true }, label = { Text("Summary") }, modifier = Modifier.testTag("summary-tab"))
                     }
                 }
+                item { RiskSection() }
                 if (summaryOpen && (listening.recording || listening.processing)) item {
                     Text(listening.note)
                     if (listening.recording) Button(onClick = { serviceAction(ListeningService.FINISH) }) { Text("Finish listening") }
@@ -234,7 +236,7 @@ class MainActivity : ComponentActivity() {
                                 TextButton(onClick = { model.clearTranscript(); consent = false }) { Text("Clear text") }
                             }
                             Row {
-                                Checkbox(checked = consent, onCheckedChange = { consent = it }, modifier = Modifier.testTag("consent"))
+                                Checkbox(checked = consent, onCheckedChange = { consent = it }, modifier = Modifier.testTag("consent").controlLabel("These are my words; analyze and save matching commitments"))
                                 Text("These are my words. Save matching commitments on this device.", Modifier.padding(top = 10.dp))
                             }
                             Button(onClick = model::analyze, enabled = consent && transcript.isNotBlank() && !busy && !listening.recording && !listening.processing) {
@@ -375,7 +377,7 @@ private fun Editor(item: CommitmentEntity, entries: List<CommitmentEntity>, erro
                 if (item.sourceKey?.startsWith("uncertain:") == true) Text(item.reviewNote, color = MaterialTheme.colorScheme.error)
                 OutlinedTextField(value = title, onValueChange = { if (it.length <= 500) title = it }, label = { Text(if (informational) "Event or note" else "What will you do?") }, modifier = Modifier.testTag("edit-title"))
                 Row {
-                    Checkbox(informational, { informational = it }, modifier = Modifier.testTag("event-informational"))
+                    Checkbox(informational, { informational = it }, modifier = Modifier.testTag("event-informational").controlLabel("Information only; attendance is unconfirmed"))
                     Text("For information only; I’m not planning to attend.", Modifier.padding(top = 12.dp))
                 }
                 DateTimeChoice("Reminder", time, zone, "edit-time", "pick-reminder", onChange = { time = it })

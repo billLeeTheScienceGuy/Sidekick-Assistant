@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import shutil
+import subprocess
 import zipfile
 
 root = Path(__file__).resolve().parents[1]
@@ -17,10 +18,12 @@ with zipfile.ZipFile(apk) as archive:
     assert all('assets/models/' + name not in names for name in optional), 'Optional models leaked into compact APK'
     assert 'assets/models/ggml-tiny.en.bin' in names
     assert 'assets/models/ggml-silero-v5.1.2.bin' in names
+    assert not any(name.startswith('assets/') and name.lower().endswith(('.wav', '.pcm', '.db', '.jks', '.keystore')) for name in names), 'Unexpected audio/database/key asset in APK'
+    assert 'assets/licenses/whisper-MIT.txt' in names
 out = root / 'dist' / f'SideKick-{version}'
 out.mkdir(parents=True, exist_ok=True)
 shutil.copy2(apk, out / f'SideKick-{version}.apk')
-for name in ['SUBMISSION_REPORT.md', 'ACCURACY_REPORT.md', 'DEMO.md', 'MODEL_PACKS.md', 'SUMMARIES.md', 'VALIDATION.md']:
+for name in ['SUBMISSION_REPORT.md', 'CAPSTONE_CHECKLIST.md', 'ARCHITECTURE.md', 'PRIVACY_AND_RISK.md', 'ACCURACY_REPORT.md', 'ASR_EVALUATION.md', 'STREAMING_BENCHMARK.md', 'DEMO.md', 'MODEL_PACKS.md', 'SUMMARIES.md', 'VALIDATION.md']:
     shutil.copy2(root / 'docs' / name, out / name)
 (out / 'README.txt').write_text(f'''SideKick {version} prototype
 
@@ -35,6 +38,15 @@ Source and reproducible build scripts: https://github.com/billLeeTheScienceGuy/S
 def digest(file):
     with file.open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
+(out / 'BUILD_INFO.json').write_text(json.dumps({
+    'version': version,
+    'versionCode': metadata['elements'][0]['versionCode'],
+    'sourceCommit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
+    'sourceHasUncommittedChanges': bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=root, text=True).strip()),
+    'buildVariant': 'debug',
+    'apkSha256': digest(apk),
+    'signing': 'Android development key; not a production store release',
+}, indent=2) + '\n', encoding='utf-8')
 (out / 'SHA256SUMS.txt').write_text(''.join(f'{digest(p)}  {p.name}\n' for p in sorted(out.iterdir()) if p.is_file() and p.name != 'SHA256SUMS.txt'), encoding='utf-8')
 print(f'Submission folder: {out}')
 print(f'APK: {apk.stat().st_size:,} bytes; optional packs: {root / ".deps/model-packs"}')

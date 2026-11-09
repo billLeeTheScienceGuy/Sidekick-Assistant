@@ -1,5 +1,12 @@
 # SideKick
 
+0.27 adds opt-in memory retention, private event export, local English risk
+advisories and labelled settings controls. Start with the
+[capstone checklist](docs/CAPSTONE_CHECKLIST.md), [architecture](docs/ARCHITECTURE.md)
+and [privacy behavior](docs/PRIVACY_AND_RISK.md). Reproduce the emulator checks with
+`scripts/validate_prototype.ps1`; the submission bundle includes dated evidence
+and known limitations.
+
 0.26 adds a [92-case text evaluation](docs/ACCURACY_REPORT.md), a Get started checklist, [verified offline model packs](docs/MODEL_PACKS.md), and a compact APK about 75% smaller. 0.26.1 fixes eight of the corpus's ten missed-reminder cases while preserving ambiguity and ownership checks. A [prototype submission report](docs/SUBMISSION_REPORT.md) and `scripts/prepare_submission.py` provide reproducible demo deliverables. The evaluation is curated text coverage, not real-world speech accuracy.
 
 0.25 adds [daily summaries and temporary conversation highlights](docs/SUMMARIES.md), explicit calendar-editor handoff, and stronger named/multilingual attendance updates. A [prototype demo checklist](docs/DEMO.md) describes the supported scope.

@@ -1,11 +1,35 @@
 package com.sidekick.app
 
 import android.app.Notification
+import android.app.NotificationManager
+import android.content.ComponentName
+import android.content.Context
+import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.flow.asStateFlow
 
 class MessageNotificationListener : NotificationListenerService() {
+    override fun onListenerConnected() { super.onListenerConnected(); connection.value = true }
+    override fun onListenerDisconnected() {
+        connection.value = false
+        super.onListenerDisconnected()
+        requestConnection(applicationContext)
+    }
+    override fun onDestroy() { connection.value = false; super.onDestroy() }
+    companion object {
+        private val connection = kotlinx.coroutines.flow.MutableStateFlow(false)
+        val connected = connection.asStateFlow()
+        fun requestConnection(context: Context) {
+            if (connection.value || !(context.applicationContext as SidekickApplication).guidance.messageNotifications.value) return
+            val component = ComponentName(context, MessageNotificationListener::class.java)
+            val granted = if (android.os.Build.VERSION.SDK_INT >= 27)
+                context.getSystemService(NotificationManager::class.java).isNotificationListenerAccessGranted(component)
+            else Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners").orEmpty().split(':').contains(component.flattenToString())
+            if (granted) try { requestRebind(component) } catch (_: SecurityException) { }
+        }
+    }
     @Suppress("DEPRECATION")
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         runCatching { readMessage(sbn) }
