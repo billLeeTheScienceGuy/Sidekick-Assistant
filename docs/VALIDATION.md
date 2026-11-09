@@ -1,5 +1,11 @@
 # 0.29 broader speech and recovery validation
 
+Fresh Linux CI for code/build commit `0f7ebbc` passed on both
+[main](https://github.com/billLeeTheScienceGuy/Sidekick-Assistant/actions/runs/42701865061)
+and [working branch](https://github.com/billLeeTheScienceGuy/Sidekick-Assistant/actions/runs/42701864828).
+The final bundle's 29 checksum entries and bundled segmentation model/license
+were verified. Its build metadata records a clean source revision.
+
 November 9, 2026. All 186 core tests pass. Normal debug, benchmark and compactTest
 builds/lint pass. The final isolated emulator suite passes **117 checks in
 325.575 seconds**; the compact-package suite passes **27 in 54.461 seconds**.
