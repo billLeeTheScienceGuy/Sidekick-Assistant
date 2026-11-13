@@ -43,3 +43,10 @@ user-study outcomes. Use VALIDATION.md for the exact tested scope.
     seven-language paced pipeline and 31/34 short Automatic command result.
     Show the three Arabic misses rather than describing synthetic-fixture coverage
     as perfect recognition. The last actual recognizer appears in Voice diagnostics.
+
+14. Open Settings and compare Simple/Detailed home layouts. Change text size and
+    interface size independently; try Calm/Classic/Warm and Light/Dark/System.
+    Disable manual note-taking and verify writing/manual-add controls disappear,
+    while listening and saved-plan editing remain available. Reset appearance
+    restores the look without resetting functional choices. On a short window,
+    Simple home prioritizes listening and the link to detailed tools.

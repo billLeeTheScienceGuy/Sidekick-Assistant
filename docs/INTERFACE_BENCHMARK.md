@@ -63,3 +63,13 @@ appearance persistence, optional details, actual window-dependent navigation and
 changes actual display size/density/font scale and restores those settings.
 Screenshots contain only synthetic/empty test-app content, not personal data.
 See VALIDATION.md for measured outcomes and the exact matrix.
+
+## Screenshots from the verified layout matrix
+
+Synthetic/empty emulator data only. These are actual app screenshots.
+
+![Simple home, Calm design](images/simple-home.png)
+
+![Classic design in a short landscape window](images/classic-landscape.png)
+
+![Detailed view, Warm design, scrolled to listening controls](images/warm-detailed.png)

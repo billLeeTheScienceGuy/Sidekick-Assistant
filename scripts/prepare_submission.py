@@ -32,6 +32,10 @@ evidence.mkdir(exist_ok=True)
 for source in (root / 'docs/evaluation').iterdir():
     if source.is_file() and source.suffix in {'.json', '.md'}:
         shutil.copy2(source, evidence / source.name)
+images = out / 'images'
+images.mkdir(exist_ok=True)
+for name in ['simple-home.png', 'classic-landscape.png', 'warm-detailed.png']:
+    shutil.copy2(root / 'docs/images' / name, images / name)
 (out / 'README.txt').write_text(f'''SideKick {version} prototype
 
 Install SideKick-{version}.apk on an Android device that permits sideloading.

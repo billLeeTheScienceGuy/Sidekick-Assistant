@@ -384,7 +384,7 @@ class MainActivity : ComponentActivity() {
             text = { Text("Start when everyone included has agreed to live transcription. Stop if someone joins without agreeing or withdraws consent. Voice matching does not verify consent. Listening continues with the screen off. Audio is discarded after processing; recent text stays temporary. " +
                 (if (handsOff) "Detected events and matching corrections save automatically, with Undo in notifications. Stopping does not delete saved events. " else "Only items you approve are saved. ") +
                 (if ((application as SidekickApplication).assistant.isSelected() && (application as SidekickApplication).assistant.enabled.value) "Assistant recovery will resume this enabled session after system restarts, including reboots, until you press Stop. " else "") +
-                "Use the notification controls to stop listening.") },
+                "Use the notification controls to stop listening.", modifier = Modifier.verticalScroll(rememberScrollState())) },
             confirmButton = { TextButton(onClick = {
                 micDialog = false
                 if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
