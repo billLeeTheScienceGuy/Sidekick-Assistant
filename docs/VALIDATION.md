@@ -1,5 +1,11 @@
 # 0.30 adaptive Android interface — November 13, 2026
 
+Final Linux CI for `8bd667f` passed on both
+[main](https://github.com/billLeeTheScienceGuy/Sidekick-Assistant/actions/runs/43496988378)
+and [working branch](https://github.com/billLeeTheScienceGuy/Sidekick-Assistant/actions/runs/43496989294).
+The submission bundle contains 34 verified checksum entries, including the
+interface evidence and three synthetic/empty emulator screenshots.
+
 All 186 core checks remain passing. The normal and isolated compact apps build;
 debug lint passes. Eight isolated physical Pixel 7a/Android 17 UI checks passed
 in **17.290 seconds**, covering navigation/draft preservation, appearance,

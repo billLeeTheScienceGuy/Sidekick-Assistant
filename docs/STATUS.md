@@ -18,6 +18,9 @@ The final normal APK matches the installed phone APK by SHA-256. Dark system bar
 and the listening dialog were visually checked on the real phone; capture was
 not started. The temporary test app is removed and the emulator is stopped.
 
+Final code/polish commit 8bd667f passed Linux CI on main (43496988378) and the
+working branch (43496989294). The submission bundle has 34 verified checksums.
+
 Previous 0.29:
 
 Current source: **0.29.0/code47**, Room schema6. Measured Adaptive Automatic and
