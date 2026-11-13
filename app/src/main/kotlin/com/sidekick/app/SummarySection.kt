@@ -12,7 +12,7 @@ import com.sidekick.app.data.CommitmentEntity
 import com.sidekick.core.*
 import java.time.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun SummarySection(entries: List<CommitmentEntity>, liveText: String, canClear: Boolean, onClear: () -> Unit, onOpen: (CommitmentEntity) -> Unit) {
     val zone = ZoneId.systemDefault()
@@ -28,9 +28,9 @@ internal fun SummarySection(entries: List<CommitmentEntity>, liveText: String, c
     val highlights = remember(liveText) { MemorySummary.conversation(liveText) }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth().testTag("summary-content")) {
         Text("Daily overview", style = MaterialTheme.typography.headlineSmall)
-        Text("Saved facts · ${zone.id}. Times follow the phone's timezone.")
+        QuietLabel("Saved facts · ${zone.id}")
         calendarError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = { selected = day.minusDays(1).toString() }) { Text("Previous") }
             TextButton(onClick = { selected = LocalDate.now(zone).toString() }) { Text("Today") }
             TextButton(onClick = { selected = day.plusDays(1).toString() }) { Text("Next") }

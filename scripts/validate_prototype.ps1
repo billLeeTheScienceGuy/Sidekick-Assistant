@@ -28,8 +28,9 @@ try {
         & $adb -s $DeviceSerial shell pm grant $package android.permission.POST_NOTIFICATIONS
         if ($LASTEXITCODE -ne 0) { throw 'Could not prepare isolated notification test permission.' }
     }
-    $classes = @('ActivityTimingTest','MemoryPrivacyTest','PrivacyScreenTest','PrivacyRegionSettingsTest','MessageRiskTest','BundledOfflineTest','CalendarMirrorTest','CalendarProviderSyncTest','CalendarTargetScreenTest','TrackedVoiceChangesTest')
-    if ($Suite -eq 'Compact') { $classes += 'CompactSetupTest' }
+    $classes = @('ActivityTimingTest','MemoryPrivacyTest','PrivacyScreenTest','PrivacyRegionSettingsTest','MessageRiskTest','BundledOfflineTest','CalendarMirrorTest','CalendarProviderSyncTest','CalendarTargetScreenTest','TrackedVoiceChangesTest','ResponsiveInterfaceTest')
+    $classes += 'InterfaceCustomizationTest'
+    if ($Suite -eq 'Compact') { $classes += @('CompactSetupTest','PlannerScreenTest','SummaryScreenTest','UndoPlannerTest','AutomaticScreenTest','UncertainUpdateScreenTest') }
     else { $classes += @('FoundationTest','PlannerScreenTest','SummaryScreenTest','CalendarDraftTest','AutomaticScreenTest','CalendarTest','AutomaticMemoryTest','EventChangeTest','LocalizedChangesTest','MessageInboxTest','CopiedSpeechTest','ReminderTest','ReminderRecoveryTest','EventReminderJourneyTest','UndoPlannerTest','UncertainUpdateTest','UncertainUpdateScreenTest','VoiceDuplicateTest','LanguageVoiceProfileTest','EmulatorIntegrationTest','NeuralDiarizationTest','SpeakerTurnsTest','SpeakerIdentityTest','SpeakerPaddingTest') }
     $qualified = ($classes | ForEach-Object { "com.sidekick.app.$_" }) -join ','
     $arguments = @('-s',$DeviceSerial,'shell','am','instrument','-w','-e','class',$qualified)

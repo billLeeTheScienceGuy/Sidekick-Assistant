@@ -16,13 +16,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sidekick.app.audio.ListeningService
+import com.sidekick.app.SidekickApplication
 
 /** User-initiated microphone setup; raw speech never leaves bounded service buffers. */
 class VoiceEnrollmentActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
+            com.sidekick.app.SidekickAppTheme((application as SidekickApplication).guidance) {
                 val state by ListeningService.state.collectAsState()
                 val selectedModel by (application as com.sidekick.app.SidekickApplication).voiceProfile.model.collectAsState()
                 val language by (application as com.sidekick.app.SidekickApplication).guidance.speechLanguage.collectAsState()

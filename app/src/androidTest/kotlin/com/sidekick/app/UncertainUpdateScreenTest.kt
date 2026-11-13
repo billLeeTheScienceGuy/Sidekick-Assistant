@@ -15,7 +15,7 @@ class UncertainUpdateScreenTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     @Test fun editorRequiresConfirmationAndReplacesOneDraft() {
         val app = compose.activity.application as SidekickApplication
-        assumeTrue(app.packageName.endsWith(".benchmark"))
+        assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         val previousMode = app.guidance.handsOffMode.value
         app.guidance.setHandsOff(false)
         val before = app.temporary.drafts.value.map { it.id }.toSet()
@@ -27,7 +27,7 @@ class UncertainUpdateScreenTest {
             target = original.id
             app.temporary.appendAttributedLive("It ends at midnight.", now.plusSeconds(10), ZoneId.of("America/Chicago"), Speaker.UNKNOWN)
             val revision = app.temporary.drafts.value.single { app.temporary.updateTarget(it.id) == original.id }
-            compose.onNodeWithTag("planner-tab").performScrollTo().performClick()
+            compose.onNodeWithTag("planner-tab").performClick()
             compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("review-${revision.id}"))
             compose.onNodeWithTag("review-${revision.id}").performScrollTo().performClick()
             compose.onNode(hasText(revision.reviewNote) and hasAnyAncestor(isDialog())).performScrollTo().assertIsDisplayed()

@@ -1,6 +1,6 @@
 # SideKick prototype implementation and evaluation
 
-Prepared November 9, 2026. Version 0.29.0. This describes a working Android
+Prepared November 13, 2026. Version 0.30.0. This describes a working Android
 prototype and its measured limits; it is not a claim that the entire Phase 1
 proposal or a production 24/7 assistant is complete.
 
@@ -10,6 +10,12 @@ detection and permission-revocation recovery protection. Owner context remains
 stable across anonymous cluster changes; continuous Chinese/Korean overlap is
 removed without altering numerals. See [broader quality evidence](ROBUSTNESS_EVALUATION.md).
 Short Arabic clocks remain imperfect, and no all-day battery claim is made.
+
+Version 0.30 adds Simple and Detailed home layouts over the same saved data,
+app-local text and control sizing, three design presets and three appearance
+modes. Manual note-taking can be hidden independently of reviewing detected
+plans. Navigation responds to the current window, with large-text and RTL checks.
+The user explicitly excluded iPhone work. See [interface comparisons and methods](INTERFACE_BENCHMARK.md).
 
 ## Implemented system
 

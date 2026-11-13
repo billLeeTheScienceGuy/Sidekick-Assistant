@@ -9,6 +9,35 @@ enum class PlaceContext { CITY, PHONE }
 
 class GuidanceSettings(context: Context) {
     private val preferences = context.getSharedPreferences("guidance", Context.MODE_PRIVATE)
+    private val appearanceValue = MutableStateFlow(runCatching {
+        AppearanceMode.valueOf(preferences.getString("appearance", "SYSTEM") ?: "SYSTEM")
+    }.getOrDefault(AppearanceMode.SYSTEM))
+    val appearance = appearanceValue.asStateFlow()
+    fun setAppearance(value: AppearanceMode) {
+        preferences.edit().putString("appearance", value.name).apply(); appearanceValue.value = value
+    }
+    private inline fun <reified T : Enum<T>> preference(key: String, fallback: T): T =
+        runCatching { enumValueOf<T>(preferences.getString(key, fallback.name) ?: fallback.name) }.getOrDefault(fallback)
+    private val designValue = MutableStateFlow(preference("interface_design", InterfaceDesign.CALM))
+    val interfaceDesign = designValue.asStateFlow()
+    fun setInterfaceDesign(value: InterfaceDesign) { preferences.edit().putString("interface_design", value.name).apply(); designValue.value = value }
+    private val textSizeValue = MutableStateFlow(preference("note_text_size", NoteTextSize.PHONE))
+    val noteTextSize = textSizeValue.asStateFlow()
+    fun setNoteTextSize(value: NoteTextSize) { preferences.edit().putString("note_text_size", value.name).apply(); textSizeValue.value = value }
+    private val interfaceSizeValue = MutableStateFlow(preference("interface_size", InterfaceSize.PHONE))
+    val interfaceSize = interfaceSizeValue.asStateFlow()
+    fun setInterfaceSize(value: InterfaceSize) { preferences.edit().putString("interface_size", value.name).apply(); interfaceSizeValue.value = value }
+    private val manualNotesValue = MutableStateFlow(preferences.getBoolean("manual_notes", true))
+    val manualNotes = manualNotesValue.asStateFlow()
+    fun setManualNotes(value: Boolean) { preferences.edit().putBoolean("manual_notes", value).apply(); manualNotesValue.value = value }
+    private val oneScreenValue = MutableStateFlow(preferences.getBoolean("one_screen_home", false))
+    val oneScreenHome = oneScreenValue.asStateFlow()
+    fun setOneScreenHome(value: Boolean) { preferences.edit().putBoolean("one_screen_home", value).apply(); oneScreenValue.value = value }
+    fun resetAppearance() {
+        setAppearance(AppearanceMode.SYSTEM); setInterfaceDesign(InterfaceDesign.CALM)
+        setNoteTextSize(NoteTextSize.PHONE); setInterfaceSize(InterfaceSize.PHONE)
+    }
+
     private val phoneRegionValue = MutableStateFlow(preferences.getBoolean("privacy_phone_region", false))
     val privacyPhoneRegion = phoneRegionValue.asStateFlow()
     private val regionValue = MutableStateFlow(runCatching {

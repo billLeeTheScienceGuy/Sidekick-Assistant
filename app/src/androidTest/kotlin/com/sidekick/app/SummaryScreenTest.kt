@@ -15,7 +15,7 @@ class SummaryScreenTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     @Test fun savedFactsAndTemporaryHighlightsStaySeparateAndEditingUpdatesTheDigest() {
         val app = compose.activity.application as SidekickApplication
-        assumeTrue(app.packageName.endsWith(".benchmark"))
+        assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         val previous = app.guidance.handsOffMode.value
         val prefix = "summary-fixture-"; val now = Instant.now(); val zone = ZoneId.systemDefault()
         val plan = CommitmentEntity(prefix + "plan", "Summary fixture plan", "Synthetic", now.toEpochMilli(), zone.id, "Fixture",

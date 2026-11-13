@@ -15,7 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) {
     val context = LocalContext.current
@@ -52,8 +55,64 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) settings.setPlaceContext(PlaceContext.PHONE)
     }
-    AlertDialog(onDismissRequest = onClose, title = { Text("Settings") }, text = {
-        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val appearance by settings.appearance.collectAsState()
+    val design by settings.interfaceDesign.collectAsState()
+    val textSize by settings.noteTextSize.collectAsState()
+    val interfaceSize by settings.interfaceSize.collectAsState()
+    val manualNotes by settings.manualNotes.collectAsState()
+    val oneScreen by settings.oneScreenHome.collectAsState()
+    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+      Surface(Modifier.safeDrawingPadding().imePadding().widthIn(max = 720.dp).fillMaxWidth().fillMaxHeight(0.95f), shape = MaterialTheme.shapes.large) {
+       Column {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Text("Settings", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+            TextButton(onClick = onClose) { Text("Close") }
+        }
+        HorizontalDivider()
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Appearance", style = MaterialTheme.typography.titleMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AppearanceMode.entries.forEach { mode ->
+                    FilterChip(selected = mode == appearance, onClick = { settings.setAppearance(mode) },
+                        label = { Text(mode.name.lowercase().replaceFirstChar { it.uppercase() }) }, modifier = Modifier.testTag("appearance-${mode.name}"))
+                }
+            }
+            Text("Design", style = MaterialTheme.typography.titleMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                InterfaceDesign.entries.forEach { choice ->
+                    FilterChip(design == choice, { settings.setInterfaceDesign(choice) }, label = { Text(choice.label) }, modifier = Modifier.testTag("design-${choice.name}"))
+                }
+            }
+            QuietLabel("Calm: soft teal. Classic: crisp blue. Warm: amber and serif headings.")
+            Text("Text size", style = MaterialTheme.typography.titleMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                NoteTextSize.entries.forEach { choice ->
+                    FilterChip(textSize == choice, { settings.setNoteTextSize(choice) }, label = { Text(choice.label) }, modifier = Modifier.testTag("text-size-${choice.name}"))
+                }
+            }
+            Text("Interface size", style = MaterialTheme.typography.titleMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                InterfaceSize.entries.forEach { choice ->
+                    FilterChip(interfaceSize == choice, { settings.setInterfaceSize(choice) }, label = { Text(choice.label) }, modifier = Modifier.testTag("interface-size-${choice.name}"))
+                }
+            }
+            QuietLabel("Text and interface size adjust separately, relative to your phone settings. Larger interface sizes increase controls and spacing.")
+            TextButton(onClick = settings::resetAppearance, modifier = Modifier.testTag("reset-appearance")) { Text("Reset appearance") }
+            HorizontalDivider()
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text("Manual note-taking", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Switch(manualNotes, settings::setManualNotes, modifier = Modifier.testTag("manual-notes").controlLabel("Show manual note-taking"))
+            }
+            QuietLabel("Show the writing panel and manual add button. You can always review and edit detected plans.")
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text("Home layout", style = MaterialTheme.typography.titleMedium)
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(oneScreen, { settings.setOneScreenHome(true) }, label = { Text("Simple") }, modifier = Modifier.testTag("home-simple"))
+                FilterChip(!oneScreen, { settings.setOneScreenHome(false) }, label = { Text("Detailed") }, modifier = Modifier.testTag("home-detailed"))
+            }
+            QuietLabel("Simple: listening and your next plan on one screen. Detailed: notes, transcript and technical tools.")
+            HorizontalDivider()
             SetupStatus(settings)
             MemoryPrivacySection()
             PrivacyGuidanceSection(settings)
@@ -182,7 +241,9 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                 if (selectedApps.isEmpty()) Text("No apps selected. Message scanning is inactive.")
             }
         }
-    }, confirmButton = { TextButton(onClick = onClose) { Text("Close") } })
+       }
+      }
+    }
     if (deleteVoice) AlertDialog(onDismissRequest = { deleteVoice = false }, title = { Text("Delete voice profile?") },
         text = { Text("This removes voice signatures for all languages and both models from this phone. Saved events stay. You can enroll again later.") },
         confirmButton = { TextButton(onClick = { voice.delete(); deleteVoice = false }) { Text("Delete") } },

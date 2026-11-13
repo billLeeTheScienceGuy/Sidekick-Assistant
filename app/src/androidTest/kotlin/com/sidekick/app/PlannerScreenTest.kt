@@ -13,7 +13,7 @@ class PlannerScreenTest {
     private var handsOff = false
     @org.junit.Before fun reviewMode() {
         val app = compose.activity.application as SidekickApplication
-        assumeTrue(app.packageName.endsWith(".benchmark"))
+        assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         handsOff = app.guidance.handsOffMode.value; app.guidance.setHandsOff(false); app.temporary.discard()
     }
     @org.junit.After fun restoreMode() {
@@ -23,20 +23,20 @@ class PlannerScreenTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     @Test fun speechLanguagePersistsAndShowsItsLocalTranscriptionScope() {
         val app = compose.activity.application as SidekickApplication
-        assumeTrue(app.packageName.endsWith(".benchmark"))
+        assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         val previous = app.guidance.speechLanguage.value
         try {
-            compose.onNodeWithTag("settings").performScrollTo().performClick()
+            compose.onNodeWithTag("settings").performClick()
             compose.onNodeWithTag("speech-language-ko").performScrollTo().performClick()
             assertEquals(com.sidekick.core.SpeechLanguage.KOREAN, GuidanceSettings(app).speechLanguage.value)
             compose.onNodeWithText("Close").performClick()
-            compose.onNodeWithText("Speech detection · 한국어 · Korean · on-device transcription").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("한국어 · Korean · On-device").performScrollTo().assertIsDisplayed()
         } finally { app.guidance.setSpeechLanguage(previous) }
     }
     @Test fun voiceSetupIsReachableWithoutOpeningMicrophone() {
         val app = compose.activity.application as SidekickApplication
-        assumeTrue(app.packageName.endsWith(".benchmark"))
-        compose.onNodeWithTag("settings").performScrollTo().performClick()
+        assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
+        compose.onNodeWithTag("settings").performClick()
         compose.onNodeWithText("Set up my voice").performScrollTo().performClick()
         compose.onNodeWithText("Start voice setup").performScrollTo().assertIsDisplayed()
         assertFalse(com.sidekick.app.audio.ListeningService.state.value.recording)
@@ -44,7 +44,7 @@ class PlannerScreenTest {
     }
     @Test fun sharingRequiresConfirmationAndNeverSavesSenderPlansAutomatically() {
         val app = compose.activity.application as SidekickApplication
-        assumeTrue(app.packageName.endsWith(".benchmark"))
+        assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         val previousSharing = app.guidance.sharedMessages.value
         val previousInclude = app.guidance.includeInformational.value
         val before = app.temporary.drafts.value.map { it.id }.toSet()
@@ -77,18 +77,18 @@ class PlannerScreenTest {
 
     @Test fun modesPersistAndUnknownEndNeverBlocksApproval() {
         val app = compose.activity.application as SidekickApplication
-        assumeTrue(app.packageName.endsWith(".benchmark"))
+        assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         val previous = app.guidance.mode.value
         val fixture = CommitmentEntity("guidance-fixture", "Guidance fixture party", "Synthetic fixture", System.currentTimeMillis(), "America/Chicago", "Test")
         try {
             app.temporary.add(fixture)
-            compose.onNodeWithTag("settings").performScrollTo().performClick()
+            compose.onNodeWithTag("settings").performClick()
             val allowed = compose.activity.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
             compose.onNodeWithTag("location-permission-status").assertTextEquals("Location permission: ${if (allowed) "Allowed" else "Not allowed"}")
             compose.onNodeWithTag("mode-ask").performScrollTo().performClick()
             compose.onNodeWithText("Close").performClick()
             assertEquals(GuidanceMode.ASK, GuidanceSettings(app).mode.value)
-            compose.onNodeWithTag("planner-tab").performScrollTo().performClick()
+            compose.onNodeWithTag("planner-tab").performClick()
             compose.onNodeWithTag("planner-search").performScrollTo().performTextInput("Guidance fixture")
             compose.onNodeWithText("Review & accept").performScrollTo().performClick()
             compose.onNodeWithText("When do you think this will last till?").performScrollTo().assertIsDisplayed()
@@ -98,7 +98,7 @@ class PlannerScreenTest {
             compose.waitUntil(5000) { runBlocking { app.database.commitments().get(fixture.id) != null } }
             val saved = runBlocking { app.database.commitments().get(fixture.id)!! }
             assertNull(saved.activityStartAt); assertNull(saved.activityEndAt); assertNull(saved.dueAt)
-            compose.onNodeWithTag("settings").performScrollTo().performClick()
+            compose.onNodeWithTag("settings").performClick()
             compose.onNodeWithTag("mode-passive").performScrollTo().performClick()
             compose.onNodeWithText("Close").performClick()
             compose.onNodeWithTag("filter-UNSCHEDULED").performScrollTo().performClick()
@@ -116,7 +116,7 @@ class PlannerScreenTest {
 
     @Test fun filtersSearchAndReminderEditorWorkWithoutTouchingPersonalData() {
         val app = compose.activity.application as SidekickApplication
-        assumeTrue(app.packageName.endsWith(".benchmark"))
+        assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         val dao = app.database.commitments()
         val prefix = "planner-fixture-"
         val now = System.currentTimeMillis()
