@@ -25,7 +25,7 @@ with zipfile.ZipFile(apk) as archive:
 out = root / 'dist' / f'SideKick-{version}'
 out.mkdir(parents=True, exist_ok=True)
 shutil.copy2(apk, out / f'SideKick-{version}.apk')
-for name in ['SUBMISSION_REPORT.md', 'CAPSTONE_CHECKLIST.md', 'ARCHITECTURE.md', 'PRIVACY_AND_RISK.md', 'SPEAKER_TURNS.md', 'SUSTAINED_TURNS.md', 'CALENDAR_SYNC.md', 'ACCURACY_REPORT.md', 'ASR_EVALUATION.md', 'ROBUSTNESS_EVALUATION.md', 'STREAMING_BENCHMARK.md', 'DEMO.md', 'MODEL_PACKS.md', 'SUMMARIES.md', 'VALIDATION.md']:
+for name in ['SUBMISSION_REPORT.md', 'CAPSTONE_CHECKLIST.md', 'ARCHITECTURE.md', 'PRIVACY_AND_RISK.md', 'SPEAKER_TURNS.md', 'SUSTAINED_TURNS.md', 'CALENDAR_SYNC.md', 'ACCURACY_REPORT.md', 'ASR_EVALUATION.md', 'ROBUSTNESS_EVALUATION.md', 'INTERFACE_BENCHMARK.md', 'STREAMING_BENCHMARK.md', 'DEMO.md', 'MODEL_PACKS.md', 'SUMMARIES.md', 'VALIDATION.md']:
     shutil.copy2(root / 'docs' / name, out / name)
 evidence = out / 'evaluation'
 evidence.mkdir(exist_ok=True)

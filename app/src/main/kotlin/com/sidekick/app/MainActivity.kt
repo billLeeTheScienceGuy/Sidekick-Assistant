@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -22,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,10 +60,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         receiveShare(intent)
         setContent {
-            MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF176B58), background = Color(0xFFF6F8F5))) { SidekickScreen() }
+            SidekickAppTheme((application as SidekickApplication).guidance) { SidekickScreen() }
         }
     }
 
+    @OptIn(ExperimentalLayoutApi::class)
     @Composable
     private fun SidekickScreen(model: MemoryViewModel = viewModel()) {
         val entries by model.items.collectAsStateWithLifecycle()
@@ -76,6 +79,9 @@ class MainActivity : ComponentActivity() {
         val editError by model.editError.collectAsStateWithLifecycle()
         val guidance by model.guidance.collectAsStateWithLifecycle()
         val handsOff by (application as SidekickApplication).guidance.handsOffMode.collectAsStateWithLifecycle()
+        val manualNotes by (application as SidekickApplication).guidance.manualNotes.collectAsStateWithLifecycle()
+        val oneScreen by (application as SidekickApplication).guidance.oneScreenHome.collectAsStateWithLifecycle()
+        var expandedCapture by rememberSaveable { mutableStateOf(false) }
         val automaticStatus by (application as SidekickApplication).automation.status.collectAsStateWithLifecycle()
         val sharedMessagesEnabled by (application as SidekickApplication).guidance.sharedMessages.collectAsStateWithLifecycle()
         val speechLanguage by (application as SidekickApplication).guidance.speechLanguage.collectAsStateWithLifecycle()
@@ -86,6 +92,9 @@ class MainActivity : ComponentActivity() {
         val missingPacks = remember(speechLanguage, speechQuality, packRevision) { com.sidekick.app.speech.ModelPacks.missing(this@MainActivity, speechLanguage, speechQuality) }
         var consent by remember { mutableStateOf(false) }
         var micDialog by remember { mutableStateOf(false) }
+        var showFullLiveText by rememberSaveable { mutableStateOf(false) }
+        var showSessionDetails by rememberSaveable { mutableStateOf(false) }
+        var showNoteTools by rememberSaveable { mutableStateOf(false) }
         var showVoiceDiagnostics by remember { mutableStateOf(false) }
         var showSpeakerTurns by remember { mutableStateOf(false) }
         var deleteDialog by remember { mutableStateOf(false) }
@@ -100,7 +109,7 @@ class MainActivity : ComponentActivity() {
         val byId = entries.associateBy { it.id }
         val shownEntries = if (plannerOpen) Planner.select(references, selectedView).mapNotNull { byId[it.id] }
             .filter { search.isBlank() || it.title.contains(search.trim(), true) || it.evidence.contains(search.trim(), true) }
-            else entries
+            else entries.take(3)
         LaunchedEffect(sharedText, handsOff, sharedMessagesEnabled) {
             if (handsOff && sharedMessagesEnabled) sharedText?.let { text ->
                 sharedText = null; model.analyzeSharedText(text)
@@ -148,31 +157,41 @@ class MainActivity : ComponentActivity() {
             if (calendarTarget == id) calendarTarget = null
         }
 
-        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            LazyColumn(Modifier.safeDrawingPadding().imePadding().testTag("main-list"),
-                contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        val focus = LocalFocusManager.current
+        val captureList = rememberLazyListState()
+        val plannerList = rememberLazyListState()
+        val summaryList = rememberLazyListState()
+        SidekickFrame(selected = if (summaryOpen) 2 else if (plannerOpen) 1 else 0,
+            onSelect = { focus.clearFocus(); expandedCapture = false; plannerOpen = it == 1; summaryOpen = it == 2 }, onSettings = { focus.clearFocus(); settingsOpen = true }) {
+            if (oneScreen && !expandedCapture && !plannerOpen && !summaryOpen) {
+                CompactHome(listening, entries, liveText, manualNotes, missingPacks.isNotEmpty(), busy, error,
+                    onStart = { micDialog = true }, onFinish = { serviceAction(ListeningService.FINISH) },
+                    onDetails = { expandedCapture = true }, onSetup = { quickStartOpen = true }, onOpen = ::openEditor)
+            } else {
+            LazyColumn(Modifier.fillMaxSize().testTag("main-list"), state = if (summaryOpen) summaryList else if (plannerOpen) plannerList else captureList,
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 item {
-                    Text("SideKick", style = MaterialTheme.typography.headlineLarge)
-                    Text("A little less to remember", style = MaterialTheme.typography.titleMedium)
-                    TextButton(onClick = { settingsOpen = true }, modifier = Modifier.testTag("settings")) { Text("Settings") }
-                    TextButton(onClick = { quickStartOpen = true }, modifier = Modifier.testTag("get-started")) { Text("Get started · language, models & permissions") }
-                    Text(if (handsOff) "Hands-off mode · $automaticStatus" else "Review mode · approve items to save", modifier = Modifier.testTag("automation-status"))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        FilterChip(selected = !plannerOpen && !summaryOpen, onClick = { plannerOpen = false; summaryOpen = false }, label = { Text("Capture") })
-                        FilterChip(selected = plannerOpen && !summaryOpen, onClick = { plannerOpen = true; summaryOpen = false }, label = { Text("Planner") }, modifier = Modifier.testTag("planner-tab"))
-                        FilterChip(selected = summaryOpen, onClick = { summaryOpen = true }, label = { Text("Summary") }, modifier = Modifier.testTag("summary-tab"))
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (oneScreen && expandedCapture && !plannerOpen && !summaryOpen) TextButton(onClick = { expandedCapture = false }) { Text("Back to simple home") }
+                        Text(if (summaryOpen) "Summary" else if (plannerOpen) "Planner" else "Capture", style = MaterialTheme.typography.headlineMedium)
+                        QuietLabel(if (summaryOpen) "Your day at a glance." else if (plannerOpen) "Plans, reminders and things to review." else "Turn conversations into plans.")
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            SuggestionChip(onClick = { settingsOpen = true }, label = { Text(if (handsOff) "Hands-off" else "Review first") })
+                            TextButton(onClick = { quickStartOpen = true }, modifier = Modifier.testTag("get-started")) { Text("Set up") }
+                        }
+                        QuietLabel(if (handsOff) "Hands-off mode · $automaticStatus" else "Review mode · approve items to save", Modifier.testTag("automation-status"))
                     }
                 }
                 item { RiskSection() }
                 if (summaryOpen && (listening.recording || listening.processing)) item {
                     Text(listening.note)
-                    if (listening.recording) Button(onClick = { serviceAction(ListeningService.FINISH) }) { Text("Finish listening") }
+                    if (listening.recording) Button(onClick = { serviceAction(ListeningService.FINISH) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Finish listening") }
                 }
                 if (summaryOpen) item { SummarySection(entries, liveText, !listening.recording && !listening.processing, model::clearRecentConversation, ::openEditor) }
                 else {
                 if (plannerOpen && (listening.recording || listening.processing)) item {
                     Text(listening.note)
-                    if (listening.recording) Button(onClick = { serviceAction(ListeningService.FINISH) }) { Text("Finish listening") }
+                    if (listening.recording) Button(onClick = { serviceAction(ListeningService.FINISH) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Finish listening") }
                     TextButton(onClick = { serviceAction(ListeningService.CANCEL) }) { Text(if (handsOff) "Stop & clear temporary text" else "Discard session") }
                 }
                 if (plannerOpen && !remindersReady) item {
@@ -191,45 +210,26 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 if (!plannerOpen) item {
-                    Card {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text("Live notes", style = MaterialTheme.typography.titleLarge)
-                            Text("Speech detection · ${speechLanguage.label} · on-device transcription")
-                            Text("New times use phone timezone: ${ZoneId.systemDefault().id}", style = MaterialTheme.typography.bodySmall)
-                            Text(if (speechQuality.usesSenseVoice(speechLanguage)) "SenseVoice int8 · ${speechLanguage.label} · on-device" else if (speechQuality.usesOmni(speechLanguage, true)) "Omnilingual int8 · ${speechLanguage.label} · on-device" else speechQuality.label, style = MaterialTheme.typography.bodySmall)
-                            if (speechLanguage != com.sidekick.core.SpeechLanguage.ENGLISH) Text("Basic event/date rules support these languages. Review dates, attendance and place; unclear phrases stay unknown.", style = MaterialTheme.typography.bodySmall)
+                            QuietLabel("${speechLanguage.label} · On-device")
                             Text(listening.note)
-                            if (listening.recognitionDiagnostics.isNotEmpty()) {
-                                Text("Clock recognition checks", style = MaterialTheme.typography.titleSmall)
-                                listening.recognitionDiagnostics.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
-                            }
-                            if (listening.chunks > 0) Text("Voice chunks: likely you ${listening.userVoiceChunks} · other ${listening.otherVoiceChunks} · unassigned ${listening.unknownVoiceChunks}", style = MaterialTheme.typography.bodySmall)
-                            if (listening.voiceDiagnostics.isNotEmpty()) {
-                                TextButton(onClick = { showVoiceDiagnostics = !showVoiceDiagnostics }) { Text(if (showVoiceDiagnostics) "Hide voice diagnostics" else "Voice diagnostics") }
-                                if (showVoiceDiagnostics) {
-                                    listening.recognizer?.let { Text("Last recognizer: $it · on this phone", style = MaterialTheme.typography.bodySmall) }
-                                    Text("Last speaker separation: ${listening.diarizationMs} ms · ${listening.speakerParts} regions", style = MaterialTheme.typography.bodySmall)
-                                    listening.voiceDiagnostics.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
-                                }
-                            }
                             if (listening.recording) {
                                 Text(if (listening.speechActive) "Speech detected" else "Waiting for speech · microphone stays on")
                                 Text(listening.voiceStatus)
                                 LinearProgressIndicator(progress = { (listening.level * 5).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                                 Text("${listening.seconds / 60}m ${listening.seconds % 60}s · ${listening.chunks} speech chunks")
-                                Button(onClick = { serviceAction(ListeningService.FINISH) }) { Text("Finish listening") }
+                                Button(onClick = { serviceAction(ListeningService.FINISH) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Finish listening") }
                             } else if (listening.processing) LinearProgressIndicator(Modifier.fillMaxWidth())
-                            else Button(onClick = { micDialog = true }, enabled = !busy && missingPacks.isEmpty()) { Text("Start live notes") }
+                            else Button(onClick = { micDialog = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), enabled = !busy && missingPacks.isEmpty()) { Text("Start live notes") }
                             if (missingPacks.isNotEmpty()) Text("Speech model needed. Open Get started to install a pack or select English Fast.")
-                            if (!listening.recording && !listening.processing) {
-                                TextButton(onClick = { wavPicker.launch(arrayOf("audio/wav", "audio/x-wav", "audio/wave")) }, enabled = !busy) { Text("Import my WAV recording") }
-                            }
                             if (listening.recording || listening.processing)
                                 TextButton(onClick = { serviceAction(ListeningService.CANCEL) }) { Text(if (handsOff) "Stop & clear temporary text" else "Discard session") }
-                            if (listening.lastLatencyMs > 0) Text("Last chunk processed in ${listening.lastLatencyMs / 1000.0}s", style = MaterialTheme.typography.bodySmall)
                             if (liveText.isNotBlank()) {
                                 Text("Recent live text", style = MaterialTheme.typography.titleMedium)
-                                Text(liveText.takeLast(3000), modifier = Modifier.testTag("live-text"))
+                                Text(liveText.takeLast(if (showFullLiveText) 3000 else 600), modifier = Modifier.testTag("live-text"))
+                                if (liveText.length > 600) TextButton(onClick = { showFullLiveText = !showFullLiveText }) { Text(if (showFullLiveText) "Show less text" else "Show more text") }
                                 if (speakerTurns.isNotEmpty()) {
                                     TextButton(onClick = { showSpeakerTurns = !showSpeakerTurns }, modifier = Modifier.testTag("speaker-turns-toggle")) { Text(if (showSpeakerTurns) "Hide speaker turns" else "Show speaker turns") }
                                     if (showSpeakerTurns) {
@@ -243,29 +243,52 @@ class MainActivity : ComponentActivity() {
                                 }
                                 TextButton(onClick = { model.copyLiveText(); consent = false }) { Text("Copy recent text for editing") }
                             }
-                            Text(if (handsOff) "Events and matching corrections save automatically. Clear times on personal plans get reminders; others stay information-only. Use Undo in notifications to reverse a change. Stopping clears temporary text but keeps saved events. Set up your voice in Settings for personal plans."
-                                else "Listening continues through pauses until you finish. Recent text is temporary; only approved items are saved. Set up your voice in Settings for personal plans. Other or uncertain voices produce information-only suggestions. Voice matches can be wrong.", style = MaterialTheme.typography.bodySmall)
+                            QuietLabel("Audio is discarded. Recent text is temporary; saved events stay on this device.")
+                            TextButton(onClick = { showSessionDetails = !showSessionDetails }, modifier = Modifier.testTag("session-details")) {
+                                Text(if (showSessionDetails) "Hide session details" else "Session details")
+                            }
+                            if (showSessionDetails) {
+                            Text("Speech detection · ${speechLanguage.label} · on-device transcription")
+                            Text("New times use phone timezone: ${ZoneId.systemDefault().id}", style = MaterialTheme.typography.bodySmall)
+                            Text(if (speechQuality.usesSenseVoice(speechLanguage)) "SenseVoice int8 · ${speechLanguage.label} · on-device" else if (speechQuality.usesOmni(speechLanguage, true)) "Omnilingual int8 · ${speechLanguage.label} · on-device" else speechQuality.label, style = MaterialTheme.typography.bodySmall)
+                            if (speechLanguage != com.sidekick.core.SpeechLanguage.ENGLISH) Text("Basic event/date rules support these languages. Review dates, attendance and place; unclear phrases stay unknown.", style = MaterialTheme.typography.bodySmall)
+                            if (listening.recognitionDiagnostics.isNotEmpty()) {
+                                Text("Clock recognition checks", style = MaterialTheme.typography.titleSmall)
+                                listening.recognitionDiagnostics.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+                            }
+                            if (listening.chunks > 0) Text("Voice chunks: likely you ${listening.userVoiceChunks} · other ${listening.otherVoiceChunks} · unassigned ${listening.unknownVoiceChunks}", style = MaterialTheme.typography.bodySmall)
+                            if (listening.voiceDiagnostics.isNotEmpty()) {
+                                TextButton(onClick = { showVoiceDiagnostics = !showVoiceDiagnostics }) { Text(if (showVoiceDiagnostics) "Hide voice diagnostics" else "Voice diagnostics") }
+                                if (showVoiceDiagnostics) {
+                                    listening.recognizer?.let { Text("Last recognizer: $it · on this phone", style = MaterialTheme.typography.bodySmall) }
+                                    Text("Last speaker separation: ${listening.diarizationMs} ms · ${listening.speakerParts} regions", style = MaterialTheme.typography.bodySmall)
+                                    listening.voiceDiagnostics.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+                                }
+                            }
+                            if (!listening.recording && !listening.processing) {
+                                TextButton(onClick = { wavPicker.launch(arrayOf("audio/wav", "audio/x-wav", "audio/wave")) }, enabled = !busy) { Text("Import my WAV recording") }
+                            }
+                                if (listening.lastLatencyMs > 0) QuietLabel("Last chunk: ${listening.lastLatencyMs / 1000.0}s")
+                                QuietLabel(if (handsOff) "Personal plans with clear times get reminders. Other voices stay information-only. Undo automatic changes from notifications. Set up your voice in Settings."
+                                    else "Only approved items are saved. Set up your voice in Settings for personal plans. Speaker matching can be wrong.")
+                            }
                             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                         }
                     }
                 }
-                if (!plannerOpen) item {
-                    Card {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text("Edit or type notes", style = MaterialTheme.typography.titleLarge)
-                            Text(if (smartReady) "Smart analysis · Qwen3-0.6B · installed" else "Basic rules · smart model not installed", style = MaterialTheme.typography.bodySmall)
-                            TextButton(onClick = { modelPicker.launch(arrayOf("*/*")) }, enabled = !busy && !listening.recording && !listening.processing) {
-                                Text(if (smartReady) "Replace local intent model" else "Import local intent model (484 MB)")
-                            }
+                if (!plannerOpen && manualNotes) item {
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text("Write a note", style = MaterialTheme.typography.titleLarge)
                             OutlinedTextField(value = transcript, onValueChange = { model.setTranscript(it) },
-                                label = { Text("Transcript or typed words") }, modifier = Modifier.fillMaxWidth().testTag("transcript"), minLines = 3)
-                            Row {
+                                label = { Text("Transcript or typed words") }, modifier = Modifier.fillMaxWidth().testTag("transcript"), minLines = 2)
+                            FlowRow {
                                 TextButton(onClick = { model.setTranscript("I'll call Emma tomorrow at 5 pm. I will send the report on Friday.", Instant.now()); consent = false }) { Text("Use an example") }
                                 TextButton(onClick = { model.clearTranscript(); consent = false }) { Text("Clear text") }
                             }
                             Row {
                                 Checkbox(checked = consent, onCheckedChange = { consent = it }, modifier = Modifier.testTag("consent").controlLabel("These are my words; analyze and save matching commitments"))
-                                Text("These are my words. Save matching commitments on this device.", Modifier.padding(top = 10.dp))
+                                Text("These are my words. Save matching commitments on this device.", Modifier.weight(1f).padding(top = 10.dp))
                             }
                             Button(onClick = model::analyze, enabled = consent && transcript.isNotBlank() && !busy && !listening.recording && !listening.processing) {
                                 Text(if (busy) "Analyzing…" else "Find commitments")
@@ -274,16 +297,22 @@ class MainActivity : ComponentActivity() {
                                 enabled = transcript.isNotBlank() && !busy && !listening.recording && !listening.processing) {
                                 Text("Analyze as message text")
                             }
-                            Text(if (smartReady) "After listening finishes, copy recent text here and confirm it is yours. Smart analysis handles up to 4,000 characters. Live suggestions still use basic rules. Model suggestions can be wrong; review every result."
-                                else "Commitment detection uses simple English rules until the optional Qwen model is imported. Review every result.", style = MaterialTheme.typography.bodySmall)
+                            TextButton(onClick = { showNoteTools = !showNoteTools }, modifier = Modifier.testTag("note-tools")) { Text(if (showNoteTools) "Hide note tools" else "More note tools") }
+                            if (showNoteTools) {
+                            Text(if (smartReady) "Smart analysis · Qwen3-0.6B · installed" else "Basic rules · smart model not installed", style = MaterialTheme.typography.bodySmall)
+                            TextButton(onClick = { modelPicker.launch(arrayOf("*/*")) }, enabled = !busy && !listening.recording && !listening.processing) {
+                                Text(if (smartReady) "Replace local intent model" else "Import local intent model (484 MB)")
+                            }
+                                QuietLabel("Optional smart analysis works on typed notes. Live event detection uses local rules; unclear details stay unknown.")
+                            }
                             Text(message, style = MaterialTheme.typography.bodySmall)
                             if (busy) TextButton(onClick = model::cancelImport) { Text("Cancel current operation") }
                         }
                     }
                 }
                 item {
-                    Text(if (plannerOpen) "Your planner" else "Your memory · ${entries.size}", style = MaterialTheme.typography.titleLarge)
-                    Text("Review suggestions before saving. Manual entry, activity times and reminders are optional.")
+                    Text(if (plannerOpen) "Your planner" else "Recent suggestions", style = MaterialTheme.typography.titleLarge)
+                    QuietLabel("Manual entry, event times and reminders are optional.")
                     if (plannerOpen) {
                         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             PlannerView.entries.forEach { view ->
@@ -295,20 +324,20 @@ class MainActivity : ComponentActivity() {
                                     PlannerView.ALL -> "All"
                                 }
                                 FilterChip(selected = selectedView == view, onClick = { selectedView = view },
-                                    label = { Text("$label (${Planner.select(references, view).size})") }, modifier = Modifier.testTag("filter-${view.name}"))
+                                    label = { Text("$label (${Planner.select(references, view).size})", maxLines = 1) }, modifier = Modifier.testTag("filter-${view.name}"))
                             }
                         }
                         OutlinedTextField(value = search, onValueChange = { search = it }, label = { Text("Search commitments") },
                             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("planner-search"))
                     }
-                    TextButton(onClick = { model.addManual(); selectedView = PlannerView.REVIEW; search = "" }) { Text("Add a commitment manually") }
+                    if (manualNotes) TextButton(onClick = { model.addManual(); selectedView = PlannerView.REVIEW; search = "" }, modifier = Modifier.testTag("manual-add")) { Text("Add a commitment manually") }
                 }
-                if (shownEntries.isEmpty()) item { Text(if (plannerOpen) "No commitments in this view." else "No commitments yet. Try the example above.") }
+                if (shownEntries.isEmpty()) item { Text(if (plannerOpen) "No commitments in this view." else "Your detected plans will appear here.") }
                 items(shownEntries, key = { it.id }) { entry ->
-                    Card {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(entry.title, style = MaterialTheme.typography.titleMedium)
-                            Text("“${entry.evidence}”")
+                            QuietLabel("“${entry.evidence.take(180)}${if (entry.evidence.length > 180) "…" else ""}”")
                             Text(entry.state.lowercase().replaceFirstChar { it.uppercase() }, color = MaterialTheme.colorScheme.primary)
                             entry.dueAt?.let {
                                 Text("Reminder: ${TimeResolver.format(Instant.ofEpochMilli(it), ZoneId.of(entry.zoneId))} · ${entry.zoneId}")
@@ -326,7 +355,7 @@ class MainActivity : ComponentActivity() {
                             entry.placeName?.let { Text("Place: $it") }
                             entry.placeAddress?.let { Text(it) }
                             Text(entry.reviewNote, style = MaterialTheme.typography.bodySmall)
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(onClick = { openEditor(entry) }, modifier = Modifier.testTag("review-${entry.id}")) { Text(when (entry.state) {
                                     "PROPOSED" -> "Review & accept"
                                     "DONE", "DISMISSED", "CANCELLED" -> "Reopen"
@@ -339,12 +368,16 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+                if (!plannerOpen && entries.size > 3) item {
+                    TextButton(onClick = { plannerOpen = true; selectedView = PlannerView.ALL }, modifier = Modifier.testTag("all-commitments")) { Text("View all ${entries.size} in Planner") }
+                }
                 item {
-                    if (entries.isNotEmpty()) TextButton(onClick = { deleteDialog = true }) { Text("Delete all saved memory") }
-                    TextButton(onClick = { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }) { Text("Notification settings") }
-                    Text("Speech and intent run on this phone. Optional place lookup uses an online provider. Reminders may be delayed by battery saving. Raw audio is never saved.", style = MaterialTheme.typography.bodySmall)
+                    if (plannerOpen && entries.isNotEmpty()) TextButton(onClick = { deleteDialog = true }) { Text("Delete all saved memory") }
+                    if (plannerOpen) TextButton(onClick = { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }) { Text("Notification settings") }
+                    QuietLabel("On-device speech and notes. Optional place lookup uses the internet.")
                 }
                 }
+            }
             }
         }
         if (micDialog) AlertDialog(onDismissRequest = { micDialog = false }, title = { Text("Start live notes?") },
@@ -365,7 +398,7 @@ class MainActivity : ComponentActivity() {
                     onClose = { edit = null }, onSave = { title, time, zone, start, end, info, place, address -> model.save(item.id, title, time, zone, start, end, info, place, address) { edit = null } })
             }
         }
-        if (settingsOpen) AppSettingsDialog((application as SidekickApplication).guidance) { settingsOpen = false }
+        if (settingsOpen) AppSettingsDialog((application as SidekickApplication).guidance) { settingsOpen = false; expandedCapture = false }
         if (quickStartOpen) QuickStart { quickStartOpen = false }
         sharedText?.takeIf { !handsOff || !sharedMessagesEnabled }?.let { text ->
             val sharing by (application as SidekickApplication).guidance.sharedMessages.collectAsStateWithLifecycle()

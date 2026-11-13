@@ -15,7 +15,7 @@ class AutomaticScreenTest {
     @get:Rule val compose = createEmptyComposeRule()
     @Test fun sharedActivitySavesWithoutAnApprovalDialogInHandsOffMode() {
         val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as SidekickApplication
-        assumeTrue(app.packageName.endsWith(".benchmark"))
+        assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         val previous = app.guidance.handsOffMode.value
         val sharing = app.guidance.sharedMessages.value
         var savedId: String? = null

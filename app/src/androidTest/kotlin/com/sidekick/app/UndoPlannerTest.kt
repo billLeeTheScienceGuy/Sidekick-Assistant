@@ -19,7 +19,7 @@ class UndoPlannerTest {
     @Test fun oneTapReminderCheckSchedulesOneLabelledEventAndPlannerCanUndoIt() {
         val i = InstrumentationRegistry.getInstrumentation()
         val app = i.targetContext.applicationContext as SidekickApplication
-        assumeTrue(app.packageName.endsWith(".benchmark"))
+        assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         if (android.os.Build.VERSION.SDK_INT >= 33) i.uiAutomation.grantRuntimePermission(app.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
         val id = com.sidekick.app.reminders.ReminderCoordinator.CHECK_ID
         var scenario: ActivityScenario<MainActivity>? = null
@@ -44,7 +44,7 @@ class UndoPlannerTest {
     }
     @Test fun dismissedNotificationDoesNotRemovePlannerUndo() {
         val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as SidekickApplication
-        assumeTrue(app.packageName.endsWith(".benchmark"))
+        assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         val previous = app.guidance.handsOffMode.value; var id: String? = null
         var scenario: ActivityScenario<MainActivity>? = null
         try {

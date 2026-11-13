@@ -1,5 +1,12 @@
 # SideKick
 
+0.30 adds an adaptive Android interface with **Simple / Detailed** home layouts,
+independent text and interface sizes, Calm / Classic / Warm design presets,
+Light / Dark / System appearance and optional manual note-taking.
+Use **Settings** to personalize it. Persistent navigation adapts from a bottom bar
+to a side rail. See the [interface benchmark](docs/INTERFACE_BENCHMARK.md) for
+comparisons, supported devices and the reproducible layout checks.
+
 0.29 improves Automatic and longer multilingual speech using measured local-model
 routing, adds explicit microphone-stall/interruption handling, and keeps owner
 context stable across anonymous speaker clusters. See the [broader evaluation](docs/ROBUSTNESS_EVALUATION.md)

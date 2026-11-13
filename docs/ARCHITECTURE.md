@@ -80,3 +80,17 @@ Calendar mirroring is opt-in and one-way, with provider-ID/hash recovery and gua
 updates; account-level cloud behavior still needs field evidence.
 See VALIDATION.md for software checks and the dated physical measurements in
 STREAMING_BENCHMARK.md and ASR_EVALUATION.md.
+
+## Adaptive Android presentation (0.30)
+
+Presentation preferences live in GuidanceSettings, outside Room event data.
+Simple and Detailed homes share the same view model, listening service and editor.
+Appearance, design, text scale and interface scale are independent. The size adapter preserves the system fontScale and compensates typography with
+the original Android forward/inverse font conversion. This avoids text-size
+coupling when Compose snapshots density on newer Android versions. Interface zoom never reduces the default touch targets. Preferences
+are applied to both the main app and voice setup.
+
+Simple home is an overview: short windows prioritize listening and the detailed
+view action. Larger windows also show the next scheduled plan. Advanced diagnostics
+remain explicit disclosures. Hiding manual notes removes the writing/add controls
+without deleting the current temporary draft or disabling saved-plan review.
