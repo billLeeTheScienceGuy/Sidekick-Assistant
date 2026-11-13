@@ -46,7 +46,7 @@ internal fun CompactHome(
                 !tight -> {
                     Card(Modifier.fillMaxWidth().clickable(enabled = next != null) { next?.let(onOpen) }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            QuietLabel("NEXT UP")
+                            QuietLabel(if (next?.informational == true) "EVENT INFO" else "NEXT UP")
                             if (next == null) Text("Nothing scheduled yet", style = MaterialTheme.typography.titleMedium)
                             else {
                                 Text(next.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)

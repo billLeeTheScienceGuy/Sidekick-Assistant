@@ -1,5 +1,25 @@
 # Handoff
 
+Current source: **0.30.0/code48**, Room schema6. Android-only interface update:
+Simple/Detailed home, Calm/Classic/Warm design, Light/Dark/System appearance,
+independent text and interface sizes, optional manual notes, persistent bottom/rail
+navigation, remembered tab scroll positions and progressive technical details.
+The phone's own font conversion is retained when zooming controls.
+
+186 core checks; eight final isolated Pixel UI checks passed (17.290s). The 45-case
+emulator run passed 44 initially; its visibility guard rejected a System UI error.
+After clearing the emulator dialog the affected check passed, and all six actual
+layout profiles passed with reviewed screenshots. Detailed evidence is in
+VALIDATION.md and INTERFACE_BENCHMARK.md; raw layout metadata is in evaluation/.
+Normal 0.30 is installed on the Pixel, with Simple home selected and saved data
+preserved. No physical microphone was opened by these interface tests.
+
+The final normal APK matches the installed phone APK by SHA-256. Dark system bars
+and the listening dialog were visually checked on the real phone; capture was
+not started. The temporary test app is removed and the emulator is stopped.
+
+Previous 0.29:
+
 Current source: **0.29.0/code47**, Room schema6. Measured Adaptive Automatic and
 longer French/German/Russian routing, optional short original-audio refinement,
 Korean retry fallback, stable owner context, exact CJK overlap and allocation-free

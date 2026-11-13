@@ -1,3 +1,58 @@
+# 0.30 adaptive Android interface — November 13, 2026
+
+All 186 core checks remain passing. The normal and isolated compact apps build;
+debug lint passes. Eight isolated physical Pixel 7a/Android 17 UI checks passed
+in **17.290 seconds**, covering navigation/draft preservation, appearance,
+optional technical details, design/size persistence and reset, independent control
+and font sizing, manual-note visibility, and Simple/Detailed switching. No microphone
+permission was granted and these tests opened no AudioRecord. Normal app data was
+not instrumented or cleared. iPhone work was explicitly excluded by the user.
+
+The expanded isolated Android 14 emulator regression covered **45 checks**:
+44 passed in the initial 273.186-second run; the foreground/visibility check
+correctly rejected an emulator System UI ANR overlay. After clearing that system
+error, the isolated foreground check passed in 14.468 seconds. All six subsequent
+actual-window layout/visibility checks passed, with screenshots reviewed. The
+initial obscured screenshots were discarded and are not evidence of visible UI.
+
+| Profile | Reported window dp | System font scale | App text / interface | Design / home |
+|---|---|---|---|---|
+| Simple portrait | 360 × 737 | 1.0 | Default / Default | Calm / Simple |
+| Small phone | 320 × 585 | 1.0 | Default / Default | Calm / Detailed |
+| Large text | 360 × 737 | 2.0 | Default / Larger | Calm / Simple |
+| Short landscape | 800 × 308 | 1.3 | Larger / Default | Classic / Simple |
+| Larger display | 960 × 539 | 1.0 | Larger / Largest | Warm / Detailed |
+| Right-to-left | 360 × 737 | 1.3 | Larger / Default | Classic / Simple |
+
+The script changes actual emulator size/density/font/locale and restores them.
+It requires the app's focused window so an overlaid system error cannot count as
+a visible UI pass. Android Studio's mirroring adds an empty virtual display on
+the real phone, so the check considers all displays, not only the first one.
+UI locale mirroring is tested; complete interface translation is not claimed.
+
+The physical test exposed a nonlinear-font-scaling interaction: dividing fontScale
+while zooming controls changed resolved text size. Typography now compensates with
+original Android forward/inverse font conversion while retaining system fontScale.
+The final Pixel test verifies resolved font pixels remain stable during interface
+zoom, grow when text size changes, and that control targets grow independently.
+A null accessibility root and layout-box padding differences were also corrected
+in the test harness; they are not treated as application failures or silently skipped.
+
+The normal 0.30.0/code48 upgrade was installed with install -r and Simple home was
+selected through the app's Settings. The temporary phone test package was removed.
+The final presentation polish paints behind system insets for readable dark-mode
+status/gesture bars, keeps information-only next events labelled, and makes the
+listening consent text scrollable at large sizes. See INTERFACE_BENCHMARK.md for
+source comparisons, real screenshots, compatibility boundaries and reproduction.
+
+The final normal build/lint passed after the presentation polish. Its installed
+APK SHA-256 was independently compared with the local build and matched.
+On the normal Pixel app, dark status/gesture-bar contrast and the complete
+listening-consent dialog were visually checked; the dialog was cancelled without
+starting capture. Simple home remained selected. Final APK size: 226,282,009 bytes.
+
+Previous validation (historical):
+
 # 0.29 broader speech and recovery validation
 
 Fresh Linux CI for code/build commit `0f7ebbc` passed on both
