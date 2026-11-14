@@ -25,7 +25,23 @@ class KoreanClockRepairTest {
         assertFalse(KoreanClockRepair.needsRetry(bad + "?"))
         assertFalse(KoreanClockRepair.needsRetry("“$bad”"))
         assertEquals(good, KoreanClockRepair.select(good, bad))
-        for (other in listOf(good.replace("내일", "오늘"), good.replace("파티", "회의"), good.replace("갈", "안 갈"), good.replace("오후", "오전"), good.replace("8시", "8시 30분"), bad))
+        for (other in listOf(good.replace("내일", "오늘"), good.replace("갈", "안 갈"), good.replace("오후", "오전"), good.replace("8시", "8시 30분"), bad))
             assertEquals(bad, KoreanClockRepair.select(bad, other))
+        // Other wording differs: only the hour may change, the original wording stays.
+        assertEquals(good, KoreanClockRepair.select(bad, good.replace("파티", "회의")))
+    }
+    @Test fun `extra ten from linked speech is dropped when another model hears the hour`() {
+        // Owner's Pixel recording of "제가 내일 저녁 8시에 Sarah 생일 파티에 갈 거예요": SenseVoice vs Omnilingual.
+        val sense = "제가 내일 저녁 18시에 셀와 생일 파티에 갈거에."
+        assertTrue(KoreanClockRepair.needsRetry(sense))
+        assertEquals("제가 내일 저녁 8시에 셀와 생일 파티에 갈거에.", KoreanClockRepair.select(sense, "제가 내일 전녁 여덟 시해 세화 생일파티에 갈 거예요"))
+        assertEquals("제가 내일 저녁 8시에 셀와 생일 파티에 갈거에.", KoreanClockRepair.select(sense, "제가내일저녁 8시에쌔하생일파티에갈거예요."))
+        // Not a dropped ten: 10 o'clock, a different evening hour, another day, or two clocks.
+        assertEquals(sense, KoreanClockRepair.select(sense, "제가 내일 저녁 열 시에 세라 생일 파티에 갈 거예요."))
+        assertEquals(sense, KoreanClockRepair.select(sense, "제가 내일 저녁 7시에 세라 생일 파티에 갈 거예요."))
+        assertEquals(sense, KoreanClockRepair.select(sense, "제가 오늘 저녁 8시에 세라 생일 파티에 갈 거예요."))
+        assertEquals(sense, KoreanClockRepair.select(sense, "제가 내일 아침 8시에 세라 생일 파티에 갈 거예요."))
+        assertEquals(sense, KoreanClockRepair.select(sense, "8시나 9시에 세라 생일 파티에 갈 거예요."))
+        assertFalse(KoreanClockRepair.needsRetry("제가 내일 저녁 8시에 세라 생일 파티에 갈 거예요."))
     }
 }

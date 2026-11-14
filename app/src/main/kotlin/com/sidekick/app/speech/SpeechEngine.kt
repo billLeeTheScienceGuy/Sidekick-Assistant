@@ -12,7 +12,8 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
     private val verified = mutableMapOf<String, File>()
     private val senseVoice = SenseVoiceEngine(context)
     private val omni = OmniSpeechEngine(context)
-    private val englishModel = EnglishSpeechEngine(context)
+    private val englishModel = TransducerSpeechEngine(context, TransducerSpeechEngine.ENGLISH)
+    private val russianModel = TransducerSpeechEngine(context, TransducerSpeechEngine.RUSSIAN)
     @Volatile var lastClockDiagnostic: String? = null
         private set
     @Volatile var lastBackend: String? = null
@@ -43,7 +44,7 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
                 if (selectedLanguage == SpeechLanguage.AUTO && selectedQuality == SpeechQuality.ADAPTIVE &&
                     ModelPacks.available(context, SenseVoiceEngine.MODEL) && ModelPacks.available(context, SenseVoiceEngine.TOKENS))
                     return@withContext detectAndTranscribe(samples, threads, retainModel)
-                englishModel.release() // only the Auto path uses it; free its memory for the other models
+                englishModel.release(); russianModel.release() // only the Auto path uses them; free their memory for the other models
                 val speechSamples = if (selectedQuality == SpeechQuality.ADAPTIVE && selectedLanguage in setOf(SpeechLanguage.AUTO, SpeechLanguage.FRENCH, SpeechLanguage.GERMAN, SpeechLanguage.RUSSIAN))
                     com.sidekick.core.SpeakerAudio.speechSpan(samples)?.let { it.last - it.first + 1 } ?: samples.size else samples.size
                 if (selectedQuality.usesOmni(selectedLanguage, shortPhrase, speechSamples)) {
@@ -174,7 +175,14 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
             else -> "Omnilingual · SenseVoice heard $tag"
         }
         lastRetryDiagnostic = "${if (keep) "SenseVoice kept" else "Omnilingual used"} · first: “${sense.take(140)}” · second: “${second.take(140)}”"
-        return if (keep) sense else second
+        if (keep) return sense
+        // Plain Russian (no Latin words, which the Russian-only model would drop): re-read with the optional GigaAM pack.
+        if (com.sidekick.core.AutoRoute.russianOnly(second) && russianModel.available()) {
+            currentCoroutineContext().ensureActive()
+            val russian = try { russianModel.transcribe(samples, threads, retain) } catch (_: Exception) { "" }
+            if (russian.any { it.isLetter() }) { lastBackend = "GigaAM Russian · Omnilingual heard Russian"; return russian }
+        }
+        return second
     }
 
     /** Whisper encodes 30 s (1500 frames) by default; 50 frames per second of real audio plus a margin is far cheaper. */
@@ -185,6 +193,7 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
         gate.withLock { withContext(Dispatchers.IO) { when (backend) {
             "sense" -> { omni.release(); NativeSpeech.release(); senseVoice.transcribeTagged(samples, threads, true, "auto") }
             "parakeet" -> { omni.release(); senseVoice.release(); NativeSpeech.release(); englishModel.transcribe(samples, threads, true) to "en" }
+            "gigaam" -> { omni.release(); senseVoice.release(); NativeSpeech.release(); russianModel.transcribe(samples, threads, true) to "ru" }
             "omni" -> { senseVoice.release(); NativeSpeech.release(); omni.transcribe(samples, threads, true) to null }
             "whisper", "whisperfit" -> { omni.release(); senseVoice.release()
                 val context = if (backend == "whisperfit") fittedContext(samples.size) else 0
@@ -194,7 +203,7 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
     } finally { samples.fill(0f) }
 
     fun cancel() { NativeSpeech.cancel() }
-    suspend fun release() = gate.withLock { withContext(Dispatchers.IO) { senseVoice.release(); omni.release(); englishModel.release(); NativeSpeech.release() } }
+    suspend fun release() = gate.withLock { withContext(Dispatchers.IO) { senseVoice.release(); omni.release(); englishModel.release(); russianModel.release(); NativeSpeech.release() } }
 
     /** Queue-clear short audio only; the second model hears the original PCM, not corrected text. */
     private suspend fun refineShortAutomatic(samples: FloatArray, threads: Int, retain: Boolean, language: SpeechLanguage): String? {
@@ -236,7 +245,9 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) { readings += "Omnilingual retry unavailable" }
         }
-        lastClockDiagnostic = readings.joinToString(" · ") + if (result == original) " · unresolved; original kept" else " · clock corrected; other wording kept"
+        // An impossible 12-hour clock ("저녁 18시") that no second reading fixes is kept as heard but never scheduled.
+        if (result == original) lastUncertain = true
+        lastClockDiagnostic = readings.joinToString(" · ") + if (result == original) " · unresolved; original kept, not scheduled" else " · clock corrected; other wording kept"
         lastBackend = "SenseVoice · clock cross-check"
         return result
     }

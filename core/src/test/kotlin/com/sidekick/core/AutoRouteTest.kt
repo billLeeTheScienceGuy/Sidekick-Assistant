@@ -40,6 +40,12 @@ class AutoRouteTest {
         assertFalse(AutoRoute.englishOnly("Bonjour tout le monde.", "fr"))
         assertFalse(AutoRoute.englishOnly("...", "en"))
     }
+    @Test fun `only plain Russian goes to the Russian model`() {
+        assertTrue(AutoRoute.russianOnly("друзья всем привет мы сейчас находимся в сочи"))
+        assertFalse(AutoRoute.russianOnly("давай встретимся на meeting в пятницу"))
+        assertFalse(AutoRoute.russianOnly("guten tag mein name ist doktor david"))
+        assertFalse(AutoRoute.russianOnly(""))
+    }
     @Test fun `two English readings agree only on English speech`() {
         // The owner's lines on the Pixel: digits vs spoken numbers still agree.
         assertTrue(AutoRoute.agreeOnEnglish("I'll go to the gym tomorrow at 7 AM.", "I'll go to the gym tomorrow at seven AM."))

@@ -33,8 +33,8 @@ internal class OmniSpeechEngine(private val context: Context) {
     companion object {
         private const val EDGE = 8_000
         const val MODEL = "omni-model.int8.onnx"
-        const val MODEL_HASH = "e7c4e54ee4c4c47829cc6667d5d00ed8ea7bef1dcfeef0fce766f77752a2726c"
+        const val MODEL_HASH = "e3042b2f3b3ef0af2211bf99d2b4bf94a21f5ac0e9898827e7dd6d003a860e91"
         const val TOKENS = "omni-tokens.txt"
-        const val TOKENS_HASH = "a7a044c52cb29cbe8b0dc1953e92cefd4ca16b0ed968177b6beab21f9a7d0b31"
+        const val TOKENS_HASH = "7d99997ef207ff14c2cfe825f2aa037528ea250113cc3c6392bfe49326884ba6"
     }
 }
