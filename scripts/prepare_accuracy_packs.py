@@ -61,3 +61,18 @@ for name, items in packs.items():
     if not all((destination / target).exists() and digest(destination / target) == sha for target, sha in items.values()):
         raise RuntimeError(f"{name} archive is incomplete")
     print(f"Verified {name}.")
+
+# The Korean pack also needs the model's word-piece vocabulary for name lists (hotwords): bpe.model -> bpe.vocab.
+vocab, vocab_sha = destination / "zipko-bpe.vocab", "4dbdff57db7b1e00e8feba8637dec4d2606221f614ce44336c04fd20b07f4c0f"
+if not (vocab.exists() and digest(vocab) == vocab_sha):
+    import sentencepiece  # python -m pip install sentencepiece
+    archive = root / ".deps" / "sherpa-onnx-zipformer-korean-2024-06-24.tar.bz2"
+    if not archive.exists():
+        urllib.request.urlretrieve(release + archive.name, archive)
+    with tarfile.open(archive) as source:
+        model = source.extractfile("sherpa-onnx-zipformer-korean-2024-06-24/bpe.model").read()
+    sp = sentencepiece.SentencePieceProcessor(model_proto=model)
+    vocab.write_text("".join(f"{sp.id_to_piece(i)}\t{sp.get_score(i)}\n" for i in range(sp.get_piece_size())), encoding="utf-8", newline="\n")
+    if digest(vocab) != vocab_sha:
+        raise RuntimeError("Korean vocabulary checksum mismatch")
+print("Verified zipko-bpe.vocab.")

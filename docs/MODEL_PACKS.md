@@ -12,7 +12,7 @@ The full benchmark variant still bundles all weights for repeatable testing.
 | omni.skmodels | 366 MB | Omnilingual v2 (an installed v1 pack must be re-imported). Adaptive Automatic/Arabic and longer French/German/Russian; optional Korean clock retry |
 | english.skmodels | 136 MB | Optional, Auto-detect: Parakeet TDT 110M re-reads plain English (most accurate English model benchmarked) |
 | russian.skmodels | 229 MB | Optional, Auto-detect: GigaAM v3 re-reads plain Russian (no English words) |
-| korean.skmodels | 76 MB | Optional: Korean Zipformer cross-checks unclear Korean times first (training-data terms not yet reviewed; not published) |
+| korean.skmodels | 77 MB | Optional: Korean Zipformer cross-checks unclear Korean times first, and finds names from Settings → Names you often mention in Korean speech (names right 29→41 of 50 on the Pixel, +0.3 s per Korean phrase). Not published: KsponSpeech/AI Hub terms need ETRI/NIA confirmation |
 
 Adaptive French/German/Russian needs Whisper and Omni. Adaptive Automatic and
 Arabic need Omni; installing SenseVoice and Whisper also improves short Automatic

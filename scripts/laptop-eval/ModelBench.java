@@ -76,6 +76,11 @@ public class ModelBench {
         Function<Integer, OfflineModelConfig.Builder> zkoModel = t -> OfflineModelConfig.builder().setTokens(f(zko, "tokens.txt"))
             .setTransducer(OfflineTransducerModelConfig.builder().setEncoder(f(zko, "encoder*.onnx")).setDecoder(f(zko, "decoder*.onnx")).setJoiner(f(zko, "joiner*.onnx")).build());
         m.put("zipko", new Spec(Set.of("ko"), t -> offline(zkoModel.apply(t), t)));
+        // Word-list (hotword) runs for names in Korean speech: -Dhw.dir holds bpe.vocab, hotwords-ko.txt, hotwords-qwen.txt.
+        String hw = System.getProperty("hw.dir", ".deps/names-hw");
+        float hwScore = Float.parseFloat(System.getProperty("hw.score", "2.0"));
+        m.put("zipkobeam", new Spec(Set.of("ko"), t -> offline(zkoModel.apply(t).setModelingUnit("bpe").setBpeVocab(hw + "/bpe.vocab"), t, hw + "/empty.txt", 0f)));
+        m.put("zipkohw", new Spec(Set.of("ko"), t -> offline(zkoModel.apply(t).setModelingUnit("bpe").setBpeVocab(hw + "/bpe.vocab"), t, hw + "/hotwords-ko.txt", hwScore)));
         Path mko = c("sherpa-onnx-moonshine-tiny-ko-quantized-2026-02-27"), men = c("sherpa-onnx-moonshine-base-en-quantized-2026-02-27"), mar = c("sherpa-onnx-moonshine-base-ar-quantized-2026-02-27");
         for (Object[] mm : new Object[][]{{"moonko", mko, "ko"}, {"moonen", men, "en"}, {"moonar", mar, "ar"}}) {
             Path d = (Path) mm[1];
@@ -111,6 +116,11 @@ public class ModelBench {
         m.put("qwen3", new Spec(all, t -> offline(OfflineModelConfig.builder()
             .setQwen3Asr(OfflineQwen3AsrModelConfig.builder().setConvFrontend(f(q3, "conv_frontend*.onnx")).setEncoder(f(q3, "encoder*.onnx"))
                 .setDecoder(f(q3, "decoder*.onnx")).setTokenizer(q3.resolve("tokenizer").toString()).build()), t)));
+        m.put("qwen3hw", new Spec(all, t -> { try { String words = Files.readString(Path.of(hw, "hotwords-qwen.txt")).trim();
+            return offline(OfflineModelConfig.builder()
+                .setQwen3Asr(OfflineQwen3AsrModelConfig.builder().setConvFrontend(f(q3, "conv_frontend*.onnx")).setEncoder(f(q3, "encoder*.onnx"))
+                .setDecoder(f(q3, "decoder*.onnx")).setTokenizer(q3.resolve("tokenizer").toString()).setHotwords(words).build()), t);
+            } catch (java.io.IOException e) { throw new RuntimeException(e); } }));
         Path nem = c("sherpa-onnx-nemotron-3.5-asr-streaming-0.6b-560ms-int8-2026-06-11");
         m.put("nemotron", new Spec(all, t -> {
             OnlineRecognizer r = new OnlineRecognizer(OnlineRecognizerConfig.builder().setOnlineModelConfig(OnlineModelConfig.builder()

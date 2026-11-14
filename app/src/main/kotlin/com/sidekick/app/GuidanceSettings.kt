@@ -30,6 +30,10 @@ class GuidanceSettings(context: Context) {
     private val manualNotesValue = MutableStateFlow(preferences.getBoolean("manual_notes", true))
     val manualNotes = manualNotesValue.asStateFlow()
     fun setManualNotes(value: Boolean) { preferences.edit().putBoolean("manual_notes", value).apply(); manualNotesValue.value = value }
+    /** Names the user often mentions, with Korean spellings ("Sarah 세라"): fixed in Korean speech (NameSplice). */
+    private val spokenNamesValue = MutableStateFlow(preferences.getString("spoken_names", "").orEmpty())
+    val spokenNames = spokenNamesValue.asStateFlow()
+    fun setSpokenNames(value: String) { val v = value.take(2000); preferences.edit().putString("spoken_names", v).apply(); spokenNamesValue.value = v }
     private val oneScreenValue = MutableStateFlow(preferences.getBoolean("one_screen_home", false))
     val oneScreenHome = oneScreenValue.asStateFlow()
     fun setOneScreenHome(value: Boolean) { preferences.edit().putBoolean("one_screen_home", value).apply(); oneScreenValue.value = value }

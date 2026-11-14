@@ -8,7 +8,27 @@ import kotlinx.coroutines.sync.withLock
 import com.sidekick.core.SpeechLanguage
 import com.sidekick.core.SpeechQuality
 
-class SpeechEngine(private val context: Context, private val language: () -> SpeechLanguage = { SpeechLanguage.ENGLISH }, private val quality: () -> SpeechQuality = { SpeechQuality.FAST }) {
+class SpeechEngine(private val context: Context, private val language: () -> SpeechLanguage = { SpeechLanguage.ENGLISH }, private val quality: () -> SpeechQuality = { SpeechQuality.FAST },
+    /** The user's name list ("Sarah 세라", one per line), see NameSplice. */
+    private val spokenNames: () -> String = { "" }) {
+    private val koreanNames = TransducerSpeechEngine(context, TransducerSpeechEngine.KOREAN)
+    private var namesText: String? = null
+    private var namesParsed = emptyList<com.sidekick.core.NameSplice.Name>()
+    /** Word list for the Korean model, rewritten only when the user's list changes; null when there is none. */
+    private fun namesHotwords(): File? {
+        val text = spokenNames()
+        if (text != namesText) { namesText = text; namesParsed = com.sidekick.core.NameSplice.parse(text)
+            File(context.noBackupFilesDir, "names-hotwords.txt").let { if (namesParsed.isEmpty()) it.delete() else it.writeText(com.sidekick.core.NameSplice.hotwords(namesParsed) + "\n") } }
+        return File(context.noBackupFilesDir, "names-hotwords.txt").takeIf { namesParsed.isNotEmpty() && it.isFile }
+    }
+    /** Korean phrase: names from the user's list, heard by the Korean model with the list, replace SenseVoice's guesses. */
+    private suspend fun withNames(text: String, samples: FloatArray, threads: Int, retain: Boolean): String {
+        val hotwords = namesHotwords() ?: return text
+        if (!koreanNames.available()) return com.sidekick.core.NameSplice.normalize(text, namesParsed)
+        currentCoroutineContext().ensureActive()
+        val listed = try { koreanNames.transcribe(samples, threads, retain, hotwords) } catch (e: CancellationException) { throw e } catch (_: Exception) { return text }
+        return com.sidekick.core.NameSplice.apply(text, listed, namesParsed)
+    }
     private val verified = mutableMapOf<String, File>()
     private val senseVoice = SenseVoiceEngine(context)
     private val omni = OmniSpeechEngine(context)
@@ -50,7 +70,7 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
                 if (selectedLanguage == SpeechLanguage.AUTO && selectedQuality == SpeechQuality.ADAPTIVE &&
                     ModelPacks.available(context, SenseVoiceEngine.MODEL) && ModelPacks.available(context, SenseVoiceEngine.TOKENS))
                     return@withContext detectAndTranscribe(samples, threads, retainModel, voiceKey)
-                englishModel.release(); russianModel.release() // only the Auto path uses them; free their memory for the other models
+                englishModel.release(); russianModel.release(); koreanNames.release() // only the Auto path uses them; free their memory for the other models
                 val speechSamples = if (selectedQuality == SpeechQuality.ADAPTIVE && selectedLanguage in setOf(SpeechLanguage.AUTO, SpeechLanguage.FRENCH, SpeechLanguage.GERMAN, SpeechLanguage.RUSSIAN))
                     com.sidekick.core.SpeakerAudio.speechSpan(samples)?.let { it.last - it.first + 1 } ?: samples.size else samples.size
                 if (selectedQuality.usesOmni(selectedLanguage, shortPhrase, speechSamples)) {
@@ -180,7 +200,7 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
     /** Optional models unused for a few minutes are unloaded (each holds 100–400 MB); they reload on the next need. */
     private fun releaseIdle() {
         val now = android.os.SystemClock.elapsedRealtime()
-        omni.releaseIfIdle(now, IDLE_MS); englishModel.releaseIfIdle(now, IDLE_MS); russianModel.releaseIfIdle(now, IDLE_MS); koreanModel.releaseIfIdle(now, IDLE_MS)
+        omni.releaseIfIdle(now, IDLE_MS); englishModel.releaseIfIdle(now, IDLE_MS); russianModel.releaseIfIdle(now, IDLE_MS); koreanModel.releaseIfIdle(now, IDLE_MS); koreanNames.releaseIfIdle(now, IDLE_MS)
     }
 
     private suspend fun refineRussian(second: String, samples: FloatArray, threads: Int, retain: Boolean): String {
@@ -197,7 +217,7 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
         val speechMs = com.sidekick.core.AutoRoute.speechMs(samples)
         val (sense, tag) = senseVoice.transcribeTagged(samples, threads, retain, "auto")
         val suffices = com.sidekick.core.AutoRoute.senseVoiceSuffices(sense, tag, speechMs)
-        if (suffices && tag == "ko") { lastBackend = "SenseVoice · detected ko"; return repairKoreanClock(sense, samples, threads, retain) }
+        if (suffices && tag == "ko") { lastBackend = "SenseVoice · detected ko"; return withNames(repairKoreanClock(sense, samples, threads, retain), samples, threads, retain) }
         // Plain English: the optional Parakeet pack (benchmark winner for English) re-reads it. When the two English
         // readings disagree, the speech is probably another language SenseVoice labeled "en", so Omnilingual decides.
         val english = if (com.sidekick.core.AutoRoute.englishOnly(sense, tag) && englishModel.available()) {
@@ -241,7 +261,7 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
     } finally { samples.fill(0f) }
 
     fun cancel() { NativeSpeech.cancel() }
-    suspend fun release() = gate.withLock { withContext(Dispatchers.IO) { senseVoice.release(); omni.release(); englishModel.release(); russianModel.release(); koreanModel.release(); NativeSpeech.release() } }
+    suspend fun release() = gate.withLock { withContext(Dispatchers.IO) { senseVoice.release(); omni.release(); englishModel.release(); russianModel.release(); koreanModel.release(); koreanNames.release(); NativeSpeech.release() } }
 
     /** Queue-clear short audio only; the second model hears the original PCM, not corrected text. */
     private suspend fun refineShortAutomatic(samples: FloatArray, threads: Int, retain: Boolean, language: SpeechLanguage): String? {

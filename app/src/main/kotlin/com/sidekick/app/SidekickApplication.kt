@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.collectLatest
 class SidekickApplication : Application() {
     val database by lazy { Room.databaseBuilder(this, MemoryDatabase::class.java, "sidekick.db").addMigrations(MemoryDatabase.MIGRATION_1_2, MemoryDatabase.MIGRATION_2_3, MemoryDatabase.MIGRATION_3_4, MemoryDatabase.MIGRATION_4_5, MemoryDatabase.MIGRATION_5_6).build() }
     val pipeline by lazy { CommitmentPipeline(RuleIntentExtractor()) }
-    val speech by lazy { SpeechEngine(this, { guidance.speechLanguage.value }, { guidance.speechQuality.value }) }
+    val speech by lazy { SpeechEngine(this, { guidance.speechLanguage.value }, { guidance.speechQuality.value }, { guidance.spokenNames.value }) }
     val voiceProfile by lazy { com.sidekick.app.speaker.VoiceProfile(this, guidance.speechLanguage.value) }
     val temporary = TemporaryMemory { guidance.includeInformational.value }
     val guidance by lazy { GuidanceSettings(this) }

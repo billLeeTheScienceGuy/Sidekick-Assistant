@@ -62,7 +62,9 @@ class NaturalSpeechEvaluationTest {
             for ((language, group) in rows.groupBy { it[1] }) {
                 if (only != null && language !in only) continue
                 val selected = if (mode == "auto") SpeechLanguage.AUTO else SpeechLanguage.fromCode(language)
-                val engine = SpeechEngine(context, { selected }, { SpeechQuality.ADAPTIVE })
+                // -e names "Sarah 세라|Jessica 제시카": a name list (| separates entries), as typed in Settings.
+        val names = arguments.getString("names")?.replace("|", "\n") ?: File(directory, "names.txt").takeIf { it.isFile }?.readText().orEmpty() // or names.txt beside the clips
+        val engine = SpeechEngine(context, { selected }, { SpeechQuality.ADAPTIVE }, { names })
                 try {
                     for (row in group) {
                         if ("$mode/${row[0]}" in finished) continue
