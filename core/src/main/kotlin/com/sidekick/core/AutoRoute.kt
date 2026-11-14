@@ -37,6 +37,8 @@ object AutoRoute {
      * Mixed Russian/English stays with Omnilingual: GigaAM scored 98% errors on it vs Omnilingual's 20%.
      */
     fun russianOnly(text: String): Boolean = script(text, Character.UnicodeScript.CYRILLIC) > 0 && script(text, Character.UnicodeScript.LATIN) == 0
+    /** Parakeet writes spoken times ("at seven AM", "twelve thirty"); show them as digits like the other models do. */
+    fun englishDigits(text: String): String = EnglishClocks.normalize(text)
     fun englishOnly(text: String, tag: String): Boolean = tag == "en" && letters(text) > 0 && script(text, Character.UnicodeScript.LATIN) == letters(text)
     /**
      * Two English models agree on real English (median 2% apart, 90% of clips under 16%) but write unrelated English-like

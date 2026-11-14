@@ -17,7 +17,7 @@ for pack, entries in groups.items():
     try:
         with zipfile.ZipFile(temporary, 'w', compression=zipfile.ZIP_STORED) as archive:
             archive.writestr('sidekick-pack.txt', f'SideKick model pack v1\n{pack}\n')
-            license_name = {'whisper': 'whisper-MIT.txt', 'sensevoice': 'sensevoice.txt', 'omni': 'omnilingual.txt', 'english': 'parakeet.txt', 'russian': 'gigaam.txt'}[pack]
+            license_name = {'whisper': 'whisper-MIT.txt', 'sensevoice': 'sensevoice.txt', 'omni': 'omnilingual.txt', 'english': 'parakeet.txt', 'russian': 'gigaam.txt', 'korean': 'zipformer-korean.txt'}[pack]
             archive.writestr('LICENSE.txt', (assets / 'licenses' / license_name).read_text(encoding='utf-8'))
             for name, size, expected in entries:
                 source = assets / 'models' / name

@@ -12,6 +12,7 @@ The full benchmark variant still bundles all weights for repeatable testing.
 | omni.skmodels | 366 MB | Omnilingual v2 (an installed v1 pack must be re-imported). Adaptive Automatic/Arabic and longer French/German/Russian; optional Korean clock retry |
 | english.skmodels | 136 MB | Optional, Auto-detect: Parakeet TDT 110M re-reads plain English (most accurate English model benchmarked) |
 | russian.skmodels | 229 MB | Optional, Auto-detect: GigaAM v3 re-reads plain Russian (no English words) |
+| korean.skmodels | 76 MB | Optional: Korean Zipformer cross-checks unclear Korean times first (training-data terms not yet reviewed; not published) |
 
 Adaptive French/German/Russian needs Whisper and Omni. Adaptive Automatic and
 Arabic need Omni; installing SenseVoice and Whisper also improves short Automatic
@@ -39,7 +40,9 @@ prepare_omnilingual.py scripts (and prepare_accuracy_packs.py for the optional E
 python scripts/package_model_packs.py
 ```
 
-Verified archives appear in `.deps/model-packs/`. Copy the desired files to the
+Verified archives appear in `.deps/model-packs/`. `scripts/publish_model_packs.ps1` uploads them to the
+`speech-packs` GitHub release, which **Get speech files** opens in the phone's browser (SideKick itself
+has no network permission). Or copy the desired files to the
 phone, open **Get started → Install offline model pack** (also in Settings), and
 choose each file. After installation the source archive can be removed from the
 phone; the verified weights are stored privately, excluded from Android backup.

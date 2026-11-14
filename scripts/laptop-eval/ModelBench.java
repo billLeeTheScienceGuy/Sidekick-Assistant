@@ -54,6 +54,14 @@ public class ModelBench {
         Map<String, Spec> m = new LinkedHashMap<>();
         m.put("sense2024", new Spec(all, t -> offline(OfflineModelConfig.builder().setTokens(appModels.resolve("sensevoice-tokens.txt").toString())
             .setSenseVoice(OfflineSenseVoiceModelConfig.builder().setModel(appModels.resolve("sensevoice-ko.int8.onnx").toString()).setLanguage("auto").setInverseTextNormalization(true).build()), t)));
+        // SenseVoice's audio-event tag (Speech, BGM, Laughter…) as "[event] text": used to test dropping music.
+        m.put("senseevent", new Spec(all, t -> {
+            OfflineRecognizer r = new OfflineRecognizer(OfflineRecognizerConfig.builder().setOfflineModelConfig(OfflineModelConfig.builder()
+                .setTokens(appModels.resolve("sensevoice-tokens.txt").toString()).setNumThreads(t)
+                .setSenseVoice(OfflineSenseVoiceModelConfig.builder().setModel(appModels.resolve("sensevoice-ko.int8.onnx").toString()).setLanguage("auto").setInverseTextNormalization(true).build()).build()).build());
+            return (x, l) -> { OfflineStream s = r.createStream();
+                try { s.acceptWaveform(x, 16000); r.decode(s); var res = r.getResult(s); return "[" + res.getEvent() + "] " + clean(res.getText()); } finally { s.release(); } };
+        }));
         Path s25 = c("sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09");
         m.put("sense2025", new Spec(all, t -> offline(OfflineModelConfig.builder().setTokens(f(s25, "tokens.txt"))
             .setSenseVoice(OfflineSenseVoiceModelConfig.builder().setModel(f(s25, "model*.onnx")).setLanguage("auto").setInverseTextNormalization(true).build()), t)));

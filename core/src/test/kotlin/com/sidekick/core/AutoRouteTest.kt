@@ -40,6 +40,12 @@ class AutoRouteTest {
         assertFalse(AutoRoute.englishOnly("Bonjour tout le monde.", "fr"))
         assertFalse(AutoRoute.englishOnly("...", "en"))
     }
+    @Test fun `English model times are shown as digits`() {
+        assertEquals("I'll go to the gym tomorrow at 7am.", AutoRoute.englishDigits("I'll go to the gym tomorrow at seven AM."))
+        assertEquals("On Tuesday, at 3pm, I have a team meeting downtown.", AutoRoute.englishDigits("On Tuesday, at three PM, I have a team meeting downtown."))
+        assertEquals("Lunch at 12:30 on Monday.", AutoRoute.englishDigits("Lunch at twelve thirty on Monday."))
+        assertEquals("Three people are coming.", AutoRoute.englishDigits("Three people are coming."))
+    }
     @Test fun `only plain Russian goes to the Russian model`() {
         assertTrue(AutoRoute.russianOnly("друзья всем привет мы сейчас находимся в сочи"))
         assertFalse(AutoRoute.russianOnly("давай встретимся на meeting в пятницу"))

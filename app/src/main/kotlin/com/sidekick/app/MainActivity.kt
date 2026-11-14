@@ -367,6 +367,7 @@ class MainActivity : ComponentActivity() {
                             }
                             if (entry.informational) Text("Information only · not blocking your calendar")
                             if (entry.sourceKey?.startsWith("uncertain:") == true) Text("Possible conversation update · confirmation required")
+                            else if (entry.sourceKey?.startsWith("confirm:") == true) Text("Unclear time · check the time before accepting", color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("confirm-time-${entry.id}"))
                             else if (entry.sourceKey?.startsWith("voice:") == true) Text("From live speech · verify speaker attribution")
                             else if (entry.sourceKey != null) Text("From an incoming message · attendance unconfirmed")
                             entry.placeName?.let { Text("Place: $it") }
@@ -446,7 +447,7 @@ private fun Editor(item: CommitmentEntity, entries: List<CommitmentEntity>, erro
     AlertDialog(onDismissRequest = onClose, title = { Text("Review commitment") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (item.sourceKey?.startsWith("uncertain:") == true) Text(item.reviewNote, color = MaterialTheme.colorScheme.error)
+                if (item.sourceKey?.startsWith("uncertain:") == true || item.sourceKey?.startsWith("confirm:") == true) Text(item.reviewNote, color = MaterialTheme.colorScheme.error)
                 OutlinedTextField(value = title, onValueChange = { if (it.length <= 500) title = it }, label = { Text(if (informational) "Event or note" else "What will you do?") }, modifier = Modifier.testTag("edit-title"))
                 Row {
                     Checkbox(informational, { informational = it }, modifier = Modifier.testTag("event-informational").controlLabel("Information only; attendance is unconfirmed"))

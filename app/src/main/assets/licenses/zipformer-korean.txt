@@ -1,0 +1,7 @@
+Korean Zipformer transducer (sherpa-onnx-zipformer-korean-2024-06-24), int8 ONNX conversion by the k2-fsa
+sherpa-onnx project of https://huggingface.co/johnBamma/icefall-asr-ksponspeech-zipformer-2024-06-24 (icefall).
+Files renamed for SideKick.
+
+The upstream model is tagged Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0); the sherpa-onnx
+conversion page states no license of its own. It was trained on KsponSpeech (AI Hub, Korea), whose dataset terms
+have not been reviewed for this app. Confirm both before distributing this optional pack.

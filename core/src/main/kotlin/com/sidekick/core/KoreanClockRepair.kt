@@ -18,6 +18,18 @@ object KoreanClockRepair {
     private fun hour(m: MatchResult): Int? = hourOf(m.groupValues[2])
     fun clockText(text: String) = clock.findAll(text).joinToString(" / ") { it.value }.ifEmpty { "no supported clock" }
     fun needsRetry(text: String) = text.none { it in "?？\"“”«»「」『』" } && clock.findAll(text).singleOrNull()?.let { hour(it) !in 1..12 } == true
+    /**
+     * For an impossible clock no reading fixed: the original text with each plausible 12-hour reading, most likely first.
+     * "저녁 18시" → 8시 (an extra "열" from linked speech), then 6시 (a 24-hour clock). Used only for confirmation, never saved as is.
+     */
+    fun likelyReadings(text: String): List<String> {
+        if (!needsRetry(text)) return emptyList()
+        val m = clock.findAll(text).single()
+        val h = hour(m) ?: return emptyList()
+        return listOf(h - 10, h - 12).filter { it in 1..12 }.distinct().map { text.replaceRange(m.groups[2]!!.range, it.toString()) }
+    }
+    /** The clock as written, e.g. "저녁 18시", for review notes. */
+    fun clockOf(text: String): String? = clock.findAll(text).singleOrNull()?.value
     fun select(original: String, alternative: String): String {
         if (!needsRetry(original)) return original
         val before = clock.findAll(original).singleOrNull() ?: return original

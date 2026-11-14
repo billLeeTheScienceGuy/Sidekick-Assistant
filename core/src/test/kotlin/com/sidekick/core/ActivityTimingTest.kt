@@ -16,6 +16,13 @@ class ActivityTimingTest {
     }
     private fun source(text: String) = Transcript(text, Instant.parse("2026-10-22T17:00:00Z"), ZoneId.of("America/Chicago"), Speaker.USER, true)
 
+    @Test fun `spoken AM at a sentence end stays morning`() {
+        // Parakeet's reading of the owner's line 8 used to become 7 PM: "AM." was not recognized as morning.
+        for (text in listOf("There's a gym class tomorrow at seven AM.", "There's a gym class tomorrow at seven a.m.", "There's a gym class tomorrow at 7am."))
+            assertEquals(Instant.parse("2026-10-23T12:00:00Z"), ActivityTiming.extract(source(text)).single().activityStartAt, text)
+        assertEquals(Instant.parse("2026-10-24T00:00:00Z"), ActivityTiming.extract(source("There's a gym class tomorrow at seven PM.")).single().activityStartAt)
+    }
+
     @Test fun `later midnight statement completes party without assuming attendance`() {
         val activity = ActivityTiming.extract(source("Yeah there's a party at 8pm. We can bring snacks. It will end around midnight.")).single()
         assertEquals(Instant.parse("2026-10-23T01:00:00Z"), activity.activityStartAt)

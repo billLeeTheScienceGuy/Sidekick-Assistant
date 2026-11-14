@@ -30,6 +30,14 @@ class KoreanClockRepairTest {
         // Other wording differs: only the hour may change, the original wording stays.
         assertEquals(good, KoreanClockRepair.select(bad, good.replace("파티", "회의")))
     }
+    @Test fun `unresolved clocks offer likely readings for confirmation only`() {
+        assertEquals(listOf("제가 내일 저녁 8시에 셀와 생일 파티에 갈거.", "제가 내일 저녁 6시에 셀와 생일 파티에 갈거."),
+            KoreanClockRepair.likelyReadings("제가 내일 저녁 18시에 셀와 생일 파티에 갈거."))
+        assertEquals(listOf("오후 3시에 봐요", "오후 1시에 봐요"), KoreanClockRepair.likelyReadings("오후 13시에 봐요"))
+        assertEquals(listOf("밤 11시에 봐요"), KoreanClockRepair.likelyReadings("밤 23시에 봐요"))
+        assertEquals(emptyList(), KoreanClockRepair.likelyReadings("저녁 8시에 봐요"))
+        assertEquals("저녁 18시", KoreanClockRepair.clockOf("제가 내일 저녁 18시에 갈게요"))
+    }
     @Test fun `extra ten from linked speech is dropped when another model hears the hour`() {
         // Owner's Pixel recording of "제가 내일 저녁 8시에 Sarah 생일 파티에 갈 거예요": SenseVoice vs Omnilingual.
         val sense = "제가 내일 저녁 18시에 셀와 생일 파티에 갈거에."
