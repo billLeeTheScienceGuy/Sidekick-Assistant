@@ -268,6 +268,12 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                                     context.startActivity(Intent(context, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java))
                                 }) { Text(if (voiceReady) "Update my voice profiles" else "Set up my voice") }
                                 TextButton(enabled = !listening.recording && !listening.processing, onClick = { deleteVoice = true }) { Text("Delete my voice setup") }
+                                SettingsDetails("Names you often mention") {
+                                    val spokenNames by settings.spokenNames.collectAsState()
+                                    QuietLabel("One per line: the name, then how it sounds in Korean, e.g. “Sarah 세라”. When you say it in Korean speech, SideKick writes the name. Needs the “Korean names & time check” speech file. Stays on this phone.")
+                                    androidx.compose.material3.OutlinedTextField(value = spokenNames, onValueChange = settings::setSpokenNames, minLines = 3,
+                                        label = { Text("Names") }, modifier = Modifier.fillMaxWidth().testTag("spoken-names"))
+                                }
                                 HorizontalDivider()
                                 var checks by remember { mutableStateOf(false) }
                                 TextButton(onClick = { checks = !checks }, modifier = Modifier.testTag("phone-checks")) { Text(if (checks) "Hide phone checks" else "Check phone setup") }

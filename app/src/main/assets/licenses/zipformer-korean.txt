@@ -3,5 +3,11 @@ sherpa-onnx project of https://huggingface.co/johnBamma/icefall-asr-ksponspeech-
 Files renamed for SideKick.
 
 The upstream model is tagged Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0); the sherpa-onnx
-conversion page states no license of its own. It was trained on KsponSpeech (AI Hub, Korea), whose dataset terms
-have not been reviewed for this app. Confirm both before distributing this optional pack.
+conversion page states no license of its own.
+
+Training data: KsponSpeech (한국어 음성), AI Hub. 본 모델의 학습 데이터는 과학기술정보통신부와 한국지능정보사회진흥원(NIA)의
+지원으로 구축된 AI 허브 데이터(한국어 음성, 한국전자통신연구원)를 활용한 결과임을 밝힙니다.
+(This model was trained on AI Hub data built with support from the Ministry of Science and ICT and NIA; the data was
+produced by ETRI.) AI Hub's policy requires this attribution in derivative works. It does not state whether models
+trained on the data may be redistributed, and requires a separate agreement for users located outside Korea; this
+optional pack is not published until ETRI/NIA confirm.

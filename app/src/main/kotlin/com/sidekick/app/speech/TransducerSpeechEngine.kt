@@ -8,14 +8,16 @@ import java.io.File
  * One single-language transducer from an optional pack (overnight benchmark):
  * - ENGLISH, NVIDIA Parakeet TDT 110M: 0.5% clean / 2.0% noisy English vs SenseVoice 2.1% / 3.2%; ~0.4 s per clip on a Pixel 7a.
  * - RUSSIAN, GigaAM v3: 4.5% clean / 4.9% noisy Russian vs Omnilingual 6.3% / 14.1%; ~1.1 s per clip.
- * - KOREAN, icefall Zipformer (KsponSpeech): weaker overall, used only to cross-check unclear Korean times; ~0.5 s per clip.
+ * - KOREAN, icefall Zipformer (KsponSpeech): weaker overall; cross-checks unclear Korean times and, with the user's name
+ *   list as hotwords, finds names in Korean speech (NameSplice); ~0.5 s per clip.
  * Owned by SpeechEngine's process-wide gate. Audio remains in caller-owned RAM.
  */
 internal class TransducerSpeechEngine(private val context: Context, private val model: Model) {
     class Model(val encoder: Pair<String, String>, val decoder: Pair<String, String>, val joiner: Pair<String, String>, val tokens: Pair<String, String>,
-        val type: String = "nemo_transducer") {
-        val files = listOf(encoder, decoder, joiner, tokens)
+        val type: String = "nemo_transducer", val bpeVocab: Pair<String, String>? = null) {
+        val files = listOfNotNull(encoder, decoder, joiner, tokens, bpeVocab)
     }
+    private var hotwordsKey: String? = null
     private var recognizer: OfflineRecognizer? = null
     private val verified = mutableMapOf<String, File>()
     private fun install(file: Pair<String, String>): String {
@@ -23,13 +25,20 @@ internal class TransducerSpeechEngine(private val context: Context, private val 
         return ModelPacks.ensure(context, file.first, file.second).also { verified[file.first] = it }.absolutePath
     }
     fun available() = model.files.all { (name, _) -> ModelPacks.available(context, name) }
-    fun transcribe(samples: FloatArray, threads: Int, retain: Boolean): String {
+    /** [hotwords]: optional word list (one phrase per line), decoded with beam search at strength 1.5 (names benchmark). */
+    fun transcribe(samples: FloatArray, threads: Int, retain: Boolean, hotwords: File? = null): String {
         require(samples.size in 1600..480000 && samples.all { it.isFinite() })
+        require(hotwords == null || model.bpeVocab != null)
         lastUsedMs = android.os.SystemClock.elapsedRealtime()
         try {
+            val key = hotwords?.let { "${it.path}:${it.lastModified()}" }
+            if (recognizer != null && key != hotwordsKey) release()
             val engine = recognizer ?: OfflineRecognizer(config = OfflineRecognizerConfig(modelConfig = OfflineModelConfig(
                 transducer = OfflineTransducerModelConfig(encoder = install(model.encoder), decoder = install(model.decoder), joiner = install(model.joiner)),
-                tokens = install(model.tokens), modelType = model.type, numThreads = threads))).also { recognizer = it }
+                tokens = install(model.tokens), modelType = model.type, numThreads = threads,
+                modelingUnit = if (hotwords != null) "bpe" else "", bpeVocab = if (hotwords != null) install(model.bpeVocab!!) else ""),
+                decodingMethod = if (hotwords != null) "modified_beam_search" else "greedy_search",
+                hotwordsFile = hotwords?.absolutePath ?: "", hotwordsScore = 1.5f)).also { recognizer = it; hotwordsKey = key }
             val stream = engine.createStream()
             return try {
                 stream.acceptWaveform(samples, 16000); engine.decode(stream)
@@ -56,6 +65,7 @@ internal class TransducerSpeechEngine(private val context: Context, private val 
             "zipko-encoder.int8.onnx" to "8b196d723421a0513c98ec25da2c43420c029e817f5e4a90b29ff80291c0af2b",
             "zipko-decoder.int8.onnx" to "2cc8c04ea080a657c18ebc59702e6b049cef08163eba5d68ac5bf707925cb0fb",
             "zipko-joiner.int8.onnx" to "eb654db1ea2cc9d63474855f65958b6059084692a9f2eb4f3812aceb1e416a20",
-            "zipko-tokens.txt" to "016bdf0965029263b7ad01b742366ee542ef0bef38261510e8176ff6f2e9e668", type = "transducer")
+            "zipko-tokens.txt" to "016bdf0965029263b7ad01b742366ee542ef0bef38261510e8176ff6f2e9e668", type = "transducer",
+            bpeVocab = "zipko-bpe.vocab" to "4dbdff57db7b1e00e8feba8637dec4d2606221f614ce44336c04fd20b07f4c0f")
     }
 }

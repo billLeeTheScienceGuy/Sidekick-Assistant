@@ -56,3 +56,9 @@ across a state line during a long session (it re-checks every 10 minutes).
 Say quickly: “제가 내일 저녁 8시에 Sarah 생일 파티에 갈 거예요.” In **Review** (Planner), an item marked **Unclear time ·
 check the time before accepting** appears with the most likely time (저녁 8시) if the app could not settle it; Hands-off
 mode never saves it automatically. With the Korean time-check pack installed it is usually settled to 8시 directly.
+
+## 4. Names in Korean speech (optional, 1 minute)
+
+Settings → **Names you often mention**: add `Sarah 세라` (one per line: the name, then how it sounds in Korean).
+Needs the **Korean names & time check** speech file. Then say: “내일 저녁에 세라랑 같이 밥 먹기로 했어요.” The note should
+read “Sarah랑”. Repeat with a sentence that has no name (“열쇠가 사라졌어요”): nothing should change.

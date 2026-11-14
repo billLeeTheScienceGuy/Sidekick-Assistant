@@ -44,7 +44,7 @@ class DeviceHealthTest {
         assumeTrue(arguments.getString("deviceHealth") == "energy")
         awake {
             runBlocking {
-                val engine = SpeechEngine(context, ::language) { SpeechQuality.ADAPTIVE }
+                val engine = SpeechEngine(context, ::language, { SpeechQuality.ADAPTIVE })
                 val rows = clips(arguments.getString("set") ?: "timing")
                 val cpu0 = android.os.Process.getElapsedCpuTime(); val wall0 = android.os.SystemClock.elapsedRealtime()
                 var audioMs = 0L
@@ -67,7 +67,7 @@ class DeviceHealthTest {
         assumeTrue(arguments.getString("deviceHealth") == "heat")
         awake {
             runBlocking {
-                val engine = SpeechEngine(context, ::language) { SpeechQuality.ADAPTIVE }
+                val engine = SpeechEngine(context, ::language, { SpeechQuality.ADAPTIVE })
                 val rows = clips(arguments.getString("set") ?: "timing")
                 val began = android.os.SystemClock.elapsedRealtime()
                 val until = began + (arguments.getString("minutes") ?: "60").toLong() * 60_000
@@ -93,7 +93,7 @@ class DeviceHealthTest {
         awake {
             runBlocking {
                 val before = android.os.Debug.getPss()
-                val engine = SpeechEngine(context, ::language) { SpeechQuality.ADAPTIVE }
+                val engine = SpeechEngine(context, ::language, { SpeechQuality.ADAPTIVE })
                 var peak = before
                 for ((file, _, _) in clips(arguments.getString("set") ?: "timing")) {
                     engine.transcribe(WavAudio.decode(file.readBytes()), 4, retainModel = true)
@@ -135,7 +135,7 @@ class DeviceHealthTest {
         assumeTrue(arguments.getString("deviceHealth") == "falsetrigger")
         awake {
             runBlocking {
-                val engine = SpeechEngine(context, ::language) { SpeechQuality.ADAPTIVE }
+                val engine = SpeechEngine(context, ::language, { SpeechQuality.ADAPTIVE })
                 NativeVad.open(VadModel.install(context))
                 val out = JSONArray(); var audioMs = 0L
                 try {
