@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.withLock
 object ModelPacks {
     val revision = MutableStateFlow(0)
     private val gate = Mutex()
-    val labels = linkedMapOf("whisper" to "Whisper languages", "sensevoice" to "Korean & Chinese", "omni" to "Auto-detect & multilingual", "english" to "English accuracy (Auto-detect)")
+    val labels = linkedMapOf("whisper" to "Whisper languages", "sensevoice" to "Korean & Chinese", "omni" to "Auto-detect & multilingual", "english" to "English accuracy (Auto-detect)", "russian" to "Russian accuracy (Auto-detect)")
     fun catalog(context: Context) = context.assets.open("model-packs.tsv").bufferedReader().use { ModelPackCatalog.parse(it.readText()) }
     private fun store(context: Context) = ModelPackStore(File(context.noBackupFilesDir, "model-packs"), catalog(context))
     fun available(context: Context, name: String): Boolean {

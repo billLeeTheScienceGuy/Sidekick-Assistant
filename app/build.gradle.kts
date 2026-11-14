@@ -95,7 +95,7 @@ tasks.matching { it.name == "preBenchmarkBuild" }.configureEach { dependsOn(veri
 val prepareCompactAssets by tasks.registering(Sync::class) {
     from("src/main/assets")
     into(layout.buildDirectory.dir("generated/compactAssets"))
-    exclude("models/ggml-tiny.bin", "models/ggml-base.bin", "models/sensevoice-*", "models/omni-*", "models/parakeet-*")
+    exclude("models/ggml-tiny.bin", "models/ggml-base.bin", "models/sensevoice-*", "models/omni-*", "models/parakeet-*", "models/gigaam-*")
 }
 tasks.named("preBuild") { dependsOn(verifySpeechModel, prepareCompactAssets) }
 dependencies {
