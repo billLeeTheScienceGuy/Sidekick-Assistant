@@ -1,0 +1,453 @@
+{
+  "date": "2026-11-13",
+  "baseline": "0.30 engine (unchanged in 0.31)",
+  "updated": "0.32.0/code50",
+  "device": "Pixel 7a Android 17; USB-connected; existing normal-app listening session remained enabled",
+  "conditions": "Concatenated synthetic voices; exploratory code-switch regression, not natural bilingual accuracy",
+  "fixtures": [
+    {
+      "file": "bilingual-ko-before.wav",
+      "languages": [
+        "en",
+        "ko"
+      ],
+      "reference": "at The James. 내일 오후 6시에 회의가 있어요.",
+      "audioMs": 3559,
+      "sha256": "3078f1d344d89aa38c7eec640e3ea84593edc76d56310a32330e641b564f9e7d",
+      "sourceCommand": "ko-ko-KR-SunHiNeural-0.wav"
+    },
+    {
+      "file": "bilingual-ko-after.wav",
+      "languages": [
+        "en",
+        "ko"
+      ],
+      "reference": "내일 오후 6시에 회의가 있어요. at The James.",
+      "audioMs": 3559,
+      "sha256": "8b9048c9311f96ae71b518b6be224fc096798ff3cd8b5a1e63568ce0703217a6",
+      "sourceCommand": "ko-ko-KR-SunHiNeural-0.wav"
+    },
+    {
+      "file": "bilingual-zh-before.wav",
+      "languages": [
+        "en",
+        "zh"
+      ],
+      "reference": "at The James. 明天下午六点有会议。",
+      "audioMs": 2934,
+      "sha256": "7810976d9be520082a72c5a238487d59df9fe0bfa29c3f097aaceb74173b71cd",
+      "sourceCommand": "zh-zh-CN-XiaoxiaoNeural-0.wav"
+    },
+    {
+      "file": "bilingual-zh-after.wav",
+      "languages": [
+        "en",
+        "zh"
+      ],
+      "reference": "明天下午六点有会议。 at The James.",
+      "audioMs": 2934,
+      "sha256": "dcec8a457433a337f917d77e8fa52e5c40ce47743a5cfc4ab547b18b44a96a9d",
+      "sourceCommand": "zh-zh-CN-XiaoxiaoNeural-0.wav"
+    },
+    {
+      "file": "bilingual-fr-before.wav",
+      "languages": [
+        "en",
+        "fr"
+      ],
+      "reference": "at The James. Je participerai à une réunion demain à 18h.",
+      "audioMs": 3961,
+      "sha256": "f38f58201e74ac9730a0c116c39529da45bdf541fd16c7df39a3f72912f26955",
+      "sourceCommand": "fr-fr-FR-DeniseNeural-0.wav"
+    },
+    {
+      "file": "bilingual-fr-after.wav",
+      "languages": [
+        "en",
+        "fr"
+      ],
+      "reference": "Je participerai à une réunion demain à 18h. at The James.",
+      "audioMs": 3961,
+      "sha256": "17a76833054d9eaeab9fd9ca2959e370d92d21ba4328f6db48701b99f75ba7d3",
+      "sourceCommand": "fr-fr-FR-DeniseNeural-0.wav"
+    },
+    {
+      "file": "bilingual-de-before.wav",
+      "languages": [
+        "en",
+        "de"
+      ],
+      "reference": "at The James. Ich nehme morgen um 18 Uhr an einem Treffen teil.",
+      "audioMs": 4280,
+      "sha256": "3fe915b7b47427a5e5ea14b30f7f97f67081394eefcd262c0625152bb5469fc2",
+      "sourceCommand": "de-de-DE-KatjaNeural-0.wav"
+    },
+    {
+      "file": "bilingual-de-after.wav",
+      "languages": [
+        "en",
+        "de"
+      ],
+      "reference": "Ich nehme morgen um 18 Uhr an einem Treffen teil. at The James.",
+      "audioMs": 4280,
+      "sha256": "73aba578eeca15e12dd1c33d42d0e342e475aed9321452e5e07bb37b3e8df925",
+      "sourceCommand": "de-de-DE-KatjaNeural-0.wav"
+    },
+    {
+      "file": "bilingual-ru-before.wav",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "reference": "at The James. Я пойду на встречу завтра в 18:00.",
+      "audioMs": 3882,
+      "sha256": "f302cbc42c8b9db37f20ee680aab060b4c2464f7c5bdc9311099dd8879de0bbd",
+      "sourceCommand": "ru-ru-RU-SvetlanaNeural-0.wav"
+    },
+    {
+      "file": "bilingual-ru-after.wav",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "reference": "Я пойду на встречу завтра в 18:00. at The James.",
+      "audioMs": 3882,
+      "sha256": "9f8a35556895d81ed5cd0ae75d5fcac78be98a89203941db3c454afb971d489e",
+      "sourceCommand": "ru-ru-RU-SvetlanaNeural-0.wav"
+    },
+    {
+      "file": "bilingual-ar-before.wav",
+      "languages": [
+        "en",
+        "ar"
+      ],
+      "reference": "at The James. سأحضر الاجتماع غدا الساعة السادسة مساء.",
+      "audioMs": 4393,
+      "sha256": "d461f1055b72644b1f4504956b193683442f1e4078aec1c1b82c43803344cb3e",
+      "sourceCommand": "ar-ar-SA-ZariyahNeural-0.wav"
+    },
+    {
+      "file": "bilingual-ar-after.wav",
+      "languages": [
+        "en",
+        "ar"
+      ],
+      "reference": "سأحضر الاجتماع غدا الساعة السادسة مساء. at The James.",
+      "audioMs": 4393,
+      "sha256": "0cf59d587750b458f485967321760c6323a7f2b66220122ec4c71a617b728d8c",
+      "sourceCommand": "ar-ar-SA-ZariyahNeural-0.wav"
+    }
+  ],
+  "baselineResults": [
+    {
+      "file": "bilingual-ko-before.wav",
+      "reference": "at The James. 내일 오후 6시에 회의가 있어요.",
+      "recognized": "아 내일 오후 6 시에 회의가 있어요.",
+      "backend": "SenseVoice · automatic short speech",
+      "referenceCharacters": 23,
+      "characterEdits": 10,
+      "venueKept": false,
+      "audioMs": 3559,
+      "elapsedMs": 11317
+    },
+    {
+      "file": "bilingual-ko-after.wav",
+      "reference": "내일 오후 6시에 회의가 있어요. at The James.",
+      "recognized": "내일 오후 6시에 회의가 있어요.",
+      "backend": "SenseVoice · automatic short speech",
+      "referenceCharacters": 23,
+      "characterEdits": 10,
+      "venueKept": false,
+      "audioMs": 3559,
+      "elapsedMs": 5320
+    },
+    {
+      "file": "bilingual-zh-before.wav",
+      "reference": "at The James. 明天下午六点有会议。",
+      "recognized": "atthejames明天下午六点有会议",
+      "backend": "Omnilingual int8",
+      "referenceCharacters": 19,
+      "characterEdits": 0,
+      "venueKept": true,
+      "audioMs": 2934,
+      "elapsedMs": 2576
+    },
+    {
+      "file": "bilingual-zh-after.wav",
+      "reference": "明天下午六点有会议。 at The James.",
+      "recognized": "明天下午六点有会议atthejames",
+      "backend": "Omnilingual int8",
+      "referenceCharacters": 19,
+      "characterEdits": 0,
+      "venueKept": true,
+      "audioMs": 2934,
+      "elapsedMs": 826
+    },
+    {
+      "file": "bilingual-fr-before.wav",
+      "reference": "at The James. Je participerai à une réunion demain à 18h.",
+      "recognized": "At the James, je participerai à une réunion demain à 18h.",
+      "backend": "Whisper Base · automatic short speech",
+      "referenceCharacters": 45,
+      "characterEdits": 0,
+      "venueKept": true,
+      "audioMs": 3961,
+      "elapsedMs": 5742
+    },
+    {
+      "file": "bilingual-fr-after.wav",
+      "reference": "Je participerai à une réunion demain à 18h. at The James.",
+      "recognized": "Je participerai à une réunion demain à 18h.",
+      "backend": "Whisper Base · automatic short speech",
+      "referenceCharacters": 45,
+      "characterEdits": 10,
+      "venueKept": false,
+      "audioMs": 3961,
+      "elapsedMs": 7737
+    },
+    {
+      "file": "bilingual-de-before.wav",
+      "reference": "at The James. Ich nehme morgen um 18 Uhr an einem Treffen teil.",
+      "recognized": "@thejames Ich nehme morgen um 18 Uhr an einem Treffenteil",
+      "backend": "Whisper Tiny · automatic short speech",
+      "referenceCharacters": 49,
+      "characterEdits": 2,
+      "venueKept": true,
+      "audioMs": 4280,
+      "elapsedMs": 8529
+    },
+    {
+      "file": "bilingual-de-after.wav",
+      "reference": "Ich nehme morgen um 18 Uhr an einem Treffen teil. at The James.",
+      "recognized": "Ich nehme morgen um 18 Uhr an einem Treffenteil.",
+      "backend": "Whisper Tiny · automatic short speech",
+      "referenceCharacters": 49,
+      "characterEdits": 10,
+      "venueKept": false,
+      "audioMs": 4280,
+      "elapsedMs": 8091
+    },
+    {
+      "file": "bilingual-ru-before.wav",
+      "reference": "at The James. Я пойду на встречу завтра в 18:00.",
+      "recognized": "Я пойду на встречу завтра 18 часов.",
+      "backend": "Whisper Base · automatic short speech",
+      "referenceCharacters": 36,
+      "characterEdits": 16,
+      "venueKept": false,
+      "audioMs": 3882,
+      "elapsedMs": 6389
+    },
+    {
+      "file": "bilingual-ru-after.wav",
+      "reference": "Я пойду на встречу завтра в 18:00. at The James.",
+      "recognized": "Я пойду на встречу завтра 18 часов.",
+      "backend": "Whisper Base · automatic short speech",
+      "referenceCharacters": 36,
+      "characterEdits": 13,
+      "venueKept": false,
+      "audioMs": 3882,
+      "elapsedMs": 6384
+    },
+    {
+      "file": "bilingual-ar-before.wav",
+      "reference": "at The James. سأحضر الاجتماع غدا الساعة السادسة مساء.",
+      "recognized": "ت جaمes سأحضر الاجتماع غدا الساعة السادس مساه",
+      "backend": "Omnilingual int8",
+      "referenceCharacters": 43,
+      "characterEdits": 9,
+      "venueKept": false,
+      "audioMs": 4393,
+      "elapsedMs": 2921
+    },
+    {
+      "file": "bilingual-ar-after.wav",
+      "reference": "سأحضر الاجتماع غدا الساعة السادسة مساء. at The James.",
+      "recognized": "سأحضر الاجتماع غدا الساعة السادس مساه at جaمes",
+      "backend": "Omnilingual int8",
+      "referenceCharacters": 43,
+      "characterEdits": 7,
+      "venueKept": false,
+      "audioMs": 4393,
+      "elapsedMs": 1269
+    }
+  ],
+  "updatedResults": [
+    {
+      "file": "bilingual-ko-before.wav",
+      "reference": "at The James. 내일 오후 6시에 회의가 있어요.",
+      "recognized": "at the james 내일 오후 여섯시에 회의가 있어요",
+      "backend": "Omnilingual int8",
+      "referenceCharacters": 23,
+      "characterEdits": 2,
+      "venueKept": true,
+      "audioMs": 3559,
+      "elapsedMs": 3225
+    },
+    {
+      "file": "bilingual-ko-after.wav",
+      "reference": "내일 오후 6시에 회의가 있어요. at The James.",
+      "recognized": "내일 오후 여섯시에 회의가 있어요 at the james",
+      "backend": "Omnilingual int8",
+      "referenceCharacters": 23,
+      "characterEdits": 2,
+      "venueKept": true,
+      "audioMs": 3559,
+      "elapsedMs": 1062
+    },
+    {
+      "file": "bilingual-zh-before.wav",
+      "reference": "at The James. 明天下午六点有会议。",
+      "recognized": "atthejames明天下午六点有会议",
+      "backend": "Omnilingual int8",
+      "referenceCharacters": 19,
+      "characterEdits": 0,
+      "venueKept": true,
+      "audioMs": 2934,
+      "elapsedMs": 819
+    },
+    {
+      "file": "bilingual-zh-after.wav",
+      "reference": "明天下午六点有会议。 at The James.",
+      "recognized": "明天下午六点有会议atthejames",
+      "backend": "Omnilingual int8",
+      "referenceCharacters": 19,
+      "characterEdits": 0,
+      "venueKept": true,
+      "audioMs": 2934,
+      "elapsedMs": 822
+    },
+    {
+      "file": "bilingual-fr-before.wav",
+      "reference": "at The James. Je participerai à une réunion demain à 18h.",
+      "recognized": "At the James, je participerai à une réunion demain à 18h.",
+      "backend": "Whisper Base · automatic short speech",
+      "referenceCharacters": 45,
+      "characterEdits": 0,
+      "venueKept": true,
+      "audioMs": 3961,
+      "elapsedMs": 5120
+    },
+    {
+      "file": "bilingual-fr-after.wav",
+      "reference": "Je participerai à une réunion demain à 18h. at The James.",
+      "recognized": "Je participerai à une réunion demain à 18h.",
+      "backend": "Whisper Base · automatic short speech",
+      "referenceCharacters": 45,
+      "characterEdits": 10,
+      "venueKept": false,
+      "audioMs": 3961,
+      "elapsedMs": 6336
+    },
+    {
+      "file": "bilingual-de-before.wav",
+      "reference": "at The James. Ich nehme morgen um 18 Uhr an einem Treffen teil.",
+      "recognized": "at the james ich nehme morgen um achtzehn uhr an einem treffenteil",
+      "backend": "Omnilingual int8",
+      "referenceCharacters": 49,
+      "characterEdits": 8,
+      "venueKept": true,
+      "audioMs": 4280,
+      "elapsedMs": 2854
+    },
+    {
+      "file": "bilingual-de-after.wav",
+      "reference": "Ich nehme morgen um 18 Uhr an einem Treffen teil. at The James.",
+      "recognized": "ich nehme morgen um achtzehn uhr an einem treffenteil at the james",
+      "backend": "Omnilingual int8",
+      "referenceCharacters": 49,
+      "characterEdits": 8,
+      "venueKept": true,
+      "audioMs": 4280,
+      "elapsedMs": 1246
+    },
+    {
+      "file": "bilingual-ru-before.wav",
+      "reference": "at The James. Я пойду на встречу завтра в 18:00.",
+      "recognized": "Я пойду на встречу завтра 18 часов.",
+      "backend": "Whisper Base · automatic short speech",
+      "referenceCharacters": 36,
+      "characterEdits": 16,
+      "venueKept": false,
+      "audioMs": 3882,
+      "elapsedMs": 4696
+    },
+    {
+      "file": "bilingual-ru-after.wav",
+      "reference": "Я пойду на встречу завтра в 18:00. at The James.",
+      "recognized": "Я пойду на встречу завтра 18 часов.",
+      "backend": "Whisper Base · automatic short speech",
+      "referenceCharacters": 36,
+      "characterEdits": 13,
+      "venueKept": false,
+      "audioMs": 3882,
+      "elapsedMs": 6349
+    },
+    {
+      "file": "bilingual-ar-before.wav",
+      "reference": "at The James. سأحضر الاجتماع غدا الساعة السادسة مساء.",
+      "recognized": "ت جaمes سأحضر الاجتماع غدا الساعة السادس مساه",
+      "backend": "Omnilingual int8",
+      "referenceCharacters": 43,
+      "characterEdits": 9,
+      "venueKept": false,
+      "audioMs": 4393,
+      "elapsedMs": 2914
+    },
+    {
+      "file": "bilingual-ar-after.wav",
+      "reference": "سأحضر الاجتماع غدا الساعة السادسة مساء. at The James.",
+      "recognized": "سأحضر الاجتماع غدا الساعة السادس مساه at جaمes",
+      "backend": "Omnilingual int8",
+      "referenceCharacters": 43,
+      "characterEdits": 7,
+      "venueKept": false,
+      "audioMs": 4393,
+      "elapsedMs": 1272
+    }
+  ],
+  "rejectedSenseVoiceAutoCandidate": [
+    {
+      "file": "bilingual-ko-before.wav",
+      "reference": "at The James. 내일 오후 6시에 회의가 있어요.",
+      "recognized": "내일 오후 6시에 회의가 있어요.",
+      "referenceCharacters": 23,
+      "characterEdits": 10,
+      "venueKept": false,
+      "elapsedMs": 203
+    },
+    {
+      "file": "bilingual-ko-after.wav",
+      "reference": "내일 오후 6시에 회의가 있어요. at The James.",
+      "recognized": "내일 오후 6시에 회의가 있어요.",
+      "referenceCharacters": 23,
+      "characterEdits": 10,
+      "venueKept": false,
+      "elapsedMs": 198
+    },
+    {
+      "file": "bilingual-zh-before.wav",
+      "reference": "at The James. 明天下午六点有会议。",
+      "recognized": "at the jam明天下午6点有会议。",
+      "referenceCharacters": 19,
+      "characterEdits": 3,
+      "venueKept": false,
+      "elapsedMs": 171
+    },
+    {
+      "file": "bilingual-zh-after.wav",
+      "reference": "明天下午六点有会议。 at The James.",
+      "recognized": "明天下午6点有会议at theja。",
+      "referenceCharacters": 19,
+      "characterEdits": 4,
+      "venueKept": false,
+      "elapsedMs": 168
+    }
+  ],
+  "limitations": [
+    "Concatenated synthetic voices, not natural within-sentence bilingual speech",
+    "Character scoring counts number-format and transliteration differences as errors",
+    "No battery/thermal/general-population accuracy conclusion",
+    "French/Russian/Arabic venue cases still fail; guard cannot recover speech missing from the primary reading"
+  ]
+}

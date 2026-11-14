@@ -8,6 +8,27 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 class CamplusSpeakerTest {
+    @Test fun enrollmentChecksRealMatchingWindowsAndRejectsShortSamplesWithoutReplacingProfile() {
+        val i = InstrumentationRegistry.getInstrumentation(); val context = i.targetContext
+        assumeTrue(context.packageName.endsWith(".benchmark"))
+        val profile = VoiceProfile(context); val previous = profile.model.value
+        val engine = SpeakerEngine(context, profile)
+        val pcm = i.context.assets.open("jfk.wav").use { WavAudio.decode(it.readBytes()) }
+        val sample = pcm.copyOfRange(0, 96000)
+        try {
+            profile.selectModel(SpeakerModel.CAMPPLUS)
+            val reference = engine.enrollmentEmbedding(sample)
+            try { profile.save(listOf(reference, reference, reference)) } finally { reference.fill(0f) }
+            val before = profile.snapshot()!!
+            try {
+                val short = pcm.copyOfRange(0, 24000)
+                try { engine.enrollmentEmbedding(short); fail("Short enrollment must not pass") }
+                catch (_: IllegalArgumentException) { } finally { short.fill(0f) }
+                assertArrayEquals(before, profile.snapshot(), .000001f)
+                assertEquals(Speaker.USER, engine.identify(sample))
+            } finally { before.fill(0f) }
+        } finally { profile.delete(); profile.selectModel(previous); engine.close(); sample.fill(0f); pcm.fill(0f) }
+    }
     @Test fun modelSwitchingPreservesProfilesAndShortHeldOutSpeechRejectsOtherVoices() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext

@@ -32,8 +32,9 @@ class AutomaticLanguageTest {
                 val pcm = i.context.assets.open(case.getString("file")).use { WavAudio.decode(it.readBytes()) }
                 val text = engine.transcribe(pcm, retainModel = true)
                 val action = case.getString("action")
-                val change = EventChange.parse(text)
-                val event = ActivityTiming.extract(Transcript(text, captured, zone, Speaker.OTHER, true), true).singleOrNull()
+                val reliable = !engine.lastUncertain
+                val change = if(reliable) EventChange.parse(text) else null
+                val event = if(reliable) ActivityTiming.extract(Transcript(text, captured, zone, Speaker.OTHER, true), true).singleOrNull() else null
                 val expectedDay = captured.atZone(zone).toLocalDate().plusDays(1)
                 val previous = expectedDay.atTime(18, 0).atZone(zone).toInstant()
                 val passed = when (action) {
@@ -51,7 +52,7 @@ class AutomaticLanguageTest {
                 if (passed) recognized++
                 results.put(JSONObject().put("file", case.getString("file")).put("language", case.getString("code"))
                     .put("reference", case.getString("reference")).put("recognized", text).put("action", action).put("passed", passed)
-                    .put("safe", safe).put("knownLimit", case.getString("file") in knownArabicLimits))
+                    .put("safe", safe).put("automaticChangesBlocked", !reliable).put("knownLimit", case.getString("file") in knownArabicLimits))
                 // Keep the three measured unresolved Arabic cases visible; never accept a wrong action/time.
                 if (!safe || !passed && case.getString("file") !in knownArabicLimits) failures += "${case.getString("file")}: $text"
             }
@@ -81,7 +82,7 @@ class AutomaticLanguageTest {
         profile.selectModel(com.sidekick.app.speaker.SpeakerModel.CAMPPLUS)
         val speaker = com.sidekick.app.speaker.SpeakerEngine(isolated, profile)
         val turns = com.sidekick.app.speaker.SpeakerTurnEngine(isolated, profile, speaker)
-        val pipeline = LiveSpeechProcessor(engine, partition = turns::partition, onPart = { audio, part -> turns.classify(audio, part) }) { text, start, elapsed ->
+        val pipeline = LiveSpeechProcessor(engine, partition = turns::partition, onPart = { audio, part -> turns.classify(audio, part); true }) { text, start, elapsed ->
             emitted++
             results.put(JSONObject().put("recognized", text).put("sourceStart", start).put("elapsedMs", elapsed))
         }

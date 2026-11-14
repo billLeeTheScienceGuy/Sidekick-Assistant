@@ -27,7 +27,9 @@ class UndoPlannerTest {
             runBlocking { app.reminders.delete(id) }
             scenario = ActivityScenario.launch(Intent(app, MainActivity::class.java))
             compose.onNodeWithTag("settings").performClick()
-            compose.onNodeWithTag("reminder-alert-details").assertExists()
+            compose.onNodeWithTag("settings-page-ADVANCED").performScrollTo().performClick()
+            compose.onNodeWithTag("phone-checks").performScrollTo().performClick()
+            compose.onNodeWithTag("reminder-alert-details").performScrollTo().assertExists()
             compose.onNodeWithTag("test-reminder").performScrollTo().performClick()
             compose.waitUntil(5000) { runBlocking { app.database.commitments().get(id) != null } }
             val item = runBlocking { app.database.commitments().get(id)!! }

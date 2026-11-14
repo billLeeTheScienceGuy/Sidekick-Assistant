@@ -33,17 +33,17 @@ internal fun PrivacyGuidanceSection(settings: GuidanceSettings) {
             try {
                 val result = PrivacyRegionLookup(context).lookup()
                 settings.setPrivacyRegion(result)
-                if (result == null) note = "Region unavailable. The explicit city hint, if any, is used instead."
+                if (result == null) note = "Can’t find your region. Your chosen city will be used instead."
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { settings.setPrivacyRegion(null); note = "Region unavailable. Check location access or use an explicit city and state." }
+            catch (_: Exception) { settings.setPrivacyRegion(null); note = "Can’t find your region. Check location access or enter a city and state." }
             finally { busy = false }
         }
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) { settings.setPrivacyPhoneRegion(true); refresh() }
-        else note = "Location access is off. You can use an explicit city and state."
+        else note = "Location access is off. You can use a city and state instead."
     }
-    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("privacy-guidance")) { Text("Listening privacy & region guidance") }
+    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("privacy-guidance")) { Text("Listening & privacy") }
     if (!expanded) return
     Text(PrivacyRegions.policy)
     Text(PrivacyRegions.limits)
@@ -52,20 +52,20 @@ internal fun PrivacyGuidanceSection(settings: GuidanceSettings) {
     val region = phone?.region ?: PrivacyRegions.fromCity(city)
     val guidance = PrivacyRegions.guidance(region)
     Text(guidance.label, style = MaterialTheme.typography.titleMedium)
-    Text(if (phone != null) "Source: approximate phone region, refreshed manually; expires after 24 hours."
-        else "Source: explicit city/state in Settings, if recognized. A city alone is ambiguous.")
+    Text(if (phone != null) "Using your nearby region. Refresh after 24 hours."
+        else "Using the city and state you chose, if recognized. A city name alone may be unclear.")
     Text(guidance.note)
     Row {
         Switch(usePhone, { enabled ->
             if (!enabled) settings.setPrivacyPhoneRegion(false)
             else if (permitted) settings.setPrivacyPhoneRegion(true)
             else permission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-        }, enabled = !busy, modifier = Modifier.testTag("privacy-phone-region").controlLabel("Use approximate phone region for privacy guidance"))
-        Text("Use approximate phone region for guidance", Modifier.weight(1f))
+        }, enabled = !busy, modifier = Modifier.testTag("privacy-phone-region").controlLabel("Use my nearby region"))
+        Text("Use my nearby region", Modifier.weight(1f))
     }
-    Text("Optional: Refresh uses Android's location and address provider, which may send approximate coordinates online. Only country/state and the refresh time are cached locally; no street, coordinates or history are saved. No background location access. Turning this off clears the cache.")
+    Text("Refresh may send approximate location to Android’s address service. Only country, state and check time stay on this phone for up to 24 hours. No location history or background tracking. Turning this off clears the saved region.")
     if (usePhone) TextButton(onClick = { if (permitted) refresh() else permission.launch(Manifest.permission.ACCESS_COARSE_LOCATION) }, enabled = !busy,
-        modifier = Modifier.testTag("privacy-refresh-region")) { Text(if (busy) "Finding region…" else "Refresh phone region") }
+        modifier = Modifier.testTag("privacy-refresh-region")) { Text(if (busy) "Finding region…" else "Refresh my region") }
     note?.let { Text(it) }
     Text(PrivacyRegions.checked, style = MaterialTheme.typography.bodySmall)
     guidance.source?.let { source -> TextButton(onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(source))) } }) { Text("Read official source") } }

@@ -39,21 +39,21 @@ internal fun ModelPackSection(initiallyExpanded: Boolean = true) {
     } }
     val missing = remember(language, quality, revision) { ModelPacks.missing(context, language, quality) }
     var expanded by remember { mutableStateOf(initiallyExpanded) }
-    Text("Offline speech models", style = MaterialTheme.typography.titleMedium)
-    Text(if (missing.isEmpty()) "Selected speech mode: ready" else "Needed for selected mode: ${missing.joinToString { ModelPacks.labels[it].orEmpty() }}", modifier = Modifier.testTag("model-readiness"))
-    if (missing.isEmpty()) TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Hide model packs" else "Show model packs") }
+    Text("Speech files", style = MaterialTheme.typography.titleMedium)
+    Text(if (missing.isEmpty()) "Speech is ready" else "Install for this language: ${missing.joinToString { ModelPacks.labels[it].orEmpty() }}", modifier = Modifier.testTag("model-readiness"))
+    if (missing.isEmpty()) TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Hide speech files" else "Manage speech files") }
     if (expanded || missing.isNotEmpty()) {
-    Text("English Fast and voice matching are included. Install other packs once from .skmodels files; recognition stays offline. Existing installed models are reused.")
-    Text("Korean clock retries can also use the Whisper and Omnilingual packs when installed.")
-    Text("Adaptive Automatic uses Omni. Installing Whisper and SenseVoice also enables queue-aware refinement of brief speech; unclear Arabic clocks may still remain unknown.")
+    Text("English Faster mode and voice matching are included. Install other speech files once. Speech stays on this phone.")
+    Text("Extra files can help check unclear Korean times.")
+    Text("Auto-detect uses the multilingual file. Other installed files can help with short phrases. Unclear times stay unknown.")
     ModelPacks.labels.forEach { (id, label) ->
         val rows = remember(revision) { ModelPacks.catalog(context).filter { it.pack == id } }
         val ready = remember(revision) { rows.all { ModelPacks.available(context, it.name) } }
         Text("$label · ${rows.sumOf { it.bytes } / 1_000_000} MB · ${if (ready) "Ready" else "Not installed"}")
     }
     TextButton(enabled = !working && !listening.recording && !listening.processing, modifier = Modifier.testTag("import-speech-pack"),
-        onClick = { picker.launch(arrayOf("*/*")) }) { Text("Install offline model pack") }
-    TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/billLeeTheScienceGuy/Sidekick-Assistant/blob/main/docs/MODEL_PACKS.md"))) }) { Text("Offline pack instructions") }
+        onClick = { picker.launch(arrayOf("*/*")) }) { Text("Install speech file") }
+    TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/billLeeTheScienceGuy/Sidekick-Assistant/blob/main/docs/MODEL_PACKS.md"))) }) { Text("How to install speech files") }
     }
     if (working) LinearProgressIndicator(Modifier.fillMaxWidth())
     if (message.isNotBlank()) Text(message)
@@ -79,18 +79,18 @@ internal fun QuickStart(onClose: () -> Unit) {
     val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { refresh++ }
     AlertDialog(onDismissRequest = onClose, title = { Text("Get started") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Text, Planner and Summary work immediately. Listening starts only when you tap Start live notes.")
+            Text("You can type notes and use plans now. Follow these steps for speech.")
             Text("1. Choose speech language and quality", style = MaterialTheme.typography.titleMedium)
             Box {
                 TextButton(enabled = editable, onClick = { languageMenu = true }, modifier = Modifier.testTag("setup-language-choice")) { Text("Language: ${language.label}") }
                 DropdownMenu(languageMenu, { languageMenu = false }) { SpeechLanguage.entries.forEach { choice ->
-                    DropdownMenuItem(text = { Text(choice.label) }, onClick = { app.voiceProfile.selectLanguage(choice); app.guidance.setSpeechLanguage(choice); languageMenu = false }, modifier = Modifier.testTag("setup-language-${choice.code}"))
+                    DropdownMenuItem(text = { Text(choice.label) }, onClick = { if (choice == SpeechLanguage.AUTO) app.guidance.setAutomaticLanguage(true) else app.guidance.setSpeechLanguage(choice); app.voiceProfile.selectLanguage(choice); languageMenu = false }, modifier = Modifier.testTag("setup-language-${choice.code}"))
                 } }
             }
             Box {
-                TextButton(enabled = editable, onClick = { qualityMenu = true }, modifier = Modifier.testTag("setup-quality-choice")) { Text("Quality: ${quality.label}") }
+                TextButton(enabled = editable, onClick = { qualityMenu = true }, modifier = Modifier.testTag("setup-quality-choice")) { Text("Quality: ${speechQualityName(quality)}") }
                 DropdownMenu(qualityMenu, { qualityMenu = false }) { SpeechQuality.entries.forEach { choice ->
-                    DropdownMenuItem(text = { Text(choice.label) }, onClick = { app.guidance.setSpeechQuality(choice); qualityMenu = false }, modifier = Modifier.testTag("setup-quality-${choice.name}"))
+                    DropdownMenuItem(text = { Text(speechQualityName(choice)) }, onClick = { app.guidance.setSpeechQuality(choice); qualityMenu = false }, modifier = Modifier.testTag("setup-quality-${choice.name}"))
                 } }
             }
             ModelPackSection(initiallyExpanded = false)
@@ -106,8 +106,8 @@ internal fun QuickStart(onClose: () -> Unit) {
                 if (android.os.Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
                 else context.startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName))
             }) { Text("Enable reminder alerts") }
-            Text("4. Start a consenting session", style = MaterialTheme.typography.titleMedium)
-            Text("Return to Capture and tap Start live notes when everyone included agrees. Voice matching does not establish consent. Settings contains optional assistant recovery, messages and places.")
+            Text("4. Start listening", style = MaterialTheme.typography.titleMedium)
+            Text("Return home and tap Start listening when everyone agrees. Voice matching does not prove consent. Settings has options for recovery, messages and places.")
         }
     }, confirmButton = { TextButton(onClick = onClose) { Text("Done") } })
 }

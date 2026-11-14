@@ -45,7 +45,8 @@ class KoreanAsrComparisonTest {
             else -> EventChange.parse(text) == null
         }
         try {
-            for (backend in listOf("tiny", "base", "sensevoice")) {
+            for (backend in listOf("tiny", "base", "sensevoice", "automatic")) {
+                if (backend != "sensevoice") { sense?.release(); sense = null }
                 if (backend == "sensevoice") {
                     whisper.release()
                     sense = OfflineRecognizer(config = OfflineRecognizerConfig(modelConfig = OfflineModelConfig(
@@ -62,7 +63,9 @@ class KoreanAsrComparisonTest {
                             val stream = sense!!.createStream()
                             try { stream.acceptWaveform(pcm, 16000); sense!!.decode(stream); sense!!.getResult(stream).text }
                             finally { stream.release() }
-                        } else whisper.transcribe(pcm, retainModel = true, audioContext = if (pcm.size <= 163840) 512 else 0,
+                        } else if (backend == "automatic") whisper.transcribe(pcm, retainModel = true,
+                            selectedLanguage = SpeechLanguage.AUTO, selectedQuality = SpeechQuality.ADAPTIVE)
+                        else whisper.transcribe(pcm, retainModel = true, audioContext = if (pcm.size <= 163840) 512 else 0,
                             selectedLanguage = SpeechLanguage.KOREAN, selectedQuality = if (backend == "tiny") SpeechQuality.FAST else SpeechQuality.ACCURATE)
                     } finally { pcm.fill(0f) }
                     val elapsed = android.os.SystemClock.elapsedRealtime() - start

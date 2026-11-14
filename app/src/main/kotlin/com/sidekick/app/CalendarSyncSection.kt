@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -28,10 +29,10 @@ internal fun CalendarSyncSection() {
         loading = true
         try {
             calendars = withContext(Dispatchers.IO) { AndroidCalendarGateway(context).calendars() }
-            note = if (calendars.isEmpty()) "No visible writable calendar found. Add a calendar account in Android or use SideKick's local reminders." else "Choose the calendar for new mirrors."
+            note = if (calendars.isEmpty()) "No calendar available. Add an account in Android, or use SideKick reminders." else "Choose where new plans will be copied."
             choosing = calendars.isNotEmpty()
         } catch (e: CancellationException) { throw e }
-        catch (_: Exception) { note = "Calendar access or provider is unavailable. Local events and reminders still work." }
+        catch (_: Exception) { note = "Can’t open your calendar. SideKick plans and reminders still work." }
         finally { loading = false }
     } }
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -39,17 +40,17 @@ internal fun CalendarSyncSection() {
             if (enablingAfterPermission) confirming = true
             else if (config.enabled) { app.calendarMirror.requestSync(); note = "Calendar access restored." }
             else load()
-        } else note = "Calendar sync needs both read and write access. Local reminders remain available."
+        } else note = "Allow calendar access to copy plans. SideKick reminders still work."
         enablingAfterPermission = false
     }
     HorizontalDivider()
-    Text("Optional calendar sync", style = MaterialTheme.typography.titleMedium)
-    Text("Mirror saved future activities to a calendar you choose. Titles, times and places may sync through that calendar account. Transcripts and voice profiles are excluded.")
-    Text("Known start and end times are required; SideKick does not invent durations. Local reminders work even when an activity cannot be mirrored.")
+    Text("Calendar", style = MaterialTheme.typography.titleMedium)
+    QuietLabel("Copy upcoming plans to your calendar. The account may send titles, times and places online. Conversation text and voice setup aren’t copied.")
+    QuietLabel("Plans need a start and end time to appear in your calendar. SideKick reminders work without calendar sync.")
     Box {
     TextButton(enabled = !loading && !config.enabled, modifier = Modifier.testTag("choose-sync-calendar"), onClick = {
         if (AndroidCalendarGateway(context).permitted()) load() else permissions.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
-    }) { Text(if (config.calendarId == null) "Choose writable calendar" else "Calendar selected · choose another") }
+    }) { Text(if (config.calendarId == null) "Choose a calendar" else "Change calendar") }
     DropdownMenu(choosing, { choosing = false }) {
         calendars.forEach { calendar -> DropdownMenuItem(text = { Text("${calendar.name} · ${calendar.account}") }, onClick = {
             app.guidance.setCalendarSync(config.copy(calendarId = calendar.id)); choosing = false
@@ -60,15 +61,18 @@ internal fun CalendarSyncSection() {
         Switch(config.enabled, { enabled -> if (!enabled) app.guidance.setCalendarSync(config.copy(enabled = false))
             else if (AndroidCalendarGateway(context).permitted()) confirming = true
             else { enablingAfterPermission = true; permissions.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)) } },
-            enabled = config.calendarId != null, modifier = Modifier.testTag("calendar-sync-setting").controlLabel("Automatically mirror saved activities to my selected calendar"))
-        Text("Automatically mirror saved activities")
+            enabled = config.calendarId != null, modifier = Modifier.testTag("calendar-sync-setting").controlLabel("Copy plans automatically to my selected calendar"))
+        Text("Copy plans automatically", Modifier.padding(start = 8.dp))
     }
     Row {
         Checkbox(config.includeInformational, { app.guidance.setCalendarSync(config.copy(includeInformational = it)) },
-            modifier = Modifier.testTag("sync-informational").controlLabel("Include information-only events as free time"))
-        Text("Include information-only events as free time")
+            modifier = Modifier.testTag("sync-informational").controlLabel("Include plans I’m not attending"))
+        Text("Include plans I’m not attending", Modifier.padding(start = 8.dp))
     }
-    Text("Rescheduling, cancellation and deletion update unchanged private mirrors. External edits, deleted copies, recurring events and added guests are protected. Turning sync off pauses writes and leaves calendar copies. Existing mirrors keep their original calendar if you choose another.")
+    QuietLabel("Turning sync off leaves existing copies in your calendar. Plans you aren’t attending appear as free time.")
+    SettingsDetails("How calendar updates work") {
+        QuietLabel("Changes and cancellations update copies you haven’t edited in your calendar. Copies with outside edits, added guests or repeating dates are left alone. Old copies stay in their original calendar if you choose another.")
+    }
     Text(status.note, modifier = Modifier.testTag("calendar-sync-status"))
     if (config.enabled) TextButton(onClick = { app.calendarMirror.requestSync() }, modifier = Modifier.testTag("retry-calendar-sync")) { Text("Retry calendar sync") }
     if (config.enabled && !AndroidCalendarGateway(context).permitted()) TextButton(onClick = {
@@ -76,8 +80,8 @@ internal fun CalendarSyncSection() {
     }) { Text("Restore calendar access") }
     if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
     if (note.isNotBlank()) Text(note)
-    if (confirming) AlertDialog(onDismissRequest = { confirming = false }, title = { Text("Enable calendar mirroring?") },
-        text = { Text("Saved future activities with known start and end times will be copied to the selected calendar. That account may send their title, times and place online. Supported changes and deletions will update unchanged mirrors. Private source excerpts and transcripts are not copied. No attendees or invitations are created.") },
+    if (confirming) AlertDialog(onDismissRequest = { confirming = false }, title = { Text("Copy plans to your calendar?") },
+        text = { Text("Copies upcoming plans with start and end times. Your calendar account may send their titles, times and places online. Conversation text stays private. No invitations are sent. SideKick updates or deletes copies only if you haven’t changed them in your calendar.") },
         confirmButton = { TextButton(onClick = { app.guidance.setCalendarSync(config.copy(enabled = true)); confirming = false }) { Text("Enable sync") } },
         dismissButton = { TextButton(onClick = { confirming = false }) { Text("Cancel") } })
 }

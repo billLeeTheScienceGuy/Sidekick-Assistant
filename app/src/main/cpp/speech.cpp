@@ -10,6 +10,7 @@ static std::atomic_bool cancelled{false};
 static std::mutex inference_mutex;
 static std::unique_ptr<whisper_context, decltype(&whisper_free)> cached_context(nullptr, whisper_free);
 static std::string cached_path;
+static std::string last_language; // Language code Whisper decoded with (detected when "auto"); never audio or text.
 static bool abort_inference(void *) { return cancelled.load(); }
 static void quiet_log(ggml_log_level, const char *, void *) {}
 static void fail(JNIEnv *env, const char *message) {
@@ -18,6 +19,11 @@ static void fail(JNIEnv *env, const char *message) {
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_sidekick_app_speech_NativeSpeech_cancel(JNIEnv *, jobject) { cancelled.store(true); }
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_sidekick_app_speech_NativeSpeech_lastLanguage(JNIEnv *env, jobject) {
+    std::lock_guard<std::mutex> lock(inference_mutex);
+    return env->NewStringUTF(last_language.c_str());
+}
 extern "C" JNIEXPORT void JNICALL
 Java_com_sidekick_app_speech_NativeSpeech_prepare(JNIEnv *, jobject) { cancelled.store(false); }
 extern "C" JNIEXPORT void JNICALL
@@ -87,6 +93,9 @@ Java_com_sidekick_app_speech_NativeSpeech_transcribe(JNIEnv *env, jobject, jstri
         std::fill(samples.begin(), samples.end(), 0.0f);
         if (cancelled.load()) { fail(env, "Transcription cancelled."); return nullptr; }
         if (status != 0) { fail(env, "Local transcription failed."); return nullptr; }
+        const int language_id = whisper_full_lang_id(context);
+        const char *language_name = language_id >= 0 ? whisper_lang_str(language_id) : nullptr;
+        last_language = language_name ? language_name : "";
         std::string text;
         for (int i = 0; i < whisper_full_n_segments(context); ++i) {
             if (whisper_full_get_segment_no_speech_prob(context, i) < 0.6f)

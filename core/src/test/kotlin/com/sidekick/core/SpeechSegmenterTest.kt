@@ -93,4 +93,29 @@ class SpeechSegmenterTest {
         segmenter.accept(floatArrayOf(.1f), true)
         assertEquals(0L, assertNotNull(segmenter.finish()).startSample)
     }
+    @Test fun `cap during a breath keeps overlap and continuation until real silence`() {
+        val s = SpeechSegmenter(8, 0, 4, 1, 2)
+        s.accept(FloatArray(6) { .1f }, true)
+        val first = s.accept(FloatArray(2), false).single()
+        assertEquals(0L, first.startSample)
+        s.accept(FloatArray(2) { .2f }, true)
+        val second = s.accept(FloatArray(4), false).single()
+        assertTrue(second.continuesPrevious)
+        assertEquals(6L, second.startSample)
+        assertContentEquals(floatArrayOf(0f,0f,.2f,.2f,0f,0f,0f,0f), second.samples)
+        assertNull(s.finish())
+    }
+    @Test fun `live policy retains a delayed detector onset and a short internal breath`() {
+        val segmenter=SpeechCapturePolicy.segmenter()
+        segmenter.accept(FloatArray(6000){.1f},false)
+        segmenter.accept(FloatArray(4000){.2f},true)
+        assertTrue(segmenter.accept(FloatArray(18000),false).isEmpty())
+        segmenter.accept(FloatArray(4000){.3f},true)
+        val clip=segmenter.accept(FloatArray(20480),false).single()
+        assertEquals(0L,clip.startSample)
+        assertEquals(6000,clip.samples.count{it==.1f})
+        assertEquals(4000,clip.samples.count{it==.3f})
+        clip.samples.fill(0f);segmenter.clear()
+        assertNull(segmenter.finish())
+    }
 }

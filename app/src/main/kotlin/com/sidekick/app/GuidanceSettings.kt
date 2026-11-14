@@ -89,7 +89,26 @@ class GuidanceSettings(context: Context) {
     val speechQuality = qualityValue.asStateFlow()
     init { if (!preferences.contains("speech_quality")) preferences.edit().putString("speech_quality", qualityValue.value.name).apply() }
     fun setSpeechQuality(value: com.sidekick.core.SpeechQuality) { preferences.edit().putString("speech_quality", value.name).apply(); qualityValue.value = value }
-    fun setSpeechLanguage(value: com.sidekick.core.SpeechLanguage) { preferences.edit().putString("speech_language", value.code).apply(); languageValue.value = value }
+    fun setSpeechLanguage(value: com.sidekick.core.SpeechLanguage) {
+        preferences.edit().apply {
+            putString("speech_language", value.code)
+            if (value != com.sidekick.core.SpeechLanguage.AUTO) putString("last_manual_language", value.code)
+        }.apply()
+        languageValue.value = value
+    }
+    fun setAutomaticLanguage(enabled: Boolean) {
+        if (enabled) {
+            if (languageValue.value != com.sidekick.core.SpeechLanguage.AUTO) setSpeechLanguage(languageValue.value)
+            setSpeechQuality(com.sidekick.core.SpeechQuality.ADAPTIVE)
+            setSpeechLanguage(com.sidekick.core.SpeechLanguage.AUTO)
+        } else {
+            setSpeechLanguage(com.sidekick.core.SpeechLanguage.fromCode(preferences.getString("last_manual_language", "en"))
+                .takeUnless { it == com.sidekick.core.SpeechLanguage.AUTO } ?: com.sidekick.core.SpeechLanguage.fromCode("en"))
+        }
+    }
+    private val skipIntroValue = MutableStateFlow(preferences.getBoolean("skip_listening_intro", false))
+    val skipListeningIntro = skipIntroValue.asStateFlow()
+    fun setSkipListeningIntro(value: Boolean) { preferences.edit().putBoolean("skip_listening_intro", value).apply(); skipIntroValue.value = value }
     private val current = MutableStateFlow(if (preferences.getBoolean("ask_end_time", false)) GuidanceMode.ASK else GuidanceMode.PASSIVE)
     val mode = current.asStateFlow()
     private val includeEvents = MutableStateFlow(preferences.getBoolean("include_informational", true))

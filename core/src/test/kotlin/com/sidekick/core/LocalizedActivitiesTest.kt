@@ -5,6 +5,15 @@ import java.time.ZoneId
 import kotlin.test.*
 
 class LocalizedActivitiesTest {
+    @Test fun `spaced Korean end time refines an English party without rewriting evidence`() {
+        val at = Instant.parse("2026-11-13T17:00:00Z")
+        val text = "The party starts tomorrow at 8pm at The James.\n내일 있을 파 티는 자 정에 끝날 예정이에요."
+        val result = ActivityTiming.extract(Transcript(text, at, ZoneId.of("America/New_York"), Speaker.OTHER, true), true).single()
+        assertEquals(Instant.parse("2026-11-15T05:00:00Z"), result.activityEndAt)
+        assertTrue(result.evidence.contains("파 티는 자 정에"))
+        val wrong = text.replace("파 티", "회의")
+        assertNull(ActivityTiming.extract(Transcript(wrong, at, ZoneId.of("America/New_York"), Speaker.OTHER, true), true).single().activityEndAt)
+    }
     @Test fun `alternative local clocks and conflicting date forms are never chosen arbitrarily`() {
         listOf("내일 오후 8시 또는 오후 9시에 파티가 있어요.", "明天晚上八点或者晚上九点有派对。",
             "Il y a une fête demain à 20 heures ou 21 heures.", "Morgen ist eine Party um 20 Uhr oder 21 Uhr.",
@@ -28,6 +37,31 @@ class LocalizedActivitiesTest {
             assertEquals("The James", result.placeName, text)
             assertTrue(result.informational)
             assertTrue(result.evidence.lines().all { text.contains(it) })
+        }
+    }
+    @Test fun `Korean word hours five six eleven and twelve keep the venue`() {
+        for ((hour, utc) in listOf("다섯" to "2026-10-24T22:00:00Z", "여섯" to "2026-10-24T23:00:00Z", "열한" to "2026-10-25T04:00:00Z")) {
+            val text = "내일 오후 ${hour}시에 The James에서 파티가 있어요."
+            val result = ActivityTiming.extract(source(text)).single()
+            assertEquals(Instant.parse(utc), result.activityStartAt, text)
+            assertEquals("The James", result.placeName, text)
+        }
+    }
+    @Test fun `live Pixel bilingual script lines resolve date and time`() {
+        val at = Instant.parse("2026-11-14T05:26:00Z"); val zone = ZoneId.of("America/New_York")
+        val pipeline = CommitmentPipeline(RuleIntentExtractor())
+        mapOf(
+            "금요일 오전 10시에 dentist appointment 있어요." to "2026-11-20T15:00:00Z",
+            "금요일 오전 10시에 덴티스트 어포인트먼트 있어요." to "2026-11-20T15:00:00Z",
+            "수요일 저녁 7시에 친구랑 저녁 먹어요." to "2026-11-19T00:00:00Z",
+            "수요일 저녁 7 시에 친랑 저녁 먹 어요." to "2026-11-19T00:00:00Z",
+            "I'm meeting with Sarah for lunch at 1230 on Monday 월요일 점심 약속이에요." to "2026-11-16T17:30:00Z",
+            "i'm meeting with sarah for lunch at twelve thirty on monday 월요일 점심 약속이에요" to "2026-11-16T17:30:00Z",
+        ).forEach { (text, utc) ->
+            val input = Transcript(text, at, zone, Speaker.USER, true)
+            val result = ActivityTiming.merge(input, pipeline.process(input)).single()
+            assertEquals(Instant.parse(utc), result.activityStartAt, text)
+            assertNull(result.placeName, text)
         }
     }
     @Test fun `negative conditional and ambiguous local statements are not invented`() {

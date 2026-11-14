@@ -40,8 +40,16 @@ SideKick's controls are app-local and never change Android's display preferences
 - Capture previews three recent suggestions; Planner retains the full history.
 - Session diagnostics, audio import and optional model administration are disclosed
   on demand. Consent, stopped/error states and uncertain ownership remain visible.
-- Settings use a wider scrollable panel with a fixed Close action, rather than a
-  narrow dialog containing the whole form. Each destination retains its scroll state.
+- Settings open to six short categories: Display, Listening, Plans & reminders,
+  Messages & places, Privacy & saved data, and Advanced & help. Each category
+  has its own scrollable page and fixed Back/Close controls. Technical model
+  choices and phone diagnostics are kept in Advanced.
+- Listening exposes an Auto-detect language switch for language changes throughout
+  the day. Turning it on selects the existing Adaptive recognition route; turning
+  it off restores the previous manual language. Changes wait until listening ends.
+- The listening explanation is brief, with optional details and a saved “Don’t
+  show this again” checkbox. Cancel does not save that checkbox. Settings →
+  Listening can restore the reminder. Hiding it does not start the microphone.
 - Source evidence in list cards is a short preview. The editor retains full evidence.
 
 ## Compatibility scope
@@ -73,3 +81,39 @@ Synthetic/empty emulator data only. These are actual app screenshots.
 ![Classic design in a short landscape window](images/classic-landscape.png)
 
 ![Detailed view, Warm design, scrolled to listening controls](images/warm-detailed.png)
+
+## Plain-language review — November 13, 2026
+
+This second desk review uses current official help pages, not a usability study
+or a claim that competitor recognition works the same way as SideKick.
+
+| App/reference | Documented pattern | SideKick wording/action |
+|---|---|---|
+| [Pixel Recorder](https://support.google.com/pixelphone/answer/16267698?hl=en) | A transcription language setting with Detect language; editing is a separate action | Auto-detect stays under Listening; descriptions explain switching languages without backend names. Recorder documents a most-spoken-language limitation, so its behavior is not claimed as SideKick's behavior. |
+| [Notta mobile](https://support.notta.ai/hc/en-us/articles/42979225735195-Bilingual-transcription-translation-Mobile-App) | Bilingual settings use a language control and remember the previous choice | Remember settings, keep the language action clear. SideKick still detects per segment without requiring a selected pair or translation subscription. |
+| [Todoist reminders](https://www.todoist.com/help/todoist/features/introduction-to-reminders-9PezfU) | Reminder settings name the outcome, such as Automatic reminders, then expose choices | Save plans automatically, Reminder alerts, and Leave it unknown replace implementation terms. |
+
+The copy pass covers Display, Listening, Plans, Messages/Places, Calendar,
+Privacy, setup and Advanced. Technical explanations are available under details;
+backend names and licenses remain available with speech files/voice model details.
+Privacy essentials stay beside the relevant action: online place lookup, message
+preview scope, calendar account sharing, permanent cleanup and exported-file sync.
+The app does not imply that voice matching proves consent, that all languages are
+perfectly recognized, or that a larger model is always more accurate.
+
+Examples from the second wording pass:
+
+| Before | Now |
+|---|---|
+| Interface size | Buttons & spacing |
+| Manual note-taking | Type notes |
+| Retention | Keep saved plans |
+| Local risk advisories | Scam warnings (explicitly English-only and fallible) |
+| Automatically mirror saved activities | Copy plans automatically |
+| Separate speaker turns locally | Label different speakers |
+| Resume enabled listening after system restart | Resume listening after a restart |
+
+Model selection shows Recommended / Faster / Larger model, with an explicit
+warning that a larger model can be slower without always improving accuracy.
+Auto-detect also selects Recommended when chosen in setup, matching Listening.
+Saved preference codes and functionality remain compatible with existing data.

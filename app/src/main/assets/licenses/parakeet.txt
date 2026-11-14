@@ -1,0 +1,6 @@
+NVIDIA Parakeet TDT 110M (English), ONNX int8 export by the sherpa-onnx project
+(sherpa-onnx-nemo-parakeet_tdt_transducer_110m-en-36000-int8).
+
+Model weights: NVIDIA, licensed under Creative Commons Attribution 4.0 International (CC BY 4.0),
+https://creativecommons.org/licenses/by/4.0/ . Source: https://huggingface.co/nvidia/parakeet-tdt_ctc-110m
+Changes: converted to ONNX and quantized to int8 by sherpa-onnx (Apache-2.0); renamed for SideKick.

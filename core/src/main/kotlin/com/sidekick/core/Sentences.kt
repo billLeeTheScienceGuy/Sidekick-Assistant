@@ -16,6 +16,13 @@ object Sentences {
             start = match.range.last + 1
         }
         text.substring(start).trim().takeIf { it.isNotEmpty() }?.let(result::add)
-        return result
+        return result.flatMap { sentence ->
+            // ASR may omit the full stop between an explicit time correction and its venue update.
+            val tail = Regex("\\s+(?=(?:the|my) (?:party|meeting|appointment|concert|dinner|class|birthday|wedding) (?:will be|is) at\\b)", RegexOption.IGNORE_CASE).find(sentence)
+            if (tail != null && EventChange.parse(sentence.substring(0, tail.range.first)) != null &&
+                sentence.substring(tail.range.last + 1).contains("instead of", true))
+                listOf(sentence.substring(0, tail.range.first).trim(), sentence.substring(tail.range.last + 1).trim())
+            else listOf(sentence)
+        }
     }
 }

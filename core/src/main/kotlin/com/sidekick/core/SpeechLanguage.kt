@@ -1,7 +1,7 @@
 package com.sidekick.core
 
 enum class SpeechLanguage(val code: String, val label: String) {
-    ENGLISH("en", "English"), AUTO("auto", "Automatic · multilingual"),
+    ENGLISH("en", "English"), AUTO("auto", "Auto-detect"),
     KOREAN("ko", "한국어 · Korean"), CHINESE("zh", "中文 · Chinese"),
     FRENCH("fr", "Français · French"), GERMAN("de", "Deutsch · German"), RUSSIAN("ru", "Русский · Russian"),
     ARABIC("ar", "العربية · Arabic");

@@ -17,12 +17,17 @@ class PrivacyScreenTest {
                 androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(compose.activity.resources.displayMetrics.density, 1.6f)
             ) { androidx.compose.material3.MaterialTheme { AppSettingsDialog(app.guidance) { } } }
         }
+        compose.onNodeWithTag("settings-page-PRIVACY").performScrollTo().performClick()
         compose.onNodeWithTag("retention-choice").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("export-memory").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithContentDescription("Include saved source excerpts in export").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Include source quotes").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("privacy-guidance").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("settings-back").performClick()
+        compose.onNodeWithTag("settings-page-PLANS").performScrollTo().performClick()
         compose.onNodeWithTag("calendar-sync-setting").performScrollTo().assertExists()
-        compose.onNodeWithContentDescription("Resume enabled listening after system restart").performScrollTo().assertExists()
+        compose.onNodeWithTag("settings-back").performClick()
+        compose.onNodeWithTag("settings-page-ADVANCED").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Resume listening after a restart").performScrollTo().assertExists()
         compose.onNodeWithText("Close").assertIsDisplayed()
     }
     @Test fun regionGuidanceDoesNotRequireLocationOrChangeListeningConsent() {
@@ -32,6 +37,7 @@ class PrivacyScreenTest {
         try {
             app.guidance.setCity("Madison, Wisconsin")
             compose.onNodeWithTag("settings").performClick()
+            compose.onNodeWithTag("settings-page-PRIVACY").performScrollTo().performClick()
             compose.onNodeWithTag("privacy-guidance").performScrollTo().performClick()
             compose.onNodeWithText("Wisconsin hint").performScrollTo().assertIsDisplayed()
             compose.onNodeWithTag("privacy-phone-region").performScrollTo().assertIsOff()
@@ -46,8 +52,9 @@ class PrivacyScreenTest {
         try {
             app.guidance.setRetentionDays(0)
             compose.onNodeWithTag("settings").performClick()
+            compose.onNodeWithTag("settings-page-PRIVACY").performScrollTo().performClick()
             compose.onNodeWithTag("export-excerpts").performScrollTo().assertIsOff()
-            compose.onNodeWithContentDescription("Include saved source excerpts in export").assertExists()
+            compose.onNodeWithContentDescription("Include source quotes").assertExists()
             compose.onNodeWithTag("retention-choice").performScrollTo().performClick()
             compose.onNodeWithTag("retention-30").performClick()
             compose.onNodeWithText("Enable automatic cleanup?").assertExists()

@@ -15,11 +15,12 @@ class LiveSpeechProcessor(
     private val contextKey: () -> String? = { null },
     private val onBoundary: (Boolean) -> Unit = {},
     private val partition: ((FloatArray) -> List<SpeakerPart>)? = null,
-    private val onPart: (FloatArray, SpeakerPart) -> Unit = { _, _ -> },
+    /** Called with each speaker part before recognition; false skips it (never transcribed). */
+    private val onPart: (FloatArray, SpeakerPart) -> Boolean = { _, _ -> true },
     private val onChunkProcessed: (Long, Int) -> Unit = { _, _ -> },
     private val onText: suspend (String, Long, Long) -> Unit,
 ) {
-    private val segmenter = SpeechSegmenter(160_000, 4_096, 16_384, 3_072, overlapSamples = 16_000)
+    private val segmenter = com.sidekick.core.SpeechCapturePolicy.segmenter()
     private val speechContext = com.sidekick.core.SpeechContext()
     private val queued = AtomicInteger()
     private val queue = Channel<SpeechSegmenter.Segment>(2, onUndeliveredElement = { queued.decrementAndGet(); it.samples.fill(0f) })
@@ -43,7 +44,7 @@ class LiveSpeechProcessor(
                     currentCoroutineContext().ensureActive()
                     val audio = if (parts.size == 1) chunk.samples else chunk.samples.copyOfRange(part.start, part.end)
                     try {
-                    onPart(audio, part)
+                    if (!onPart(audio, part)) { speechContext.clear(); continue }
                     transcriptions.incrementAndGet()
                     val continues = index == 0 && chunk.continuesPrevious && !part.ambiguous
                     if (!continues) speechContext.clear()
@@ -73,7 +74,7 @@ class LiveSpeechProcessor(
         val paddedSize = ((historySize + 511) / 512) * 512
         // Thirty-two frames of context retain VAD continuity across native state resets.
         val context = history.copyOf(historySize).copyOf(paddedSize)
-        val probabilities = try { NativeVad.probabilities(context) } finally { context.fill(0f) }
+        val probabilities = try { com.sidekick.core.VadInput.prepareInPlace(context); NativeVad.probabilities(context) } finally { context.fill(0f) }
         val offset = historySize - samples.size
         var detected = false
         for (index in samples.indices step 512) {

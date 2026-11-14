@@ -1,0 +1,2392 @@
+{
+  "date": "2026-11-13",
+  "device": "Pixel 7a, Android 17, USB connected, no microphone",
+  "baselineVersion": "0.32",
+  "updatedVersion": "0.33/code51",
+  "dataLicense": "ASCEND-derived evaluation text: CC BY-SA 4.0; FLEURS: CC BY 4.0; source attribution in selection and report",
+  "baseline": {
+    "completed": true,
+    "dataset": {
+      "durationRangeSeconds": [
+        1.2,
+        8
+      ],
+      "conditions": "First six eligible mixed ASCEND test clips without speaker balancing (limited speaker coverage), and first frozen FLEURS validation clip per supported language. Frozen before decoding; small development evaluation, not population accuracy.",
+      "clips": [
+        {
+          "file": "ascend-4.wav",
+          "reference": "呃what's the呃",
+          "code": "zh-en",
+          "dataset": "ASCEND",
+          "split": "test",
+          "row": 4,
+          "speaker": 17,
+          "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+          "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+          "license": "CC BY-SA 4.0",
+          "sha256": "dfab1159630a975fdc02f58f55408a628af4141efd25809f0350cde19a6d06a7"
+        },
+        {
+          "file": "ascend-9.wav",
+          "reference": "no我专业是那个i s m information systems management",
+          "code": "zh-en",
+          "dataset": "ASCEND",
+          "split": "test",
+          "row": 9,
+          "speaker": 17,
+          "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+          "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+          "license": "CC BY-SA 4.0",
+          "sha256": "b58f0a4013b0d4a7a0e48ad732467b2afce73b022e04fde3296da162ec878301"
+        },
+        {
+          "file": "ascend-55.wav",
+          "reference": "um运动啊男生一般不都喜欢运动",
+          "code": "zh-en",
+          "dataset": "ASCEND",
+          "split": "test",
+          "row": 55,
+          "speaker": 17,
+          "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+          "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+          "license": "CC BY-SA 4.0",
+          "sha256": "8a0e76d44b81fa4ca413df68db32ddde89e72890543967adc573180f9e4ec72b"
+        },
+        {
+          "file": "ascend-66.wav",
+          "reference": "哦这么technical",
+          "code": "zh-en",
+          "dataset": "ASCEND",
+          "split": "test",
+          "row": 66,
+          "speaker": 17,
+          "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+          "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+          "license": "CC BY-SA 4.0",
+          "sha256": "7fb0db332ad282deaf1c7b43666d230231c49f3f0529a6eefb167fc8353e59f7"
+        },
+        {
+          "file": "ascend-68.wav",
+          "reference": "computer languages是",
+          "code": "zh-en",
+          "dataset": "ASCEND",
+          "split": "test",
+          "row": 68,
+          "speaker": 17,
+          "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+          "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+          "license": "CC BY-SA 4.0",
+          "sha256": "3dfb5c7b9d52517733bfdc76c90daecb1268ba872dc7ab1cb75d1b1adf7e3317"
+        },
+        {
+          "file": "ascend-81.wav",
+          "reference": "所以我上学期也学了python",
+          "code": "zh-en",
+          "dataset": "ASCEND",
+          "split": "test",
+          "row": 81,
+          "speaker": 17,
+          "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+          "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+          "license": "CC BY-SA 4.0",
+          "sha256": "c9d249b6a4885799681e1b742937c32d3d598375ec7cbcca32f54d8e0159d549"
+        },
+        {
+          "file": "robust-en-10.wav",
+          "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+          "code": "en",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "6fb2c8a8dac6f06a208cbccc55a3fb5728f3bf6f2bdae368ba0be0347c17b5d2"
+        },
+        {
+          "file": "robust-ko-17.wav",
+          "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+          "code": "ko",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "c2c05e739f5bf80a8ee09620332014efd66967997773755d5f85247e5094fa5a"
+        },
+        {
+          "file": "robust-zh-11.wav",
+          "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+          "code": "zh",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "696af0c04a1c95f88490f8107748d60287b148c3259038fd2cc5987f6e57c8b3"
+        },
+        {
+          "file": "robust-fr-10.wav",
+          "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+          "code": "fr",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "5221f57d605a93c30b071589fe0f32d02d101983a4443e55f074c957ec47acef"
+        },
+        {
+          "file": "robust-de-10.wav",
+          "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+          "code": "de",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "217603f6b5ba7c3b651ae0c4fee858047fcad1a4a164b94dc4e877ca9aa67b9c"
+        },
+        {
+          "file": "robust-ru-12.wav",
+          "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+          "code": "ru",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "c4448309df6b1e8ea54ae02edb0dbf2f18053ccf636abbd2b820cc947a05c834"
+        },
+        {
+          "file": "robust-ar-14.wav",
+          "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+          "code": "ar",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "e66695b422cf64a6e7624da11096976ae31d6b6d6e5a8dcaed2b4072dba9f240"
+        }
+      ]
+    },
+    "conditions": "Public recorded speech; synthetic acoustic transforms are not real-room measurements; no microphone",
+    "results": [
+      {
+        "file": "ascend-4.wav",
+        "code": "zh-en",
+        "condition": "clean",
+        "reference": "呃what's the呃",
+        "recognized": "那我什么啊",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 10,
+        "characterEdits": 10,
+        "automaticChangesBlocked": false,
+        "audioMs": 1360,
+        "elapsedMs": 5355
+      },
+      {
+        "file": "ascend-9.wav",
+        "code": "zh-en",
+        "condition": "clean",
+        "reference": "no我专业是那个i s m information systems management",
+        "recognized": "那个s نفرمن سسممجم",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 39,
+        "characterEdits": 36,
+        "automaticChangesBlocked": false,
+        "audioMs": 4030,
+        "elapsedMs": 1217
+      },
+      {
+        "file": "ascend-55.wav",
+        "code": "zh-en",
+        "condition": "clean",
+        "reference": "um运动啊男生一般不都喜欢运动",
+        "recognized": "嗯运动啊男生应般不多喜欢运动",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 15,
+        "characterEdits": 4,
+        "automaticChangesBlocked": false,
+        "audioMs": 3000,
+        "elapsedMs": 849
+      },
+      {
+        "file": "ascend-66.wav",
+        "code": "zh-en",
+        "condition": "clean",
+        "reference": "哦这么technical",
+        "recognized": "أو 这م تكنيكود",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 12,
+        "characterEdits": 12,
+        "automaticChangesBlocked": false,
+        "audioMs": 1589,
+        "elapsedMs": 443
+      },
+      {
+        "file": "ascend-68.wav",
+        "code": "zh-en",
+        "condition": "clean",
+        "reference": "computer languages是",
+        "recognized": "肯p特两鬼一直是",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 18,
+        "characterEdits": 16,
+        "automaticChangesBlocked": false,
+        "audioMs": 1450,
+        "elapsedMs": 410
+      },
+      {
+        "file": "ascend-81.wav",
+        "code": "zh-en",
+        "condition": "clean",
+        "reference": "所以我上学期也学了python",
+        "recognized": "所以我上学吸也学的拍森",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 15,
+        "characterEdits": 8,
+        "automaticChangesBlocked": false,
+        "audioMs": 1840,
+        "elapsedMs": 512
+      },
+      {
+        "file": "robust-en-10.wav",
+        "code": "en",
+        "condition": "clean",
+        "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "recognized": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 70,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 7320,
+        "elapsedMs": 2234
+      },
+      {
+        "file": "robust-en-10.wav",
+        "code": "en",
+        "condition": "quiet-minus16dB",
+        "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "recognized": "as soon as you get out of the current simming back is no more difficult than normally",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 70,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 7320,
+        "elapsedMs": 2229
+      },
+      {
+        "file": "robust-en-10.wav",
+        "code": "en",
+        "condition": "white-noise-10dB",
+        "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "recognized": "as soon as you get out of the current simming back is no more difficult than normally",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 70,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 7320,
+        "elapsedMs": 2230
+      },
+      {
+        "file": "robust-en-10.wav",
+        "code": "en",
+        "condition": "simulated-distance",
+        "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "recognized": "as soon as you get out of the current siming back is no more difficult than normally",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 70,
+        "characterEdits": 2,
+        "automaticChangesBlocked": false,
+        "audioMs": 7320,
+        "elapsedMs": 2219
+      },
+      {
+        "file": "robust-en-10.wav",
+        "code": "en",
+        "condition": "overlap-minus10dB",
+        "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "recognized": "as soon as you get out of the current siming back is no more difficult than normaly",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 70,
+        "characterEdits": 3,
+        "automaticChangesBlocked": false,
+        "audioMs": 7320,
+        "elapsedMs": 2212
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "code": "ko",
+        "condition": "clean",
+        "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+        "recognized": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급법의 판결로 구조되었다.",
+        "backend": "SenseVoice · automatic short speech",
+        "referenceCharacters": 29,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 7800,
+        "elapsedMs": 7144
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "code": "ko",
+        "condition": "quiet-minus16dB",
+        "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+        "recognized": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급법의 판결로 구조되었다.",
+        "backend": "SenseVoice · automatic short speech",
+        "referenceCharacters": 29,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 7800,
+        "elapsedMs": 6876
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "code": "ko",
+        "condition": "white-noise-10dB",
+        "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+        "recognized": "화유일에 배어 스러들릴 예정이었으나 긴급 법원의 판별로 구조되었다",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 29,
+        "characterEdits": 5,
+        "automaticChangesBlocked": false,
+        "audioMs": 7800,
+        "elapsedMs": 4393
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "code": "ko",
+        "condition": "simulated-distance",
+        "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+        "recognized": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급법의 판결로 구조되었다.",
+        "backend": "SenseVoice · automatic short speech",
+        "referenceCharacters": 29,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 7800,
+        "elapsedMs": 5249
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "code": "ko",
+        "condition": "overlap-minus10dB",
+        "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+        "recognized": "화유일에 배어 스러들릴 예정이었으나 긴급 법원의 판결로 구절되었다",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 29,
+        "characterEdits": 5,
+        "automaticChangesBlocked": false,
+        "audioMs": 7800,
+        "elapsedMs": 4163
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "code": "zh",
+        "condition": "clean",
+        "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+        "recognized": "他称他制作了一个歪f门龄",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 14,
+        "characterEdits": 4,
+        "automaticChangesBlocked": false,
+        "audioMs": 5580,
+        "elapsedMs": 1640
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "code": "zh",
+        "condition": "quiet-minus16dB",
+        "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+        "recognized": "他称他制作了一个wf门龄",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 14,
+        "characterEdits": 3,
+        "automaticChangesBlocked": false,
+        "audioMs": 5580,
+        "elapsedMs": 1652
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "code": "zh",
+        "condition": "white-noise-10dB",
+        "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+        "recognized": "他称 他是作了一个wf门龄",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 14,
+        "characterEdits": 4,
+        "automaticChangesBlocked": false,
+        "audioMs": 5580,
+        "elapsedMs": 1636
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "code": "zh",
+        "condition": "simulated-distance",
+        "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+        "recognized": "他称他制作了一个wf门龄",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 14,
+        "characterEdits": 3,
+        "automaticChangesBlocked": false,
+        "audioMs": 5580,
+        "elapsedMs": 1640
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "code": "zh",
+        "condition": "overlap-minus10dB",
+        "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+        "recognized": "他称他制作了一个门领",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 14,
+        "characterEdits": 5,
+        "automaticChangesBlocked": false,
+        "audioMs": 5580,
+        "elapsedMs": 1639
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "code": "fr",
+        "condition": "clean",
+        "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+        "recognized": "La police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ.",
+        "backend": "Whisper Base · automatic short speech",
+        "referenceCharacters": 71,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 7440,
+        "elapsedMs": 6760
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "code": "fr",
+        "condition": "quiet-minus16dB",
+        "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+        "recognized": "La police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ.",
+        "backend": "Whisper Base · automatic short speech",
+        "referenceCharacters": 71,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 7440,
+        "elapsedMs": 7805
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "code": "fr",
+        "condition": "white-noise-10dB",
+        "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+        "recognized": "la police déclarait qu'il semblerait que le corps se trouvait là depuis un jour environ",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 71,
+        "characterEdits": 4,
+        "automaticChangesBlocked": false,
+        "audioMs": 7440,
+        "elapsedMs": 3940
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "code": "fr",
+        "condition": "simulated-distance",
+        "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+        "recognized": "La police est déclarée qu'il semblerait que le corps se trouvaient là depuis un jour environ.",
+        "backend": "Whisper Base · automatic short speech",
+        "referenceCharacters": 71,
+        "characterEdits": 6,
+        "automaticChangesBlocked": false,
+        "audioMs": 7440,
+        "elapsedMs": 6175
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "code": "fr",
+        "condition": "overlap-minus10dB",
+        "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+        "recognized": "la police a déclarait qu'il semblerait que le corps se trouvait là depuis un jour enviant",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 71,
+        "characterEdits": 6,
+        "automaticChangesBlocked": false,
+        "audioMs": 7440,
+        "elapsedMs": 3938
+      },
+      {
+        "file": "robust-de-10.wav",
+        "code": "de",
+        "condition": "clean",
+        "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "recognized": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 58,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 7560,
+        "elapsedMs": 2322
+      },
+      {
+        "file": "robust-de-10.wav",
+        "code": "de",
+        "condition": "quiet-minus16dB",
+        "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "recognized": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 58,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 7560,
+        "elapsedMs": 2332
+      },
+      {
+        "file": "robust-de-10.wav",
+        "code": "de",
+        "condition": "white-noise-10dB",
+        "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "recognized": "seine allmacht beherft we jeden vom könig bis zum einfachen bürger",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 58,
+        "characterEdits": 5,
+        "automaticChangesBlocked": false,
+        "audioMs": 7560,
+        "elapsedMs": 2299
+      },
+      {
+        "file": "robust-de-10.wav",
+        "code": "de",
+        "condition": "simulated-distance",
+        "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "recognized": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 58,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 7560,
+        "elapsedMs": 2301
+      },
+      {
+        "file": "robust-de-10.wav",
+        "code": "de",
+        "condition": "overlap-minus10dB",
+        "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "recognized": "seine allmacht beherrschte jedem vom könig bis zum einfachen bürger",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 58,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 7560,
+        "elapsedMs": 2316
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "code": "ru",
+        "condition": "clean",
+        "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+        "recognized": "как только вы выйдете из течения плыте братно будет не труднее чем обычно",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 62,
+        "characterEdits": 2,
+        "automaticChangesBlocked": false,
+        "audioMs": 7080,
+        "elapsedMs": 2163
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "code": "ru",
+        "condition": "quiet-minus16dB",
+        "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+        "recognized": "как только вы выйдете из течения плыте братно будет не труднее чем обычно",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 62,
+        "characterEdits": 2,
+        "automaticChangesBlocked": false,
+        "audioMs": 7080,
+        "elapsedMs": 2163
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "code": "ru",
+        "condition": "white-noise-10dB",
+        "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+        "recognized": "как столько вы выйдете с течения деть обратно будеть нетруднее чем обычло",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 62,
+        "characterEdits": 8,
+        "automaticChangesBlocked": false,
+        "audioMs": 7080,
+        "elapsedMs": 2162
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "code": "ru",
+        "condition": "simulated-distance",
+        "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+        "recognized": "как только вы выйдите из течения плыте братно будет не труднея чем обычно",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 62,
+        "characterEdits": 4,
+        "automaticChangesBlocked": false,
+        "audioMs": 7080,
+        "elapsedMs": 2156
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "code": "ru",
+        "condition": "overlap-minus10dB",
+        "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+        "recognized": "как только вы выйдете из течения литебратом будет нетруднее  чем обытшнем",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 62,
+        "characterEdits": 10,
+        "automaticChangesBlocked": false,
+        "audioMs": 7080,
+        "elapsedMs": 2151
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "code": "ar",
+        "condition": "clean",
+        "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+        "recognized": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريبا",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 47,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 5860,
+        "elapsedMs": 1731
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "code": "ar",
+        "condition": "quiet-minus16dB",
+        "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+        "recognized": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريبا",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 47,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 5860,
+        "elapsedMs": 1725
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "code": "ar",
+        "condition": "white-noise-10dB",
+        "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+        "recognized": "وقالت الشرطة إن الجسة بدت وكأنها كانت هناك منذ يوم تقريبا",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 47,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 5860,
+        "elapsedMs": 1723
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "code": "ar",
+        "condition": "simulated-distance",
+        "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+        "recognized": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريبا",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 47,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 5860,
+        "elapsedMs": 1724
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "code": "ar",
+        "condition": "overlap-minus10dB",
+        "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+        "recognized": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك مهذ يوم تقريبا",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 47,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 5860,
+        "elapsedMs": 1730
+      }
+    ]
+  },
+  "updated": {
+    "completed": true,
+    "dataset": {
+      "durationRangeSeconds": [
+        1.2,
+        8
+      ],
+      "conditions": "First six eligible mixed ASCEND test clips without speaker balancing (limited speaker coverage), and first frozen FLEURS validation clip per supported language. Frozen before decoding; small development evaluation, not population accuracy.",
+      "clips": [
+        {
+          "file": "ascend-4.wav",
+          "reference": "呃what's the呃",
+          "code": "zh-en",
+          "dataset": "ASCEND",
+          "split": "test",
+          "row": 4,
+          "speaker": 17,
+          "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+          "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+          "license": "CC BY-SA 4.0",
+          "sha256": "dfab1159630a975fdc02f58f55408a628af4141efd25809f0350cde19a6d06a7"
+        },
+        {
+          "file": "ascend-9.wav",
+          "reference": "no我专业是那个i s m information systems management",
+          "code": "zh-en",
+          "dataset": "ASCEND",
+          "split": "test",
+          "row": 9,
+          "speaker": 17,
+          "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+          "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+          "license": "CC BY-SA 4.0",
+          "sha256": "b58f0a4013b0d4a7a0e48ad732467b2afce73b022e04fde3296da162ec878301"
+        },
+        {
+          "file": "ascend-55.wav",
+          "reference": "um运动啊男生一般不都喜欢运动",
+          "code": "zh-en",
+          "dataset": "ASCEND",
+          "split": "test",
+          "row": 55,
+          "speaker": 17,
+          "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+          "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+          "license": "CC BY-SA 4.0",
+          "sha256": "8a0e76d44b81fa4ca413df68db32ddde89e72890543967adc573180f9e4ec72b"
+        },
+        {
+          "file": "ascend-66.wav",
+          "reference": "哦这么technical",
+          "code": "zh-en",
+          "dataset": "ASCEND",
+          "split": "test",
+          "row": 66,
+          "speaker": 17,
+          "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+          "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+          "license": "CC BY-SA 4.0",
+          "sha256": "7fb0db332ad282deaf1c7b43666d230231c49f3f0529a6eefb167fc8353e59f7"
+        },
+        {
+          "file": "ascend-68.wav",
+          "reference": "computer languages是",
+          "code": "zh-en",
+          "dataset": "ASCEND",
+          "split": "test",
+          "row": 68,
+          "speaker": 17,
+          "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+          "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+          "license": "CC BY-SA 4.0",
+          "sha256": "3dfb5c7b9d52517733bfdc76c90daecb1268ba872dc7ab1cb75d1b1adf7e3317"
+        },
+        {
+          "file": "ascend-81.wav",
+          "reference": "所以我上学期也学了python",
+          "code": "zh-en",
+          "dataset": "ASCEND",
+          "split": "test",
+          "row": 81,
+          "speaker": 17,
+          "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+          "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+          "license": "CC BY-SA 4.0",
+          "sha256": "c9d249b6a4885799681e1b742937c32d3d598375ec7cbcca32f54d8e0159d549"
+        },
+        {
+          "file": "robust-en-10.wav",
+          "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+          "code": "en",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "6fb2c8a8dac6f06a208cbccc55a3fb5728f3bf6f2bdae368ba0be0347c17b5d2"
+        },
+        {
+          "file": "robust-ko-17.wav",
+          "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+          "code": "ko",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "c2c05e739f5bf80a8ee09620332014efd66967997773755d5f85247e5094fa5a"
+        },
+        {
+          "file": "robust-zh-11.wav",
+          "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+          "code": "zh",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "696af0c04a1c95f88490f8107748d60287b148c3259038fd2cc5987f6e57c8b3"
+        },
+        {
+          "file": "robust-fr-10.wav",
+          "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+          "code": "fr",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "5221f57d605a93c30b071589fe0f32d02d101983a4443e55f074c957ec47acef"
+        },
+        {
+          "file": "robust-de-10.wav",
+          "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+          "code": "de",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "217603f6b5ba7c3b651ae0c4fee858047fcad1a4a164b94dc4e877ca9aa67b9c"
+        },
+        {
+          "file": "robust-ru-12.wav",
+          "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+          "code": "ru",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "c4448309df6b1e8ea54ae02edb0dbf2f18053ccf636abbd2b820cc947a05c834"
+        },
+        {
+          "file": "robust-ar-14.wav",
+          "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+          "code": "ar",
+          "dataset": "FLEURS",
+          "source": "https://huggingface.co/datasets/google/fleurs",
+          "license": "CC BY 4.0",
+          "sha256": "e66695b422cf64a6e7624da11096976ae31d6b6d6e5a8dcaed2b4072dba9f240"
+        }
+      ]
+    },
+    "conditions": "Public recorded speech; synthetic acoustic transforms are not real-room measurements; no microphone",
+    "results": [
+      {
+        "file": "ascend-4.wav",
+        "code": "zh-en",
+        "condition": "clean",
+        "reference": "呃what's the呃",
+        "recognized": "So it was the.",
+        "backend": "SenseVoice · automatic CJK short speech",
+        "referenceCharacters": 10,
+        "characterEdits": 7,
+        "automaticChangesBlocked": false,
+        "audioMs": 1360,
+        "elapsedMs": 5167
+      },
+      {
+        "file": "ascend-9.wav",
+        "code": "zh-en",
+        "condition": "clean",
+        "reference": "no我专业是那个i s m information systems management",
+        "recognized": "那个s نفرمن سسممجم",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 39,
+        "characterEdits": 36,
+        "automaticChangesBlocked": false,
+        "audioMs": 4030,
+        "elapsedMs": 2992
+      },
+      {
+        "file": "ascend-55.wav",
+        "code": "zh-en",
+        "condition": "clean",
+        "reference": "um运动啊男生一般不都喜欢运动",
+        "recognized": "嗯，运动啊男生一般不都喜欢运动的。",
+        "backend": "SenseVoice · automatic CJK short speech",
+        "referenceCharacters": 15,
+        "characterEdits": 3,
+        "automaticChangesBlocked": false,
+        "audioMs": 3000,
+        "elapsedMs": 3493
+      },
+      {
+        "file": "ascend-66.wav",
+        "code": "zh-en",
+        "condition": "clean",
+        "reference": "哦这么technical",
+        "recognized": "أو 这م تكنيكود",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 12,
+        "characterEdits": 12,
+        "automaticChangesBlocked": false,
+        "audioMs": 1589,
+        "elapsedMs": 2195
+      },
+      {
+        "file": "ascend-68.wav",
+        "code": "zh-en",
+        "condition": "clean",
+        "reference": "computer languages是",
+        "recognized": "can飘两.",
+        "backend": "SenseVoice · automatic CJK short speech",
+        "referenceCharacters": 18,
+        "characterEdits": 15,
+        "automaticChangesBlocked": false,
+        "audioMs": 1450,
+        "elapsedMs": 2961
+      },
+      {
+        "file": "ascend-81.wav",
+        "code": "zh-en",
+        "condition": "clean",
+        "reference": "所以我上学期也学了python",
+        "recognized": "所以我上学期也学了pyython。",
+        "backend": "SenseVoice · automatic CJK short speech",
+        "referenceCharacters": 15,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 1840,
+        "elapsedMs": 4854
+      },
+      {
+        "file": "robust-en-10.wav",
+        "code": "en",
+        "condition": "clean",
+        "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "recognized": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 70,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 7320,
+        "elapsedMs": 4011
+      },
+      {
+        "file": "robust-en-10.wav",
+        "code": "en",
+        "condition": "quiet-minus16dB",
+        "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "recognized": "as soon as you get out of the current simming back is no more difficult than normally",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 70,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 7320,
+        "elapsedMs": 2249
+      },
+      {
+        "file": "robust-en-10.wav",
+        "code": "en",
+        "condition": "white-noise-10dB",
+        "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "recognized": "as soon as you get out of the current simming back is no more difficult than normally",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 70,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 7320,
+        "elapsedMs": 2231
+      },
+      {
+        "file": "robust-en-10.wav",
+        "code": "en",
+        "condition": "simulated-distance",
+        "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "recognized": "as soon as you get out of the current siming back is no more difficult than normally",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 70,
+        "characterEdits": 2,
+        "automaticChangesBlocked": false,
+        "audioMs": 7320,
+        "elapsedMs": 2209
+      },
+      {
+        "file": "robust-en-10.wav",
+        "code": "en",
+        "condition": "overlap-minus10dB",
+        "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "recognized": "as soon as you get out of the current siming back is no more difficult than normaly",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 70,
+        "characterEdits": 3,
+        "automaticChangesBlocked": false,
+        "audioMs": 7320,
+        "elapsedMs": 2198
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "code": "ko",
+        "condition": "clean",
+        "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+        "recognized": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급법의 판결로 구조되었다.",
+        "backend": "SenseVoice · automatic short speech",
+        "referenceCharacters": 29,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 7800,
+        "elapsedMs": 5322
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "code": "ko",
+        "condition": "quiet-minus16dB",
+        "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+        "recognized": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급법의 판결로 구조되었다.",
+        "backend": "SenseVoice · automatic short speech",
+        "referenceCharacters": 29,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 7800,
+        "elapsedMs": 7095
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "code": "ko",
+        "condition": "white-noise-10dB",
+        "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+        "recognized": "화유일에 배어 스러들릴 예정이었으나 긴급 법원의 판별로 구조되었다",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 29,
+        "characterEdits": 5,
+        "automaticChangesBlocked": false,
+        "audioMs": 7800,
+        "elapsedMs": 4195
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "code": "ko",
+        "condition": "simulated-distance",
+        "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+        "recognized": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급법의 판결로 구조되었다.",
+        "backend": "SenseVoice · automatic short speech",
+        "referenceCharacters": 29,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 7800,
+        "elapsedMs": 5335
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "code": "ko",
+        "condition": "overlap-minus10dB",
+        "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+        "recognized": "화유일에 배어 스러들릴 예정이었으나 긴급 법원의 판결로 구절되었다",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 29,
+        "characterEdits": 5,
+        "automaticChangesBlocked": false,
+        "audioMs": 7800,
+        "elapsedMs": 4187
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "code": "zh",
+        "condition": "clean",
+        "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+        "recognized": "他称，他制作了一个wifi门铃。",
+        "backend": "SenseVoice · automatic CJK short speech",
+        "referenceCharacters": 14,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 5580,
+        "elapsedMs": 4419
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "code": "zh",
+        "condition": "quiet-minus16dB",
+        "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+        "recognized": "他称，他制作了一个wifi门铃。",
+        "backend": "SenseVoice · automatic CJK short speech",
+        "referenceCharacters": 14,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 5580,
+        "elapsedMs": 6177
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "code": "zh",
+        "condition": "white-noise-10dB",
+        "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+        "recognized": "他称 他是作了一个wf门龄",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 14,
+        "characterEdits": 4,
+        "automaticChangesBlocked": false,
+        "audioMs": 5580,
+        "elapsedMs": 3408
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "code": "zh",
+        "condition": "simulated-distance",
+        "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+        "recognized": "他称他制作了一个wifi门铃。",
+        "backend": "SenseVoice · automatic CJK short speech",
+        "referenceCharacters": 14,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 5580,
+        "elapsedMs": 4426
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "code": "zh",
+        "condition": "overlap-minus10dB",
+        "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+        "recognized": "他称他制作了一个门领",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 14,
+        "characterEdits": 5,
+        "automaticChangesBlocked": false,
+        "audioMs": 5580,
+        "elapsedMs": 3412
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "code": "fr",
+        "condition": "clean",
+        "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+        "recognized": "La police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ.",
+        "backend": "Whisper Base · automatic short speech",
+        "referenceCharacters": 71,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 7440,
+        "elapsedMs": 6329
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "code": "fr",
+        "condition": "quiet-minus16dB",
+        "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+        "recognized": "La police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ.",
+        "backend": "Whisper Base · automatic short speech",
+        "referenceCharacters": 71,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 7440,
+        "elapsedMs": 7871
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "code": "fr",
+        "condition": "white-noise-10dB",
+        "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+        "recognized": "la police déclarait qu'il semblerait que le corps se trouvait là depuis un jour environ",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 71,
+        "characterEdits": 4,
+        "automaticChangesBlocked": false,
+        "audioMs": 7440,
+        "elapsedMs": 3969
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "code": "fr",
+        "condition": "simulated-distance",
+        "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+        "recognized": "La police est déclarée qu'il semblerait que le corps se trouvaient là depuis un jour environ.",
+        "backend": "Whisper Base · automatic short speech",
+        "referenceCharacters": 71,
+        "characterEdits": 6,
+        "automaticChangesBlocked": false,
+        "audioMs": 7440,
+        "elapsedMs": 6211
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "code": "fr",
+        "condition": "overlap-minus10dB",
+        "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+        "recognized": "la police a déclarait qu'il semblerait que le corps se trouvait là depuis un jour enviant",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 71,
+        "characterEdits": 6,
+        "automaticChangesBlocked": false,
+        "audioMs": 7440,
+        "elapsedMs": 3963
+      },
+      {
+        "file": "robust-de-10.wav",
+        "code": "de",
+        "condition": "clean",
+        "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "recognized": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 58,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 7560,
+        "elapsedMs": 2310
+      },
+      {
+        "file": "robust-de-10.wav",
+        "code": "de",
+        "condition": "quiet-minus16dB",
+        "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "recognized": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 58,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 7560,
+        "elapsedMs": 2323
+      },
+      {
+        "file": "robust-de-10.wav",
+        "code": "de",
+        "condition": "white-noise-10dB",
+        "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "recognized": "seine allmacht beherft we jeden vom könig bis zum einfachen bürger",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 58,
+        "characterEdits": 5,
+        "automaticChangesBlocked": false,
+        "audioMs": 7560,
+        "elapsedMs": 2305
+      },
+      {
+        "file": "robust-de-10.wav",
+        "code": "de",
+        "condition": "simulated-distance",
+        "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "recognized": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 58,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 7560,
+        "elapsedMs": 2302
+      },
+      {
+        "file": "robust-de-10.wav",
+        "code": "de",
+        "condition": "overlap-minus10dB",
+        "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "recognized": "seine allmacht beherrschte jedem vom könig bis zum einfachen bürger",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 58,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 7560,
+        "elapsedMs": 2300
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "code": "ru",
+        "condition": "clean",
+        "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+        "recognized": "как только вы выйдете из течения плыте братно будет не труднее чем обычно",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 62,
+        "characterEdits": 2,
+        "automaticChangesBlocked": false,
+        "audioMs": 7080,
+        "elapsedMs": 2249
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "code": "ru",
+        "condition": "quiet-minus16dB",
+        "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+        "recognized": "как только вы выйдете из течения плыте братно будет не труднее чем обычно",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 62,
+        "characterEdits": 2,
+        "automaticChangesBlocked": false,
+        "audioMs": 7080,
+        "elapsedMs": 2251
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "code": "ru",
+        "condition": "white-noise-10dB",
+        "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+        "recognized": "как столько вы выйдете с течения деть обратно будеть нетруднее чем обычло",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 62,
+        "characterEdits": 8,
+        "automaticChangesBlocked": false,
+        "audioMs": 7080,
+        "elapsedMs": 2253
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "code": "ru",
+        "condition": "simulated-distance",
+        "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+        "recognized": "как только вы выйдите из течения плыте братно будет не труднея чем обычно",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 62,
+        "characterEdits": 4,
+        "automaticChangesBlocked": false,
+        "audioMs": 7080,
+        "elapsedMs": 2246
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "code": "ru",
+        "condition": "overlap-minus10dB",
+        "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+        "recognized": "как только вы выйдете из течения литебратом будет нетруднее  чем обытшнем",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 62,
+        "characterEdits": 10,
+        "automaticChangesBlocked": false,
+        "audioMs": 7080,
+        "elapsedMs": 2252
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "code": "ar",
+        "condition": "clean",
+        "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+        "recognized": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريبا",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 47,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 5860,
+        "elapsedMs": 1803
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "code": "ar",
+        "condition": "quiet-minus16dB",
+        "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+        "recognized": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريبا",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 47,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 5860,
+        "elapsedMs": 1797
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "code": "ar",
+        "condition": "white-noise-10dB",
+        "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+        "recognized": "وقالت الشرطة إن الجسة بدت وكأنها كانت هناك منذ يوم تقريبا",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 47,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 5860,
+        "elapsedMs": 1802
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "code": "ar",
+        "condition": "simulated-distance",
+        "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+        "recognized": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريبا",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 47,
+        "characterEdits": 0,
+        "automaticChangesBlocked": false,
+        "audioMs": 5860,
+        "elapsedMs": 1798
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "code": "ar",
+        "condition": "overlap-minus10dB",
+        "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+        "recognized": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك مهذ يوم تقريبا",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 47,
+        "characterEdits": 1,
+        "automaticChangesBlocked": false,
+        "audioMs": 5860,
+        "elapsedMs": 1799
+      }
+    ]
+  },
+  "captureBaseline": {
+    "conditions": "Real capture/VAD; clean-energy onset is a proxy, not manually labeled phoneme truth; no ASR or microphone",
+    "results": [
+      {
+        "file": "ascend-4.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 38912
+      },
+      {
+        "file": "ascend-4.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 39936
+      },
+      {
+        "file": "ascend-9.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 80896
+      },
+      {
+        "file": "ascend-9.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 81408
+      },
+      {
+        "file": "ascend-55.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 65536
+      },
+      {
+        "file": "ascend-55.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 66560
+      },
+      {
+        "file": "ascend-66.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 43520
+      },
+      {
+        "file": "ascend-66.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 44032
+      },
+      {
+        "file": "ascend-68.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 39936
+      },
+      {
+        "file": "ascend-68.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 39936
+      },
+      {
+        "file": "ascend-81.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 46592
+      },
+      {
+        "file": "ascend-81.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 47104
+      },
+      {
+        "file": "robust-en-10.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 85504
+      },
+      {
+        "file": "robust-en-10.wav",
+        "quiet": true,
+        "segments": 0,
+        "missedOnsetMs": 3880,
+        "maximumChunkSamples": 0
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 97280
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 95744
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 61952
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 60416
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 75776
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 76800
+      },
+      {
+        "file": "robust-de-10.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 88576
+      },
+      {
+        "file": "robust-de-10.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 89088
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 98816
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 98816
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 97280
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 96768
+      },
+      {
+        "file": "silence-control",
+        "quiet": false,
+        "segments": 0,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 0
+      },
+      {
+        "file": "silence-control",
+        "quiet": true,
+        "segments": 0,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 0
+      }
+    ]
+  },
+  "captureUpdated": {
+    "conditions": "Real capture/VAD; clean-energy onset is a proxy, not manually labeled phoneme truth; no ASR or microphone",
+    "results": [
+      {
+        "file": "ascend-4.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 47104
+      },
+      {
+        "file": "ascend-4.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 47104
+      },
+      {
+        "file": "ascend-9.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 89088
+      },
+      {
+        "file": "ascend-9.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 89088
+      },
+      {
+        "file": "ascend-55.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 73728
+      },
+      {
+        "file": "ascend-55.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 74752
+      },
+      {
+        "file": "ascend-66.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 51712
+      },
+      {
+        "file": "ascend-66.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 52224
+      },
+      {
+        "file": "ascend-68.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 48128
+      },
+      {
+        "file": "ascend-68.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 48128
+      },
+      {
+        "file": "ascend-81.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 54784
+      },
+      {
+        "file": "ascend-81.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 55808
+      },
+      {
+        "file": "robust-en-10.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 94208
+      },
+      {
+        "file": "robust-en-10.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 89600
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 105472
+      },
+      {
+        "file": "robust-ko-17.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 105472
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 70656
+      },
+      {
+        "file": "robust-zh-11.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 70144
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 83968
+      },
+      {
+        "file": "robust-fr-10.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 84480
+      },
+      {
+        "file": "robust-de-10.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 96768
+      },
+      {
+        "file": "robust-de-10.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 97280
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 107008
+      },
+      {
+        "file": "robust-ru-12.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 107008
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "quiet": false,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 105472
+      },
+      {
+        "file": "robust-ar-14.wav",
+        "quiet": true,
+        "segments": 1,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 104960
+      },
+      {
+        "file": "noise-control-0",
+        "quiet": false,
+        "segments": 0,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 0
+      },
+      {
+        "file": "noise-control-0",
+        "quiet": true,
+        "segments": 0,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 0
+      },
+      {
+        "file": "noise-control-1",
+        "quiet": false,
+        "segments": 0,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 0
+      },
+      {
+        "file": "noise-control-1",
+        "quiet": true,
+        "segments": 0,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 0
+      },
+      {
+        "file": "noise-control-2",
+        "quiet": false,
+        "segments": 0,
+        "missedOnsetMs": 10000,
+        "maximumChunkSamples": 0
+      },
+      {
+        "file": "noise-control-2",
+        "quiet": true,
+        "segments": 0,
+        "missedOnsetMs": 10000,
+        "maximumChunkSamples": 0
+      },
+      {
+        "file": "noise-control-3",
+        "quiet": false,
+        "segments": 0,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 0
+      },
+      {
+        "file": "noise-control-3",
+        "quiet": true,
+        "segments": 0,
+        "missedOnsetMs": 0,
+        "maximumChunkSamples": 0
+      }
+    ]
+  },
+  "syntheticBilingual": {
+    "completed": true,
+    "conditions": "Concatenated synthetic voices; exploratory code-switch regression, not natural bilingual accuracy",
+    "results": [
+      {
+        "file": "bilingual-ko-before.wav",
+        "reference": "at The James. 내일 오후 6시에 회의가 있어요.",
+        "recognized": "at the james 내일 오후 여섯시에 회의가 있어요",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 23,
+        "characterEdits": 2,
+        "venueKept": true,
+        "audioMs": 3559,
+        "elapsedMs": 3171
+      },
+      {
+        "file": "bilingual-ko-after.wav",
+        "reference": "내일 오후 6시에 회의가 있어요. at The James.",
+        "recognized": "내일 오후 여섯시에 회의가 있어요 at the james",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 23,
+        "characterEdits": 2,
+        "venueKept": true,
+        "audioMs": 3559,
+        "elapsedMs": 1086
+      },
+      {
+        "file": "bilingual-zh-before.wav",
+        "reference": "at The James. 明天下午六点有会议。",
+        "recognized": "atthejames明天下午六点有会议",
+        "backend": "Omnilingual · retry kept primary",
+        "referenceCharacters": 19,
+        "characterEdits": 0,
+        "venueKept": true,
+        "audioMs": 2934,
+        "elapsedMs": 3830
+      },
+      {
+        "file": "bilingual-zh-after.wav",
+        "reference": "明天下午六点有会议。 at The James.",
+        "recognized": "明天下午六点有会议atthejames",
+        "backend": "Omnilingual · retry kept primary",
+        "referenceCharacters": 19,
+        "characterEdits": 0,
+        "venueKept": true,
+        "audioMs": 2934,
+        "elapsedMs": 5227
+      },
+      {
+        "file": "bilingual-fr-before.wav",
+        "reference": "at The James. Je participerai à une réunion demain à 18h.",
+        "recognized": "At the James, je participerai à une réunion demain à 18h.",
+        "backend": "Whisper Base · automatic short speech",
+        "referenceCharacters": 45,
+        "characterEdits": 0,
+        "venueKept": true,
+        "audioMs": 3961,
+        "elapsedMs": 6802
+      },
+      {
+        "file": "bilingual-fr-after.wav",
+        "reference": "Je participerai à une réunion demain à 18h. at The James.",
+        "recognized": "Je participerai à une réunion demain à 18h.",
+        "backend": "Whisper Base · automatic short speech",
+        "referenceCharacters": 45,
+        "characterEdits": 10,
+        "venueKept": false,
+        "audioMs": 3961,
+        "elapsedMs": 6463
+      },
+      {
+        "file": "bilingual-de-before.wav",
+        "reference": "at The James. Ich nehme morgen um 18 Uhr an einem Treffen teil.",
+        "recognized": "at the james ich nehme morgen um achtzehn uhr an einem treffenteil",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 49,
+        "characterEdits": 8,
+        "venueKept": true,
+        "audioMs": 4280,
+        "elapsedMs": 2921
+      },
+      {
+        "file": "bilingual-de-after.wav",
+        "reference": "Ich nehme morgen um 18 Uhr an einem Treffen teil. at The James.",
+        "recognized": "ich nehme morgen um achtzehn uhr an einem treffenteil at the james",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 49,
+        "characterEdits": 8,
+        "venueKept": true,
+        "audioMs": 4280,
+        "elapsedMs": 1245
+      },
+      {
+        "file": "bilingual-ru-before.wav",
+        "reference": "at The James. Я пойду на встречу завтра в 18:00.",
+        "recognized": "Я пойду на встречу завтра 18 часов.",
+        "backend": "Whisper Base · automatic short speech",
+        "referenceCharacters": 36,
+        "characterEdits": 16,
+        "venueKept": false,
+        "audioMs": 3882,
+        "elapsedMs": 4743
+      },
+      {
+        "file": "bilingual-ru-after.wav",
+        "reference": "Я пойду на встречу завтра в 18:00. at The James.",
+        "recognized": "Я пойду на встречу завтра 18 часов.",
+        "backend": "Whisper Base · automatic short speech",
+        "referenceCharacters": 36,
+        "characterEdits": 13,
+        "venueKept": false,
+        "audioMs": 3882,
+        "elapsedMs": 6438
+      },
+      {
+        "file": "bilingual-ar-before.wav",
+        "reference": "at The James. سأحضر الاجتماع غدا الساعة السادسة مساء.",
+        "recognized": "ت جaمes سأحضر الاجتماع غدا الساعة السادس مساه",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 43,
+        "characterEdits": 9,
+        "venueKept": false,
+        "audioMs": 4393,
+        "elapsedMs": 2956
+      },
+      {
+        "file": "bilingual-ar-after.wav",
+        "reference": "سأحضر الاجتماع غدا الساعة السادسة مساء. at The James.",
+        "recognized": "سأحضر الاجتماع غدا الساعة السادس مساه at جaمes",
+        "backend": "Omnilingual int8",
+        "referenceCharacters": 43,
+        "characterEdits": 7,
+        "venueKept": false,
+        "audioMs": 4393,
+        "elapsedMs": 1269
+      }
+    ]
+  },
+  "commands": {
+    "results": [
+      {
+        "file": "en-en-US-AriaNeural-0.wav",
+        "language": "en",
+        "reference": "I'll attend a meeting tomorrow at 6pm.",
+        "recognized": "I'll attend a meeting tomorrow at 6pm.",
+        "action": "create",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "en-en-US-AriaNeural-1.wav",
+        "language": "en",
+        "reference": "Move the meeting to tomorrow at 7pm.",
+        "recognized": "Move the meeting to tomorrow at 7pm.",
+        "action": "move",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "en-en-US-AriaNeural-2.wav",
+        "language": "en",
+        "reference": "Cancel the meeting.",
+        "recognized": "Cancel the meeting.",
+        "action": "cancel",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "en-en-US-AriaNeural-3.wav",
+        "language": "en",
+        "reference": "Don't cancel the meeting.",
+        "recognized": "Don't cancel the meeting.",
+        "action": "negative",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ko-ko-KR-SunHiNeural-0.wav",
+        "language": "ko",
+        "reference": "내일 오후 6시에 회의가 있어요.",
+        "recognized": "내일 오후 6 시에 회의가 있 어요.",
+        "action": "create",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ko-ko-KR-SunHiNeural-1.wav",
+        "language": "ko",
+        "reference": "회의를 내일 오후 7시로 변경해줘.",
+        "recognized": "회의 를 내일 오후 7 시로 변경 해줘.",
+        "action": "move",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ko-ko-KR-SunHiNeural-2.wav",
+        "language": "ko",
+        "reference": "회의를 취소해줘.",
+        "recognized": "회의 를 취소 해 줘.",
+        "action": "cancel",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ko-ko-KR-SunHiNeural-3.wav",
+        "language": "ko",
+        "reference": "회의를 취소하지 마세요.",
+        "recognized": "회의 를 취소 하지 마세요.",
+        "action": "negative",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ko-ko-KR-SunHiNeural-4.wav",
+        "language": "ko",
+        "reference": "저는 내일 오후 8시에 파티에 갈 거예요.",
+        "recognized": "저는 내일 오후 8 시에 파티 티에 갈 거.",
+        "action": "create",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ko-ko-KR-SunHiNeural-5.wav",
+        "language": "ko",
+        "reference": "저는 내일 오후 여덟 시에 파티에 갈 거예요.",
+        "recognized": "저는 내일 오후 8 시에 파티 티에 갈 거예요.",
+        "action": "create",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "zh-zh-CN-XiaoxiaoNeural-0.wav",
+        "language": "zh",
+        "reference": "明天下午六点有会议。",
+        "recognized": "明天下午6点有会议。",
+        "action": "create",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "zh-zh-CN-XiaoxiaoNeural-1.wav",
+        "language": "zh",
+        "reference": "把会议改到明天下午七点。",
+        "recognized": "把会议改到明天下午7点。",
+        "action": "move",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "zh-zh-CN-XiaoxiaoNeural-2.wav",
+        "language": "zh",
+        "reference": "取消会议。",
+        "recognized": "取消会议。",
+        "action": "cancel",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "zh-zh-CN-XiaoxiaoNeural-3.wav",
+        "language": "zh",
+        "reference": "不要取消会议。",
+        "recognized": "不要取消会议。",
+        "action": "negative",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "fr-fr-FR-DeniseNeural-0.wav",
+        "language": "fr",
+        "reference": "Je participerai à une réunion demain à 18h.",
+        "recognized": "Je participerai à une réunion demain à 18h.",
+        "action": "create",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "fr-fr-FR-DeniseNeural-1.wav",
+        "language": "fr",
+        "reference": "Déplace la réunion à demain à 19h.",
+        "recognized": "Déplace la réunion à demain à 19h.",
+        "action": "move",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "fr-fr-FR-DeniseNeural-2.wav",
+        "language": "fr",
+        "reference": "Annule la réunion.",
+        "recognized": "Annule la réunion.",
+        "action": "cancel",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "fr-fr-FR-DeniseNeural-3.wav",
+        "language": "fr",
+        "reference": "N’annule pas la réunion.",
+        "recognized": "N'annule pas la réunion.",
+        "action": "negative",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "de-de-DE-KatjaNeural-0.wav",
+        "language": "de",
+        "reference": "Ich nehme morgen um 18 Uhr an einem Treffen teil.",
+        "recognized": "Ich nehme morgen um 18 Uhr an einem Treffen Teil.",
+        "action": "create",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "de-de-DE-KatjaNeural-1.wav",
+        "language": "de",
+        "reference": "Verschiebe das Treffen auf morgen um 19 Uhr.",
+        "recognized": "Verschiebe das Treffen auf morgen um 19 Uhr.",
+        "action": "move",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "de-de-DE-KatjaNeural-2.wav",
+        "language": "de",
+        "reference": "Sag das Treffen ab.",
+        "recognized": "Sagt das Treffen ab.",
+        "action": "cancel",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "de-de-DE-KatjaNeural-3.wav",
+        "language": "de",
+        "reference": "Sag das Treffen nicht ab.",
+        "recognized": "Sag das Treffen nicht ab.",
+        "action": "negative",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ru-ru-RU-SvetlanaNeural-0.wav",
+        "language": "ru",
+        "reference": "Я пойду на встречу завтра в 18:00.",
+        "recognized": "Я пойду на встречу завтра 18 часов.",
+        "action": "create",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ru-ru-RU-SvetlanaNeural-1.wav",
+        "language": "ru",
+        "reference": "Перенеси встречу на завтра в 19:00.",
+        "recognized": "Перенеси встречи на завтра в 19 часов.",
+        "action": "move",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ru-ru-RU-SvetlanaNeural-2.wav",
+        "language": "ru",
+        "reference": "Отмени встречу.",
+        "recognized": "Отмени встречу.",
+        "action": "cancel",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ru-ru-RU-SvetlanaNeural-3.wav",
+        "language": "ru",
+        "reference": "Не отмени встречу.",
+        "recognized": "Не отмени встречу.",
+        "action": "negative",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ar-ar-SA-ZariyahNeural-0.wav",
+        "language": "ar",
+        "reference": "سأحضر الاجتماع غدا الساعة السادسة مساء.",
+        "recognized": "سأحضر الاجتماع غدا الساعة السادس مساه",
+        "action": "create",
+        "passed": false,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": true
+      },
+      {
+        "file": "ar-ar-SA-ZariyahNeural-1.wav",
+        "language": "ar",
+        "reference": "انقل الاجتماع إلى غدا الساعة السابعة مساء.",
+        "recognized": "امقل الاجتماع إلى غد الساعة السابعة مساه",
+        "action": "move",
+        "passed": false,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": true
+      },
+      {
+        "file": "ar-ar-SA-ZariyahNeural-2.wav",
+        "language": "ar",
+        "reference": "ألغي الاجتماع.",
+        "recognized": "ألغي الاجتماع",
+        "action": "cancel",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ar-ar-SA-ZariyahNeural-3.wav",
+        "language": "ar",
+        "reference": "لا تلغي الاجتماع.",
+        "recognized": "لا تلغي الاجتماعة",
+        "action": "negative",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ar-ar-SA-HamedNeural-0.wav",
+        "language": "ar",
+        "reference": "سأحضر الاجتماع غدا الساعة السادسة مساء.",
+        "recognized": "سأحضر الاجتماع غدا الساعة السادس مساء",
+        "action": "create",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ar-ar-SA-HamedNeural-1.wav",
+        "language": "ar",
+        "reference": "انقل الاجتماع إلى غدا الساعة السابعة مساء.",
+        "recognized": "أنقل الاجتماع إلى غدا الساعة السادع مساء",
+        "action": "move",
+        "passed": false,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": true
+      },
+      {
+        "file": "ar-ar-SA-HamedNeural-2.wav",
+        "language": "ar",
+        "reference": "ألغي الاجتماع.",
+        "recognized": "ألغي الاجتماع",
+        "action": "cancel",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      },
+      {
+        "file": "ar-ar-SA-HamedNeural-3.wav",
+        "language": "ar",
+        "reference": "لا تلغي الاجتماع.",
+        "recognized": "لا تلغي الاجتماع",
+        "action": "negative",
+        "passed": true,
+        "safe": true,
+        "automaticChangesBlocked": false,
+        "knownLimit": false
+      }
+    ],
+    "conditions": "Synthetic commands, no forced language, no physical microphone; not natural-conversation accuracy"
+  },
+  "paced": {
+    "results": [
+      {
+        "recognized": "as soon as you get out of the current swimming back is no more difficult than normally",
+        "sourceStart": 24704,
+        "elapsedMs": 4998
+      },
+      {
+        "recognized": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다.",
+        "sourceStart": 174528,
+        "elapsedMs": 6069
+      },
+      {
+        "recognized": "他称，他制作了一个wifi门铃。",
+        "sourceStart": 317696,
+        "elapsedMs": 5705
+      },
+      {
+        "recognized": "La police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ.",
+        "sourceStart": 449408,
+        "elapsedMs": 7579
+      },
+      {
+        "recognized": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+        "sourceStart": 576064,
+        "elapsedMs": 3758
+      },
+      {
+        "recognized": "как только вы выйдете истечения плыте братно будет нетр",
+        "sourceStart": 714368,
+        "elapsedMs": 1380
+      },
+      {
+        "recognized": "nee čema byčna",
+        "sourceStart": 777503,
+        "elapsedMs": 2139
+      },
+      {
+        "recognized": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريبا",
+        "sourceStart": 844992,
+        "elapsedMs": 2305
+      }
+    ],
+    "queueDrainMs": 1307,
+    "conditions": "Real-time-paced public recordings, seven languages with quiet gaps, no microphone; not within-sentence code switching"
+  }
+}

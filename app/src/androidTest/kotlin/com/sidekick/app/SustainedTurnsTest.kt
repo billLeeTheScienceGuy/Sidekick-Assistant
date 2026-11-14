@@ -50,7 +50,7 @@ class SustainedTurnsTest {
         val begin = SystemClock.elapsedRealtime(); val captured = Instant.now(); val zone = ZoneId.systemDefault()
         var finished = false; var failure: String? = null; var feedFinishedAt = begin; var drainMs = 0L
         val pipeline = LiveSpeechProcessor(speech, contextKey = { if (attribution.speaker == Speaker.USER) attribution.key else null },
-            partition = turns::partition, onPart = { samples, part -> attribution = turns.classify(samples, part) },
+            partition = turns::partition, onPart = { samples, part -> attribution = turns.classify(samples, part); true },
             onChunkProcessed = { elapsed, count ->
                 batches += elapsed to count
                 val thermal = if (Build.VERSION.SDK_INT >= 29) power.currentThermalStatus else -1

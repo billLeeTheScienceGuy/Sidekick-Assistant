@@ -62,10 +62,12 @@ class ResponsiveInterfaceTest {
     }
     @Test fun appearancePersistsAndCanFollowTheSystemAgain() {
         compose.onNodeWithTag("settings").performClick()
+        compose.onNodeWithTag("settings-page-DISPLAY").performScrollTo().performClick()
         compose.onNodeWithTag("appearance-DARK").performClick().assertIsSelected()
         assertEquals(AppearanceMode.DARK, GuidanceSettings(app).appearance.value)
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("settings").performClick()
+        compose.onNodeWithTag("settings-page-DISPLAY").performScrollTo().performClick()
         compose.onNodeWithTag("appearance-DARK").assertIsSelected()
         compose.onNodeWithTag("appearance-SYSTEM").performClick().assertIsSelected()
         assertEquals(AppearanceMode.SYSTEM, GuidanceSettings(app).appearance.value)
@@ -102,8 +104,8 @@ class ResponsiveInterfaceTest {
             compose.onNodeWithTag("compact-listen").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
             compose.onNodeWithTag("compact-details").assertIsDisplayed()
         } else {
-            compose.onNodeWithTag("main-list").performScrollToNode(hasText("Start live notes"))
-            compose.onNodeWithText("Start live notes").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
+            compose.onNodeWithTag("main-list").performScrollToNode(hasText("Start listening"))
+            compose.onNodeWithText("Start listening").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
         }
         assertFalse(ListeningService.state.value.recording)
         // Accessibility roots can be temporarily null on Android 17. Check the actual
