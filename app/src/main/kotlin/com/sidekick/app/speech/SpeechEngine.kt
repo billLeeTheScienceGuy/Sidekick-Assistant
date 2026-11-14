@@ -14,11 +14,14 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
     private val omni = OmniSpeechEngine(context)
     private val englishModel = TransducerSpeechEngine(context, TransducerSpeechEngine.ENGLISH)
     private val russianModel = TransducerSpeechEngine(context, TransducerSpeechEngine.RUSSIAN)
+    private val koreanModel = TransducerSpeechEngine(context, TransducerSpeechEngine.KOREAN)
     @Volatile var lastClockDiagnostic: String? = null
         private set
     @Volatile var lastBackend: String? = null
         private set
     @Volatile var lastUncertain: Boolean = false
+    /** When the last phrase had an impossible time: the phrase with each likely time, most likely first (for confirmation). */
+    @Volatile var lastTimeChoices: List<String> = emptyList()
         private set
     @Volatile var lastRetryDiagnostic: String? = null
         private set
@@ -31,9 +34,12 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
         selectedQuality: SpeechQuality = quality(),
         beamSize: Int = 1,
         shortPhrase: Boolean = samples.size < if (selectedLanguage in setOf(SpeechLanguage.AUTO, SpeechLanguage.FRENCH, SpeechLanguage.GERMAN, SpeechLanguage.RUSSIAN)) 128_000 else 48_000,
+        /** Live voice track (Auto-detect remembers each voice's language); null for one-off audio. */
+        voiceKey: String? = null,
     ): String = try {
         gate.withLock {
             lastUncertain = false
+            lastTimeChoices = emptyList()
             lastRetryDiagnostic = null
             lastClockDiagnostic = null
             lastBackend = null
@@ -43,7 +49,7 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
             withContext(Dispatchers.IO) {
                 if (selectedLanguage == SpeechLanguage.AUTO && selectedQuality == SpeechQuality.ADAPTIVE &&
                     ModelPacks.available(context, SenseVoiceEngine.MODEL) && ModelPacks.available(context, SenseVoiceEngine.TOKENS))
-                    return@withContext detectAndTranscribe(samples, threads, retainModel)
+                    return@withContext detectAndTranscribe(samples, threads, retainModel, voiceKey)
                 englishModel.release(); russianModel.release() // only the Auto path uses them; free their memory for the other models
                 val speechSamples = if (selectedQuality == SpeechQuality.ADAPTIVE && selectedLanguage in setOf(SpeechLanguage.AUTO, SpeechLanguage.FRENCH, SpeechLanguage.GERMAN, SpeechLanguage.RUSSIAN))
                     com.sidekick.core.SpeakerAudio.speechSpan(samples)?.let { it.last - it.first + 1 } ?: samples.size else samples.size
@@ -151,8 +157,43 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
      * Auto-detect: SenseVoice first; its language tag and reading decide whether Omnilingual is needed (see AutoRoute).
      * Both stay loaded in a live session so a French or Arabic speaker does not reload a model every chunk.
      */
-    private suspend fun detectAndTranscribe(samples: FloatArray, threads: Int, retain: Boolean): String {
+    private suspend fun detectAndTranscribe(samples: FloatArray, threads: Int, retain: Boolean, voiceKey: String?): String {
         NativeSpeech.release(); currentCoroutineContext().ensureActive()
+        releaseIdle()
+        val key = voiceKey?.takeUnless { it.contains("_unassigned") }
+        val memory = key?.let { routeMemory[it] } ?: com.sidekick.core.RouteMemory()
+        val text = if (memory.skipToOmnilingual) {
+            // This voice's last phrases all needed Omnilingual: skip SenseVoice/Parakeet (re-checked fully every 4th phrase).
+            val second = omni.transcribe(samples, threads, retain)
+            lastBackend = "Omnilingual · this voice's language remembered"
+            if (second.none { it.isLetter() }) route(samples, threads, retain) else refineRussian(second, samples, threads, retain)
+        } else route(samples, threads, retain)
+        val viaOmnilingual = lastBackend?.let { it.startsWith("Omnilingual") || it.startsWith("GigaAM") } == true
+        if (key != null) {
+            routeMemory[key] = memory.after(viaOmnilingual)
+            while (routeMemory.size > 8) routeMemory.remove(routeMemory.keys.first())
+        }
+        return text
+    }
+    private val routeMemory = linkedMapOf<String, com.sidekick.core.RouteMemory>()
+
+    /** Optional models unused for a few minutes are unloaded (each holds 100–400 MB); they reload on the next need. */
+    private fun releaseIdle() {
+        val now = android.os.SystemClock.elapsedRealtime()
+        omni.releaseIfIdle(now, IDLE_MS); englishModel.releaseIfIdle(now, IDLE_MS); russianModel.releaseIfIdle(now, IDLE_MS); koreanModel.releaseIfIdle(now, IDLE_MS)
+    }
+
+    private suspend fun refineRussian(second: String, samples: FloatArray, threads: Int, retain: Boolean): String {
+        // Plain Russian (no Latin words, which the Russian-only model would drop): re-read with the optional GigaAM pack.
+        if (com.sidekick.core.AutoRoute.russianOnly(second) && russianModel.available()) {
+            currentCoroutineContext().ensureActive()
+            val russian = try { russianModel.transcribe(samples, threads, retain) } catch (_: Exception) { "" }
+            if (russian.any { it.isLetter() }) { lastBackend = "GigaAM Russian · Omnilingual heard Russian"; return russian }
+        }
+        return second
+    }
+
+    private suspend fun route(samples: FloatArray, threads: Int, retain: Boolean): String {
         val speechMs = com.sidekick.core.AutoRoute.speechMs(samples)
         val (sense, tag) = senseVoice.transcribeTagged(samples, threads, retain, "auto")
         val suffices = com.sidekick.core.AutoRoute.senseVoiceSuffices(sense, tag, speechMs)
@@ -163,7 +204,10 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
             currentCoroutineContext().ensureActive()
             try { englishModel.transcribe(samples, threads, retain) } catch (_: Exception) { null }
         } else null
-        if (english != null && com.sidekick.core.AutoRoute.agreeOnEnglish(sense, english)) { lastBackend = "Parakeet English · agrees with SenseVoice"; return english }
+        if (english != null && com.sidekick.core.AutoRoute.agreeOnEnglish(sense, english)) {
+            lastBackend = "Parakeet English · agrees with SenseVoice"
+            return com.sidekick.core.AutoRoute.englishDigits(english) // "at seven AM" → "at 7am", like SenseVoice's digits
+        }
         if (suffices && english == null) { lastBackend = "SenseVoice · detected $tag"; return sense }
         currentCoroutineContext().ensureActive()
         val second = omni.transcribe(samples, threads, retain)
@@ -176,13 +220,7 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
         }
         lastRetryDiagnostic = "${if (keep) "SenseVoice kept" else "Omnilingual used"} · first: “${sense.take(140)}” · second: “${second.take(140)}”"
         if (keep) return sense
-        // Plain Russian (no Latin words, which the Russian-only model would drop): re-read with the optional GigaAM pack.
-        if (com.sidekick.core.AutoRoute.russianOnly(second) && russianModel.available()) {
-            currentCoroutineContext().ensureActive()
-            val russian = try { russianModel.transcribe(samples, threads, retain) } catch (_: Exception) { "" }
-            if (russian.any { it.isLetter() }) { lastBackend = "GigaAM Russian · Omnilingual heard Russian"; return russian }
-        }
-        return second
+        return refineRussian(second, samples, threads, retain)
     }
 
     /** Whisper encodes 30 s (1500 frames) by default; 50 frames per second of real audio plus a margin is far cheaper. */
@@ -203,7 +241,7 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
     } finally { samples.fill(0f) }
 
     fun cancel() { NativeSpeech.cancel() }
-    suspend fun release() = gate.withLock { withContext(Dispatchers.IO) { senseVoice.release(); omni.release(); englishModel.release(); russianModel.release(); NativeSpeech.release() } }
+    suspend fun release() = gate.withLock { withContext(Dispatchers.IO) { senseVoice.release(); omni.release(); englishModel.release(); russianModel.release(); koreanModel.release(); NativeSpeech.release() } }
 
     /** Queue-clear short audio only; the second model hears the original PCM, not corrected text. */
     private suspend fun refineShortAutomatic(samples: FloatArray, threads: Int, retain: Boolean, language: SpeechLanguage): String? {
@@ -228,25 +266,25 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
         if (!com.sidekick.core.KoreanClockRepair.needsRetry(original)) return original
         var result = original
         val readings = mutableListOf("SenseVoice: ${com.sidekick.core.KoreanClockRepair.clockText(original)}")
-        senseVoice.release(); currentCoroutineContext().ensureActive()
-        try {
-            val second = whisper(installModel(SpeechLanguage.KOREAN, SpeechQuality.ACCURATE), samples, threads, false, 0, SpeechLanguage.KOREAN, 1)
-            readings += "Whisper base: ${com.sidekick.core.KoreanClockRepair.clockText(second)}"
-            result = com.sidekick.core.KoreanClockRepair.select(result, second)
-        } catch (e: CancellationException) { throw e }
-        catch (_: Exception) { readings += "Whisper retry unavailable" }
-        // A missing optional Whisper pack must not prevent the independent Omni retry.
-        if (result == original) {
-            NativeSpeech.release(); currentCoroutineContext().ensureActive()
+        senseVoice.release()
+        // Fastest and most Korean-specific first; stop at the first reading that fixes the clock. A missing optional
+        // pack never prevents the next check. The Korean Zipformer was the only app model to hear the owner's "저녁 8시".
+        val checks = listOfNotNull<Pair<String, suspend () -> String>>(
+            ("Korean Zipformer" to suspend { koreanModel.transcribe(samples, threads, retain) }).takeIf { koreanModel.available() },
+            "Whisper base" to suspend { whisper(installModel(SpeechLanguage.KOREAN, SpeechQuality.ACCURATE), samples, threads, false, 0, SpeechLanguage.KOREAN, 1) },
+            "Omnilingual" to suspend { NativeSpeech.release(); omni.transcribe(samples, threads, retain) })
+        for ((name, read) in checks) {
+            if (result != original) break
+            currentCoroutineContext().ensureActive()
             try {
-                val third = omni.transcribe(samples, threads, retain)
-                readings += "Omnilingual: ${com.sidekick.core.KoreanClockRepair.clockText(third)}"
-                result = com.sidekick.core.KoreanClockRepair.select(result, third)
+                val other = read()
+                readings += "$name: ${com.sidekick.core.KoreanClockRepair.clockText(other)}"
+                result = com.sidekick.core.KoreanClockRepair.select(result, other)
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { readings += "Omnilingual retry unavailable" }
+            catch (_: Exception) { readings += "$name retry unavailable" }
         }
         // An impossible 12-hour clock ("저녁 18시") that no second reading fixes is kept as heard but never scheduled.
-        if (result == original) lastUncertain = true
+        if (result == original) { lastUncertain = true; lastTimeChoices = com.sidekick.core.KoreanClockRepair.likelyReadings(original) }
         lastClockDiagnostic = readings.joinToString(" · ") + if (result == original) " · unresolved; original kept, not scheduled" else " · clock corrected; other wording kept"
         lastBackend = "SenseVoice · clock cross-check"
         return result
@@ -260,6 +298,7 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
     }
 
     companion object {
+        private const val IDLE_MS = 180_000L
         private val gate = Mutex()
         internal suspend fun <T> modelMaintenance(block: suspend () -> T): T = gate.withLock { block() }
         const val HASH = "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f"

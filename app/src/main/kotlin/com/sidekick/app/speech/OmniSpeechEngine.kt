@@ -15,6 +15,7 @@ internal class OmniSpeechEngine(private val context: Context) {
     }
     fun transcribe(samples: FloatArray, threads: Int, retain: Boolean): String {
         require(samples.size in 1600..480000 && samples.all { it.isFinite() })
+        lastUsedMs = android.os.SystemClock.elapsedRealtime()
         try {
             val engine = recognizer ?: OfflineRecognizer(config = OfflineRecognizerConfig(modelConfig = OfflineModelConfig(
                 omnilingual = OfflineOmnilingualAsrCtcModelConfig(model = install(MODEL, MODEL_HASH).absolutePath),
@@ -29,7 +30,10 @@ internal class OmniSpeechEngine(private val context: Context) {
             } finally { stream.release(); padded.fill(0f) }
         } finally { if (!retain) release() }
     }
+    private var lastUsedMs = 0L
     fun release() { recognizer?.release(); recognizer = null }
+    /** Frees the loaded model when unused for [idleMs]; it reloads on the next phrase that needs it. */
+    fun releaseIfIdle(nowMs: Long, idleMs: Long) { if (recognizer != null && nowMs - lastUsedMs > idleMs) release() }
     companion object {
         private const val EDGE = 8_000
         const val MODEL = "omni-model.int8.onnx"

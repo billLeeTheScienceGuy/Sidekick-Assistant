@@ -1,4 +1,4 @@
-"""Prepare the optional Auto-detect accuracy packs (English: Parakeet TDT 110M, Russian: GigaAM v3) as verified assets.
+"""Prepare the optional accuracy packs (English: Parakeet TDT 110M, Russian: GigaAM v3, Korean time check: Zipformer) as verified assets.
 Files are renamed to the names in app/src/main/assets/model-packs.tsv; run package_model_packs.py afterwards."""
 from pathlib import Path
 import hashlib
@@ -21,6 +21,12 @@ packs = {
         "decoder.onnx": ("gigaam-decoder.onnx", "5d1cfef155d8e07f213bd2f3229b5f6c5c29355c7fa5c1b9eb62cb1925725254"),
         "joiner.onnx": ("gigaam-joiner.onnx", "fd1d02f45c2ad3d6b67cc149811ad794ab4b020ed49a0a9e2790a8619d1cddd8"),
         "tokens.txt": ("gigaam-tokens.txt", "17cc514451bcceac9c280068c71502f8448f99e9fb1456b8d0761651fd0392f2"),
+    },
+    "sherpa-onnx-zipformer-korean-2024-06-24": {
+        "encoder-epoch-99-avg-1.int8.onnx": ("zipko-encoder.int8.onnx", "8b196d723421a0513c98ec25da2c43420c029e817f5e4a90b29ff80291c0af2b"),
+        "decoder-epoch-99-avg-1.int8.onnx": ("zipko-decoder.int8.onnx", "2cc8c04ea080a657c18ebc59702e6b049cef08163eba5d68ac5bf707925cb0fb"),
+        "joiner-epoch-99-avg-1.int8.onnx": ("zipko-joiner.int8.onnx", "eb654db1ea2cc9d63474855f65958b6059084692a9f2eb4f3812aceb1e416a20"),
+        "tokens.txt": ("zipko-tokens.txt", "016bdf0965029263b7ad01b742366ee542ef0bef38261510e8176ff6f2e9e668"),
     },
 }
 

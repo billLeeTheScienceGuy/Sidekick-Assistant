@@ -53,6 +53,8 @@ internal fun ModelPackSection(initiallyExpanded: Boolean = true) {
     }
     TextButton(enabled = !working && !listening.recording && !listening.processing, modifier = Modifier.testTag("import-speech-pack"),
         onClick = { picker.launch(arrayOf("*/*")) }) { Text("Install speech file") }
+    // SideKick has no network permission: the browser downloads the file, then "Install speech file" verifies it.
+    TextButton(modifier = Modifier.testTag("download-speech-packs"), onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/billLeeTheScienceGuy/Sidekick-Assistant/releases/tag/speech-packs"))) }) { Text("Get speech files (opens browser)") }
     TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/billLeeTheScienceGuy/Sidekick-Assistant/blob/main/docs/MODEL_PACKS.md"))) }) { Text("How to install speech files") }
     }
     if (working) LinearProgressIndicator(Modifier.fillMaxWidth())

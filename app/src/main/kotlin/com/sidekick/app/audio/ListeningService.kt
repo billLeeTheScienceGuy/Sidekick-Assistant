@@ -181,7 +181,7 @@ class ListeningService : Service() {
                 var voiceLabel = "Unassigned voice"
                 var continuation = false
                 var changedVoice = true
-                val pipeline = LiveSpeechProcessor(app.speech, onBoundary = { continuation = it && !changedVoice }, contextKey = { if (identified == Speaker.USER) voiceTrack else null },
+                val pipeline = LiveSpeechProcessor(app.speech, onBoundary = { continuation = it && !changedVoice }, contextKey = { if (identified == Speaker.USER) voiceTrack else null }, voiceKey = { voiceTrack },
                     partition = { samples ->
                         val parts = if (enrollment) listOf(com.sidekick.core.SpeakerPart(0, samples.size, null, false)) else turns.partition(samples)
                         ensureActive()
@@ -203,7 +203,10 @@ class ListeningService : Service() {
                                     Speaker.UNKNOWN -> "$voiceLabel · identity unassigned"
                                 }) }
                             // Speech the consent rule does not allow is dropped before recognition: never transcribed.
-                            if (!consent.keep(identified, SystemClock.elapsedRealtime())) {
+                            val kept = consent.keep(identified, SystemClock.elapsedRealtime())
+                            // For phone tests (scripts/phone-tests): voice scores and the consent decision only; never words or location.
+                            android.util.Log.i("SidekickVoice", "speaker=$identified kept=$kept rule=${consent.place.rule} notice=${consent.noticeAtMs != null} · ${attributed.diagnostic}")
+                            if (!kept) {
                                 mutableState.update { it.copy(droppedChunks = it.droppedChunks + 1) }
                                 return@LiveSpeechProcessor false
                             }
@@ -230,7 +233,7 @@ class ListeningService : Service() {
                     ensureActive()
                     if (!discard) {
                         app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text)
-                        app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified, continuation, voiceTrack, voiceLabel, recognitionReliable = !app.speech.lastUncertain)
+                        app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified, continuation, voiceTrack, voiceLabel, recognitionReliable = !app.speech.lastUncertain, timeChoices = app.speech.lastTimeChoices)
                         app.automation.process()
                     }
                     mutableState.update { it.copy(chunks = it.chunks + 1, lastLatencyMs = latency,

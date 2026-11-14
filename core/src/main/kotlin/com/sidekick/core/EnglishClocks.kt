@@ -24,7 +24,10 @@ internal object EnglishClocks {
         val hour = hours.indexOf(it.groupValues[1].lowercase()) + 1
         val suffix = it.groupValues[2].lowercase().let { value -> if (value.first() in "ap" && !value.startsWith("at")) value.replace(Regex("\\s+"), "") else value }
         if (suffix == "at night" && hour in 1..5) return@replace it.value
-        "$hour${if (suffix.startsWith("a.") || suffix == "am" || suffix == "in the morning" || suffix == "at night" && hour == 12) "am" else "pm"}"
+        // "AM." at a sentence end: the dot is punctuation, not part of "a.m." (it used to read "seven AM." as 7 PM).
+        val morning = suffix.replace(".", "") == "am" || suffix == "in the morning" || suffix == "at night" && hour == 12
+        val sentenceEnd = Regex("[ap]m\\.").matches(suffix)
+        "$hour${if (morning) "am" else "pm"}${if (sentenceEnd) "." else ""}"
         }
     }
 }

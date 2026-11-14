@@ -103,9 +103,25 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         observations[key(candidate)] = at
     }
 
+    /**
+     * An impossible time no second reading fixed ("저녁 18시"): propose the most likely reading for review instead of nothing.
+     * The "confirm:" source keeps it out of Hands-off saving; it waits in Review with the heard time and the alternatives.
+     */
+    private fun offerTimeChoice(heard: String, choices: List<String>, at: Instant, zone: ZoneId, speaker: Speaker) {
+        val likely = choices.firstOrNull() ?: return
+        val input = Transcript(likely, at, zone, speaker, true)
+        val proposals = if (speaker == Speaker.USER) ActivityTiming.merge(input, pipeline.process(input))
+            else ActivityTiming.extract(input.copy(speaker = Speaker.OTHER), informationalOnly = true)
+        val heardClock = KoreanClockRepair.clockOf(heard) ?: return
+        val options = choices.mapNotNull { KoreanClockRepair.clockOf(it) }
+        addProposals(proposals.map { it.copy(sourceKey = "confirm:${heard.lowercase().hashCode()}",
+            needsReview = "Unclear time: heard “$heardClock”. Set to ${options.first()}" +
+                (if (options.size > 1) " (or ${options.drop(1).joinToString(", ")})" else "") + ". Check the time, then accept. " + it.needsReview) }, at)
+    }
+
     /** Reset reference context on speaker changes; unknown voices never create personal promises. */
     @Synchronized fun appendAttributedLive(text: String, capturedAt: Instant, zone: ZoneId, speaker: Speaker, continuation: Boolean = true,
-        speakerTrack: String? = null, speakerLabel: String = speaker.name, recognitionReliable: Boolean = true) {
+        speakerTrack: String? = null, speakerLabel: String = speaker.name, recognitionReliable: Boolean = true, timeChoices: List<String> = emptyList()) {
         if (text.isBlank()) return
         require(speakerTrack == null || VoiceSource.track("voice:0:$speakerTrack:${speaker.name}") == speakerTrack)
         mutableSpeakerTurns.value = (mutableSpeakerTurns.value + LiveSpeakerTurn(capturedAt, speakerLabel.take(80), speaker, text.take(500))).takeLast(12)
@@ -113,6 +129,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
             // Keep the heard text, but never schedule/update from conflicting acoustic readings.
             mutableText.value = LiveText.append(mutableText.value, text, !continuation).takeLast(6000)
             voiceContext = ""; voiceContexts.clear(); correctionContext = null; voiceCommandTarget = null
+            offerTimeChoice(text, timeChoices, capturedAt, zone, speaker)
             return
         }
         if (voiceTrack != speakerTrack) {

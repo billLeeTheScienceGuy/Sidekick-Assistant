@@ -13,6 +13,8 @@ class LiveSpeechProcessor(
     private val speech: SpeechEngine,
     private val inspect: (FloatArray) -> Boolean = { true },
     private val contextKey: () -> String? = { null },
+    /** Current voice track, so Auto-detect can remember each voice's language. */
+    private val voiceKey: () -> String? = { null },
     private val onBoundary: (Boolean) -> Unit = {},
     private val partition: ((FloatArray) -> List<SpeakerPart>)? = null,
     /** Called with each speaker part before recognition; false skips it (never transcribed). */
@@ -28,6 +30,9 @@ class LiveSpeechProcessor(
     private var historySize = 0
     private val transcriptions = AtomicInteger()
     val transcriptionCount: Int get() = transcriptions.get()
+    private val noise = AtomicInteger()
+    /** Phrases dropped as music or noise. */
+    val noiseCount: Int get() = noise.get()
 
     suspend fun consume() {
         try {
@@ -51,9 +56,11 @@ class LiveSpeechProcessor(
                     val sourceStart = chunk.startSample + part.start
                     val window = speechContext.prepare(audio, sourceStart, contextKey())
                     val shortBoost = audio.size < speech.shortBoostLimit() && queued.get() == 0 && parts.size == 1
-                    val text = try { withTimeout(30_000) { speech.transcribe(window, 2, true, speech.liveContext(shortBoost), shortPhrase = shortBoost) } }
+                    val heard = try { withTimeout(30_000) { speech.transcribe(window, 2, true, speech.liveContext(shortBoost), shortPhrase = shortBoost, voiceKey = voiceKey()) } }
                         catch (_: TimeoutCancellationException) { error("Transcription timed out. Listening stopped; review text captured so far.") }
                         finally { if (window !== chunk.samples) window.fill(0f) }
+                    // Music and noise scraps are never shown or used (see PhraseFilter).
+                    val text = if (com.sidekick.core.PhraseFilter.isNoise(heard, audio.size * 1000L / 16000)) { noise.incrementAndGet(); "" } else heard
                     onBoundary(continues)
                     onText(text, sourceStart, android.os.SystemClock.elapsedRealtime() - start)
                     } finally { if (audio !== chunk.samples) audio.fill(0f) }
