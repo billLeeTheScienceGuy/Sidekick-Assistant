@@ -7,4 +7,6 @@ object NativeSpeech {
     external fun cancel()
     external fun transcribe(path: String, pcm: FloatArray, threads: Int = 2, retainModel: Boolean = false, audioContext: Int = 0, language: String = "en", beamSize: Int = 1): ByteArray
     external fun release()
+    /** Language code of the last decode ("ko", "en", …); detected by Whisper when the request was "auto". */
+    external fun lastLanguage(): String
 }

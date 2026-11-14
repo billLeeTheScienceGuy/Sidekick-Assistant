@@ -53,7 +53,7 @@ class SpeechSegmenter(
                 if (speech) freshSpeech = true
                 if (speech) { speechCount++; quietCount = 0 } else quietCount++
                 if (count == maxSamples || quietCount >= silenceSamples) {
-                    val continues = count == maxSamples && speech
+                    val continues = count == maxSamples && quietCount < silenceSamples
                     val tail = if (continues && overlapSamples > 0) audio.copyOfRange(count - overlapSamples, count) else null
                     val segment = finish()
                     segment?.let(ready::add)

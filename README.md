@@ -1,5 +1,16 @@
 # SideKick
 
+0.33 improves speech onset/pauses, quiet-speech detection and short CJK automatic
+recognition. Conflicting acoustic readings stay as temporary text instead of
+automatically changing plans. See the [recorded Pixel evaluation and limits](docs/RECOGNITION_033.md).
+
+0.32 simplifies Settings with plain-language labels and optional details, keeps
+privacy information beside each action, and improves short bilingual recognition
+by avoiding retries that force mixed speech into one language.
+See the [paired Pixel measurements and limits](docs/RECOGNITION_NEXT_STEPS.md).
+The six-category settings, Auto-detect switch and optional start tips introduced
+in 0.31 remain available.
+
 0.30 adds an adaptive Android interface with **Simple / Detailed** home layouts,
 independent text and interface sizes, Calm / Classic / Warm design presets,
 Light / Dark / System appearance and optional manual note-taking.

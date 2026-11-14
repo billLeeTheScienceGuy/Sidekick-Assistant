@@ -45,6 +45,34 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
         val speech = samples.copyOfRange(span.first, span.last + 1)
         return try { computeEmbedding(speech) } finally { speech.fill(0f) }
     }
+    /** Setup must work with independent short windows, not only a whole-utterance average. */
+    fun enrollmentEmbedding(samples: FloatArray): FloatArray {
+        val span = com.sidekick.core.SpeakerAudio.speechSpan(samples)
+            ?: throw IllegalArgumentException("No clear speech. Speak closer to the phone.")
+        val speech = samples.copyOfRange(span.first, span.last + 1)
+        val vectors = mutableListOf<FloatArray>()
+        var reference: FloatArray? = null
+        var success = false
+        try {
+            require(speech.size >= 64_000) { "Use a full sentence with at least four seconds of speech, then pause." }
+            val candidate = computeEmbedding(speech); reference = candidate
+            val width = minOf(48_000, speech.size / 2)
+            for (start in listOf(0, speech.size - width)) {
+                val range = com.sidekick.core.SpeakerAudio.matchingWindow(speech, start, width)
+                    ?: throw IllegalArgumentException("Too much silence. Read a full sentence naturally.")
+                val window = speech.copyOfRange(range.first, range.last + 1)
+                try { vectors += computeEmbedding(window) } finally { window.fill(0f) }
+            }
+            require(VoiceMatch.identifyTurn(candidate, vectors) == Speaker.USER) {
+                "Voice sample did not match consistently. Keep the phone at your usual distance and speak normally."
+            }
+            success = true
+            return candidate
+        } finally {
+            if (!success) reference?.fill(0f)
+            speech.fill(0f); vectors.forEach { it.fill(0f) }
+        }
+    }
     private fun computeEmbedding(samples: FloatArray): FloatArray {
         require(samples.size >= 24_000) { "Speak in longer phrases for voice setup." }
         require(samples.count { kotlin.math.abs(it) > .005f } >= samples.size / 10) { "Speak louder, closer to the microphone." }
@@ -72,7 +100,8 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
     private fun identifySpeech(samples: FloatArray, nowMs: Long): Speaker {
         if (profileLanguage != profile.language.value) { clearRecent(); profileLanguage = profile.language.value }
         val seconds = "%.1f".format(java.util.Locale.US, samples.size / 16000.0)
-        val reference = profile.snapshot() ?: run {
+        val references = profile.matchingSnapshots()
+        if (references.isEmpty()) {
             clearRecent()
             lastDiagnostic = if (profile.enabled.value) "${seconds}s: no enrolled profile" else "${seconds}s: voice matching is off"
             return Speaker.UNKNOWN
@@ -90,7 +119,7 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
                     // identify() already trimmed the utterance; preserve this validated window.
                     val vector = computeEmbedding(samples)
                     try {
-                        val score = VoiceMatch.similarity(reference, vector)
+                        val score = references.maxOf { VoiceMatch.similarity(it, vector) }
                         val support = anchors.support(vector, nowMs) ?: return Speaker.UNKNOWN
                         val recentScore = support.score
                         val result = VoiceMatch.classifyShortScores(score, recentScore, samples.size * 1000L / 16000L, support.ageMs, profile.model.value.shortThreshold)
@@ -117,17 +146,19 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
                     // Re-trimming each window can shrink a long turn below 1.5 seconds at a pause.
                     try { vectors += computeEmbedding(window) } finally { window.fill(0f) }
                 }
-                val result = VoiceMatch.identifyTurn(reference, vectors)
+                val result = VoiceMatch.identifyProfiles(references, vectors)
+                val reference = references.firstOrNull { VoiceMatch.identifyTurn(it, vectors) == Speaker.USER }
+                    ?: references.maxBy { candidate -> vectors.sumOf { VoiceMatch.similarity(candidate, it).toDouble() } }
                 if (result == Speaker.USER) anchors.remember(vectors, nowMs) else clearRecent()
                 val scores = vectors.joinToString(" / ") { String.format(java.util.Locale.US, "%.2f", VoiceMatch.similarity(reference, it)) }
                 val consistency = vectors.zipWithNext { a, b -> VoiceMatch.similarity(a, b) }.minOrNull() ?: 0f
-                lastDiagnostic = String.format(java.util.Locale.US, "%ss: %s; %d speaker windows; profile %s; minimum consistency %.2f",
-                    seconds, result.name, vectors.size, scores, consistency)
+                lastDiagnostic = String.format(java.util.Locale.US, "%ss: %s; %d speaker windows; profile %s; minimum consistency %.2f; %d enrolled profiles",
+                    seconds, result.name, vectors.size, scores, consistency, references.size)
                 result
             }
                 catch (e: IllegalArgumentException) { clearRecent(); lastDiagnostic = "${seconds}s: ${e.message}"; Speaker.UNKNOWN }
                 finally { vectors.forEach { it.fill(0f) } }
-        } finally { reference.fill(0f) }
+        } finally { references.forEach { it.fill(0f) } }
     }
     fun close() { clearRecent(); extractor?.release(); extractor = null; extractorModel = null }
     companion object { const val HASH = "e9848563da86f263117134dfd7ad63c92355b37de492b55e325400c9d9c39012" }

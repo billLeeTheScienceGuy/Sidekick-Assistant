@@ -40,6 +40,14 @@ object ArabicActivities {
         return dates.singleOrNull()
     }
     private data class Time(val value: LocalTime, val range: IntRange)
+    private fun explicitRecognitionClock(m: MatchResult): Boolean = m.value.startsWith("الساعة") || m.groupValues[2].isNotEmpty() || ':' in m.groupValues[1]
+    internal fun recognitionNumberContext(text: String): String = clock.replace(normalized(text)) { m -> if(explicitRecognitionClock(m)) " ".repeat(m.value.length) else m.value }
+
+    internal fun recognitionClocks(text: String): List<java.time.LocalTime> = if(!isArabic(text)) emptyList() else runCatching {
+        val explicit=clock.replace(normalized(text)) { m -> if(explicitRecognitionClock(m)) m.value else " ".repeat(m.value.length) }
+        times(explicit).map { it.value }
+    }.getOrDefault(emptyList())
+
     private fun times(text: String): List<Time> {
         val withoutDates = datePattern.replace(text) { " ".repeat(it.value.length) }
         val values = clock.findAll(withoutDates).mapNotNull { m ->

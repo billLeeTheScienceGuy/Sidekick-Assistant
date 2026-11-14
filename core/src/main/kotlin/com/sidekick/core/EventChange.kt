@@ -5,6 +5,11 @@ import java.time.*
 /** Explicit grounded corrections; questions, possibilities and ambiguous clocks are ignored. */
 data class EventChange(val target: String, val cancel: Boolean, val timing: String, val evidence: String, val localized: Boolean = false) {
     fun newStart(previous: Instant, capturedAt: Instant, zone: ZoneId): Instant? = if (localized) LocalizedActivities.changeStart(timing, previous, capturedAt, zone) else runCatching {
+        val targetDay = Regex("^(today|tomorrow|tonight)['’]s\\s+", RegexOption.IGNORE_CASE).find(target)?.groupValues?.get(1)
+        if (targetDay != null) {
+            val expected = capturedAt.atZone(zone).toLocalDate().plusDays(if (targetDay.equals("tomorrow", true)) 1 else 0)
+            require(previous.atZone(zone).toLocalDate() == expected)
+        }
         val dates = EnglishDates.pattern.findAll(timing).toList()
         require(dates.size <= 1 && !EnglishDates.hasNextWeekday(timing))
         val today = capturedAt.atZone(zone).toLocalDate()
@@ -32,7 +37,7 @@ data class EventChange(val target: String, val cancel: Boolean, val timing: Stri
 
     fun matches(title: String): Boolean {
         if (localized) return LocalizedEventChanges.matches(target, title)
-        val words = target.removePrefix("the ").removePrefix("my ")
+        val words = target.replace(Regex("^(?:today|tomorrow|tonight)['’]s\\s+", RegexOption.IGNORE_CASE), "").removePrefix("the ").removePrefix("my ")
         return Regex("(?<![\\p{L}\\p{N}])" + Regex.escape(words) + "(?![\\p{L}\\p{N}])", RegexOption.IGNORE_CASE).containsMatchIn(title)
     }
     val pronoun: Boolean get() = target in setOf("it", "that", "that event")
@@ -42,10 +47,10 @@ data class EventChange(val target: String, val cancel: Boolean, val timing: Stri
         private const val target = "(it|that|that event|(?:(?:the|my) )?[a-z][a-z '’\\-]{0,70}?)"
         private val cancelCommand = Regex("^(?:please )?cancel $target[.!]*$", RegexOption.IGNORE_CASE)
         private val cancelStatement = Regex("^$target (?:is|was|has been) cancel(?:l)?ed[.!]*$", RegexOption.IGNORE_CASE)
-        private val moveCommand = Regex("^(?:please )?(?:move|reschedule) $target to (.+?)[!]*$", RegexOption.IGNORE_CASE)
+        private val moveCommand = Regex("^(?:please )?(?:move|reschedule|change) $target to (.+?)[!]*$", RegexOption.IGNORE_CASE)
         private val moveStatement = Regex("^$target (?:is|has been|was) (?:moved|rescheduled) to (.+?)[!]*$", RegexOption.IGNORE_CASE)
         private val makeTime = Regex("^make (it|that|that event) (.+?)[!]*$", RegexOption.IGNORE_CASE)
-        fun looksLikeChange(text: String) = ArabicActivities.looksLikeChange(text) || LocalizedEventChanges.looksLike(text) || Regex("\\b(?:cancel(?:l)?ed|cancel|reschedule[ds]?|moved?|rescheduled)\\b|\\bmake (?:it|that)\\b", RegexOption.IGNORE_CASE).containsMatchIn(text)
+        fun looksLikeChange(text: String) = ArabicActivities.looksLikeChange(text) || LocalizedEventChanges.looksLike(text) || Regex("\\b(?:cancel(?:l)?ed|cancel|reschedule[ds]?|moved?|rescheduled|change)\\b|\\bmake (?:it|that)\\b", RegexOption.IGNORE_CASE).containsMatchIn(text)
         fun parse(text: String): EventChange? {
             LocalizedEventChanges.parse(text)?.let { return it }
             val clean = text.trim().lowercase(java.util.Locale.ROOT).replace(Regex("^(?:actually|okay|ok)[, ]+"), "")
@@ -55,7 +60,7 @@ data class EventChange(val target: String, val cancel: Boolean, val timing: Stri
             if (cancellation != null) return EventChange(cancellation.groupValues[1], true, "", text)
             val movement = moveCommand.matchEntire(clean) ?: moveStatement.matchEntire(clean) ?: makeTime.matchEntire(clean) ?: return null
             val numbers = listOf("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve")
-            val timing = Regex("\\b(" + numbers.joinToString("|") + ")\\s+([ap])\\.?\\s*m\\.?(?!\\w)").replace(movement.groupValues[2]) {
+            val timing = Regex("\\b(" + numbers.joinToString("|") + ")\\s+([ap])\\.?\\s*m\\.?(?!\\w)").replace(EnglishClocks.normalize(movement.groupValues[2])) {
                 "${numbers.indexOf(it.groupValues[1]) + 1}${it.groupValues[2]}m"
             }
             return EventChange(movement.groupValues[1], false, timing, text)

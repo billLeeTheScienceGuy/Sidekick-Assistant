@@ -12,8 +12,8 @@ android {
         applicationId = "com.sidekick.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 48
-        versionName = "0.30.0"
+        versionCode = 53
+        versionName = "0.34.0"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -42,6 +42,8 @@ android {
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/speaker-evaluation"))
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/korean-evaluation/assets"))
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/asr-commands"))
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/bilingual-fixtures"))
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/recognition-review"))
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/quality-small"))
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file(".deps/moonshine-ar/assets"))
     sourceSets.getByName("main").assets.setSrcDirs(listOf(layout.buildDirectory.dir("generated/compactAssets")))
@@ -93,11 +95,11 @@ tasks.matching { it.name == "preBenchmarkBuild" }.configureEach { dependsOn(veri
 val prepareCompactAssets by tasks.registering(Sync::class) {
     from("src/main/assets")
     into(layout.buildDirectory.dir("generated/compactAssets"))
-    exclude("models/ggml-tiny.bin", "models/ggml-base.bin", "models/sensevoice-*", "models/omni-*")
+    exclude("models/ggml-tiny.bin", "models/ggml-base.bin", "models/sensevoice-*", "models/omni-*", "models/parakeet-*")
 }
 tasks.named("preBuild") { dependsOn(verifySpeechModel, prepareCompactAssets) }
 dependencies {
-    implementation(files("libs/sherpa-onnx-1.13.3.aar"))
+    implementation(files("libs/sherpa-onnx-1.13.8.aar"))
     implementation(project(":core"))
     implementation(platform("androidx.compose:compose-bom:2025.04.01"))
     implementation("androidx.activity:activity-compose:1.10.1")

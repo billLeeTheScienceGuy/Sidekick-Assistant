@@ -150,8 +150,8 @@ class CalendarMirror(private val context: Context, private val db: MemoryDatabas
                 links.put(link.copy(appliedHash = desiredHash, pendingHash = null, state = "ACTIVE")); synced++
             }
             publish(CalendarSyncStatus(synced, waiting, conflicts,
-                "$synced calendar mirrors current · $waiting waiting for dates, end times or calendar access · $conflicts externally changed items protected." +
-                    if (unavailable) " A selected or linked calendar is unavailable." else ""), conflicts > 0 || unavailable)
+                "$synced calendar copies up to date · $waiting need dates or calendar access · $conflicts left unchanged after outside edits." +
+                    if (unavailable) " A calendar can’t be opened." else ""), conflicts > 0 || unavailable)
         } catch (e: CancellationException) { throw e }
         catch (_: Exception) { publish(CalendarSyncStatus(synced, waiting, conflicts, "Calendar sync interrupted; saved work will be retried. Local reminders remain active."), true) }
     } }

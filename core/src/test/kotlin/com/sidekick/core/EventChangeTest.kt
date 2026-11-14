@@ -7,6 +7,33 @@ class EventChangeTest {
     private val zone = ZoneId.of("America/Chicago")
     private val now = Instant.parse("2026-10-22T17:00:00Z")
     private val previous = Instant.parse("2026-10-23T01:00:00Z")
+    @Test fun `change commands handle possessive days and spaced meridiem`() {
+        val captured = Instant.parse("2026-11-13T17:00:00Z")
+        val start = Instant.parse("2026-11-15T01:00:00Z")
+        val eastern = ZoneId.of("America/New_York")
+        for (phrase in listOf("Change tomorrow’s party to nine p m.", "Change tomorrow's party to 9 p m.", "Please change the party to nine p.m.")) {
+            assertTrue(EventChange.looksLikeChange(phrase))
+            val change = EventChange.parse(phrase)!!
+            assertTrue(change.matches("The party starts tomorrow at 8pm at the James"))
+            assertEquals(Instant.parse("2026-11-15T02:00:00Z"), change.newStart(start, captured, eastern), phrase)
+        }
+        assertNull(EventChange.parse("Change tomorrow's party to nine pm.")!!.newStart(start.plusSeconds(86400), captured, eastern))
+        for (phrase in listOf("Don't change the party to nine pm.", "Could you change the party to nine pm?", "She said change the party to nine pm."))
+            assertNull(EventChange.parse(phrase))
+    }
+    @Test fun `unpunctuated correction keeps a separate venue clause`() {
+        val phrase = "change tomorrow’s party to nine p m the party will be at memorial union instead of the james"
+        val clauses = Sentences.split(phrase)
+        assertEquals(1, Sentences.split("Don't " + phrase).size)
+        assertEquals(1, Sentences.split("She said " + phrase).size)
+        assertEquals(2, clauses.size)
+        assertNotNull(EventChange.parse(clauses.first()))
+        assertEquals("memorial union", PlaceHints.extract(clauses.last()).name)
+        assertEquals("9pm", EnglishClocks.normalize("nine p m"))
+        assertEquals("9pm", EnglishClocks.normalize("9 p m"))
+        assertEquals("8am", EnglishClocks.normalize("eight a m"))
+        assertEquals("8pm", EnglishClocks.normalize("eight in the evening"))
+    }
     @Test fun `moves to explicit day and clock`() {
         val change = EventChange.parse("Actually, move the meeting to Friday at 9 p.m.")!!
         assertTrue(change.matches("Meeting with Alex tomorrow at 8pm"))

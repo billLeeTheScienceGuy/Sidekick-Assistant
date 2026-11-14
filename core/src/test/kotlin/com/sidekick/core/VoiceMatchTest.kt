@@ -27,6 +27,13 @@ class VoiceMatchTest {
         assertEquals(Speaker.UNKNOWN, VoiceMatch.classifyScores(.76f, .68f, .64f))
         assertEquals(Speaker.UNKNOWN, VoiceMatch.classifyScores(Float.NaN, .8f, .8f))
     }
+    @Test fun `automatic voice matching accepts one complete enrolled profile only`() {
+        val profiles = listOf(axis(0), axis(1))
+        assertEquals(Speaker.USER, VoiceMatch.identifyProfiles(profiles, listOf(axis(1), axis(1))))
+        assertEquals(Speaker.OTHER, VoiceMatch.identifyProfiles(profiles, listOf(axis(2), axis(2))))
+        assertEquals(Speaker.UNKNOWN, VoiceMatch.identifyProfiles(profiles, listOf(axis(0), axis(1))))
+        assertEquals(Speaker.UNKNOWN, VoiceMatch.identifyProfiles(emptyList(), listOf(axis(1), axis(1))))
+    }
     private fun axis(i: Int) = FloatArray(256) { if (it == i) 1f else 0f }
     @Test fun `missing profile and inconsistent windows stay unknown`() {
         assertEquals(Speaker.UNKNOWN, VoiceMatch.identify(null, axis(0), axis(0)))

@@ -83,6 +83,8 @@ class MainActivity : ComponentActivity() {
         val oneScreen by (application as SidekickApplication).guidance.oneScreenHome.collectAsStateWithLifecycle()
         var expandedCapture by rememberSaveable { mutableStateOf(false) }
         val automaticStatus by (application as SidekickApplication).automation.status.collectAsStateWithLifecycle()
+        val recoveryEnabled by (application as SidekickApplication).assistant.enabled.collectAsStateWithLifecycle()
+        val assistantSelected by (application as SidekickApplication).assistant.selected.collectAsStateWithLifecycle()
         val sharedMessagesEnabled by (application as SidekickApplication).guidance.sharedMessages.collectAsStateWithLifecycle()
         val speechLanguage by (application as SidekickApplication).guidance.speechLanguage.collectAsStateWithLifecycle()
         val speechQuality by (application as SidekickApplication).guidance.speechQuality.collectAsStateWithLifecycle()
@@ -137,6 +139,15 @@ class MainActivity : ComponentActivity() {
             } else if (!granted) error = "Notifications are disabled. You can save commitments without reminders."
             else model.notificationPermissionChanged()
         }
+        fun beginListening() {
+            if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                awaitingLiveNotifications = true; notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+        }
+        fun requestListening() {
+            if ((application as SidekickApplication).guidance.skipListeningIntro.value) beginListening()
+            else micDialog = true
+        }
         val wavPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri?.let { consent = false; model.importWav(it) }
         }
@@ -165,7 +176,7 @@ class MainActivity : ComponentActivity() {
             onSelect = { focus.clearFocus(); expandedCapture = false; plannerOpen = it == 1; summaryOpen = it == 2 }, onSettings = { focus.clearFocus(); settingsOpen = true }) {
             if (oneScreen && !expandedCapture && !plannerOpen && !summaryOpen) {
                 CompactHome(listening, entries, liveText, manualNotes, missingPacks.isNotEmpty(), busy, error,
-                    onStart = { micDialog = true }, onFinish = { serviceAction(ListeningService.FINISH) },
+                    onStart = { requestListening() }, onFinish = { serviceAction(ListeningService.FINISH) },
                     onDetails = { expandedCapture = true }, onSetup = { quickStartOpen = true }, onOpen = ::openEditor)
             } else {
             LazyColumn(Modifier.fillMaxSize().testTag("main-list"), state = if (summaryOpen) summaryList else if (plannerOpen) plannerList else captureList,
@@ -218,11 +229,17 @@ class MainActivity : ComponentActivity() {
                             if (listening.recording) {
                                 Text(if (listening.speechActive) "Speech detected" else "Waiting for speech · microphone stays on")
                                 Text(listening.voiceStatus)
+                                if (listening.consent.isNotBlank()) QuietLabel(listening.consent, Modifier.testTag("consent-status"))
+                                if (listening.droppedChunks > 0) QuietLabel("${listening.droppedChunks} phrases from other voices dropped, never saved")
+                                if (listening.noticeNeeded) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedButton(onClick = { serviceAction(ListeningService.ANNOUNCE) }, modifier = Modifier.testTag("announce-notice")) { Text("Announce note-taking") }
+                                    TextButton(onClick = { serviceAction(ListeningService.NOTICE_GIVEN) }, modifier = Modifier.testTag("notice-given")) { Text("I told everyone") }
+                                }
                                 LinearProgressIndicator(progress = { (listening.level * 5).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                                 Text("${listening.seconds / 60}m ${listening.seconds % 60}s · ${listening.chunks} speech chunks")
                                 Button(onClick = { serviceAction(ListeningService.FINISH) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Finish listening") }
                             } else if (listening.processing) LinearProgressIndicator(Modifier.fillMaxWidth())
-                            else Button(onClick = { micDialog = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), enabled = !busy && missingPacks.isEmpty()) { Text("Start live notes") }
+                            else Button(onClick = { requestListening() }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), enabled = !busy && missingPacks.isEmpty()) { Text("Start listening") }
                             if (missingPacks.isNotEmpty()) Text("Speech model needed. Open Get started to install a pack or select English Fast.")
                             if (listening.recording || listening.processing)
                                 TextButton(onClick = { serviceAction(ListeningService.CANCEL) }) { Text(if (handsOff) "Stop & clear temporary text" else "Discard session") }
@@ -374,24 +391,18 @@ class MainActivity : ComponentActivity() {
                 item {
                     if (plannerOpen && entries.isNotEmpty()) TextButton(onClick = { deleteDialog = true }) { Text("Delete all saved memory") }
                     if (plannerOpen) TextButton(onClick = { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }) { Text("Notification settings") }
-                    QuietLabel("On-device speech and notes. Optional place lookup uses the internet.")
+                    QuietLabel("Listen only when everyone agrees. Optional place lookup uses the internet.")
                 }
                 }
             }
             }
         }
-        if (micDialog) AlertDialog(onDismissRequest = { micDialog = false }, title = { Text("Start live notes?") },
-            text = { Text("Start when everyone included has agreed to live transcription. Stop if someone joins without agreeing or withdraws consent. Voice matching does not verify consent. Listening continues with the screen off. Audio is discarded after processing; recent text stays temporary. " +
-                (if (handsOff) "Detected events and matching corrections save automatically, with Undo in notifications. Stopping does not delete saved events. " else "Only items you approve are saved. ") +
-                (if ((application as SidekickApplication).assistant.isSelected() && (application as SidekickApplication).assistant.enabled.value) "Assistant recovery will resume this enabled session after system restarts, including reboots, until you press Stop. " else "") +
-                "Use the notification controls to stop listening.", modifier = Modifier.verticalScroll(rememberScrollState())) },
-            confirmButton = { TextButton(onClick = {
-                micDialog = false
-                if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                    awaitingLiveNotifications = true; notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
-                } else microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
-            }) { Text("Start listening") } },
-            dismissButton = { TextButton(onClick = { micDialog = false }) { Text("Cancel") } })
+        if (micDialog) ListeningStartDialog(
+            settings = (application as SidekickApplication).guidance,
+            handsOff = handsOff,
+            recovery = assistantSelected && recoveryEnabled,
+            onCancel = { micDialog = false },
+            onStart = { micDialog = false; beginListening() })
         edit?.let { item ->
             key(item.id) {
                 Editor(item, entries, editError, askAboutEnd = !handsOff && guidance == GuidanceMode.ASK,

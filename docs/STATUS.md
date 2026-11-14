@@ -1,6 +1,74 @@
+# Current update — November 13, 2026
+
+Current source: **0.33.0/code51**, Room schema6. Speech capture keeps more onset
+context, tolerates short breaths, and preserves continuation when a ten-second
+chunk ends during a pause. Detection-only gain is bounded; ASR/voice PCM stays
+unchanged. A guarded short CJK fallback uses installed models. Conflicting times,
+numbers, relative days or negation cannot automatically create/update plans.
+
+All 195 core checks, debug lint and seven isolated Pixel checks pass (434.478 s).
+The 41-condition recorded comparison improved 9.39% → 8.21% character errors.
+Quiet capture improved 12/13 → 13/13, with zero segments from eight synthetic
+silence/noise/click controls. Noise/overlap decoding scores were unchanged.
+The command set remains 31/34 expected, with three known Arabic clock limits.
+Very short natural Chinese–English fragments remain poor: 78.90% → 67.89% errors
+on six clips from one source speaker; this is development evidence, not general
+accuracy. See RECOGNITION_033.md and its public, attributed evaluation JSON.
+
+The final normal 0.33 app is installed and its APK checksum matches the local
+build. No private audio or microphone was used in these replays, and no normal
+app data was cleared/instrumented. Next: an actual consenting Korean–English
+microphone conversation with quiet pauses and times/venue corrections. Battery
+and real-room/overlap field trials remain separate. Changes are not pushed.
+
+# 0.32 update — November 13, 2026
+
+Previous source: **0.32.0/code50**, Room schema6. Settings uses shorter labels,
+brief secondary descriptions and optional details, informed by official Recorder,
+Notta mobile and Todoist documentation. Online sharing, message scope, deletion
+and export information remain beside the related choices. Switch spacing and
+text hierarchy were reviewed on the Pixel; existing display/home preferences stay.
+
+Recognition now avoids forced-language retries when the primary reading shows
+mixed scripts or strong clues for two Latin-script languages. On 12 synthetic
+bilingual clips, English venue retention rose 4/12 → 7/12 and character errors
+fell 20.2% → 17.4%. This is a bounded development comparison, not general accuracy.
+A tested SenseVoice automatic-mode alternative was worse and was not adopted.
+No new weights or cloud transcription were added. See RECOGNITION_NEXT_STEPS.md.
+
+All 187 core checks, debug lint and 22 final isolated Pixel UI/regression checks
+passed (42.619 s). Three on-device ASR checks passed in 265.356 s: the paired
+bilingual evaluation, 31/34 expected short commands (three known Arabic limits;
+no wrong action/time in this set), and seven paced public languages with 869 ms
+final queue drain. The final normal 0.32 app is installed; its APK hash matches
+the local build. At the final check, listening was off and recovery was disarmed; no new session
+was started. No personal app data was cleared/instrumented. Changes have not been pushed to GitHub.
+
+# 0.31 interface update — November 13, 2026
+
+Previous source: **0.31.0/code49**, Room schema6. Settings now opens to six
+short category pages with fixed Back/Close controls. Everyday Listening settings
+show Auto-detect language, the start reminder and voice setup. Technical model
+choices and phone checks are in Advanced. Font/interface sizes, design presets,
+Simple/Detailed home and optional manual notes remain under Display.
+
+The start explanation is shorter, with optional details and “Don’t show this
+again.” Cancel does not persist that checkbox. Settings → Listening can restore
+the explanation. Android microphone/notification permissions remain enforced.
+Auto-detect enables the existing Adaptive route; disabling it restores the last
+manual language. Finish listening before changing languages.
+
+Normal 0.31 is installed on the connected Pixel with install -r. Its APK checksum
+matches the local build. The existing enabled session resumed through package
+update recovery. No normal-app data was cleared or instrumented. All 22 focused
+isolated Pixel UI/regression checks passed in 42.671 seconds; 186 core checks and
+debug lint pass. Temporary test apps were removed. Recognition changes are
+explicitly deferred; see RECOGNITION_NEXT_STEPS.md for the code-review findings
+and next evaluation priorities. This update has not been pushed to GitHub.
+
 # Handoff
 
-Current source: **0.30.0/code48**, Room schema6. Android-only interface update:
+Previous source: **0.30.0/code48**, Room schema6. Android-only interface update:
 Simple/Detailed home, Calm/Classic/Warm design, Light/Dark/System appearance,
 independent text and interface sizes, optional manual notes, persistent bottom/rail
 navigation, remembered tab scroll positions and progressive technical details.

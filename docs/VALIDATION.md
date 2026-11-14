@@ -1,3 +1,115 @@
+# 0.33 recognition and capture — November 13, 2026
+
+The final normal and isolated benchmark apps/test APK build and debug lint pass.
+All **195 core checks** pass. Seven isolated Pixel device checks passed in
+**434.478 seconds**, covering the real capture/VAD path, buffer wiping and noise
+controls; uncertainty-to-temporary-memory safety; 34 commands; seven paced public
+languages; 41 clean/acoustic-stress/natural-bilingual cases; 12 synthetic bilingual
+clips; and speaker-scoped correction rules. No microphone or private speech was
+used. The normal app was not instrumented or cleared.
+
+Quiet capture improved 12/13 → 13/13 on the fixed recordings, without triggers
+from eight silence/white-noise/click controls. Detection gain leaves recognition
+PCM unchanged. Core regressions cover a delayed onset, a short breath, and a
+chunk cap during quiet; the existing twenty-minute bound still passes. Explicit
+clock formats (6pm/18:00) can agree while changed room numbers still block changes.
+Uncertain text cannot create/reschedule plans or leak reference context into the
+next fragment. Tests cover numeric/clock and negation conflicts across all seven
+supported grammars. The command set remains 31/34 expected with no wrong
+action/time in that bounded set; three Arabic clock cases remain unresolved.
+
+The paired 41-condition character score improved **9.39% → 8.21%**. White noise
+and overlapping-speech scores were unchanged. Very short natural Chinese–English
+clips remain weak (**78.90% → 67.89%**, six clips, one source speaker). Synthetic
+bilingual venue retention remains 7/12. These are development samples and
+controlled transforms, not broad accent/dialect, room-noise, battery or bilingual
+population claims. See RECOGNITION_033.md and evaluation/recognition-review-033.json
+for raw results, attribution, sources, conditions and remaining failures.
+
+Normal 0.33.0/code51 was installed with install -r; its installed APK hash matches
+the final local build. Existing models/preferences/saved plans were preserved.
+A consenting natural Korean–English microphone trial is the next required field
+check. No current GitHub CI or new emulator matrix is claimed. Earlier sections
+below refer to their named versions. Temporary benchmark packages were removed.
+
+# 0.32 plain-language Settings and bilingual retries — November 13, 2026
+
+Final normal and isolated compact builds and debug lint pass. All 187 core
+checks pass. The final Settings layout was rechecked through 22 isolated Pixel
+UI/regression checks in **42.619 seconds**, after the spacing/text hierarchy
+polish. This includes guidance and optional end times, Calendar/Privacy reachability
+with large text, setup readiness, manual notes, designs/scales/home preferences,
+Auto-detect persistence, restoring a manual language, and the optional start tips.
+The normal app was not instrumented or cleared; tests opened no microphone.
+The category index and Plans page were visually inspected at the phone’s system
+font scale 1.4. The final APK is installed as 0.32.0/code50 and its installed hash
+matches the local build. At the final check, listening was off with recovery disarmed; no new microphone session was started.
+
+Recognition was tested separately on the Pixel with recorded fixtures. The same
+test APK ran 12 new bilingual clips against the previous engine and the new guard.
+English venue retention improved **4/12 → 7/12** and normalized character errors
+fell **20.2% → 17.4%**. Sum of recorded decode time fell 67.101 s → 36.715 s, with
+model setup/hash costs included; no battery or general throughput claim is made.
+These are concatenated synthetic voices, not natural bilingual field evidence.
+Some French/Russian/Arabic venue cases remain wrong. Number words versus digits
+also affect character scores. Full outputs/hashes are in
+`evaluation/bilingual-recognition-032.json`.
+
+SenseVoice automatic mode was evaluated on the four Korean/Chinese clips. Its
+32.1% character error rate was worse than the prior route’s 23.8% on that subset;
+it was rejected. Production model weights and number of simultaneous recognizers
+are unchanged. The two guard conditions have a core regression test including
+mixed-language wording and foreign venue names; they do not claim calibrated
+language-confidence scores.
+
+The new route retained **31/34** expected synthetic command actions/times with
+no wrong action/time in that bounded set; three known Arabic clock cases remain
+unresolved. Seven public languages with quiet gaps emitted eight regions and
+cleared the final queue in **869 ms**. Bilingual evaluation plus these two checks
+passed in **265.356 seconds**. Raw output is in
+`evaluation/automatic-regression-032.json`. These checks do not establish
+within-sentence human code switching, accent/dialect accuracy or long-term power.
+See RECOGNITION_NEXT_STEPS.md for limitations and the next experiments.
+
+An initial layout-polish build caught missing dp imports before installation;
+they were corrected and the final build/lint and 22-check run passed. No failing
+app behavior or recognition case was waived. The older emulator matrix below
+belongs to 0.30 and was not rerun for this update. No new GitHub CI run is claimed.
+
+# 0.31 settings and listening explanation — November 13, 2026
+
+The final normal/isolated compact apps and test APK build successfully; debug
+lint passes. Core verification remains 186 checks with zero failures. The
+connected physical Pixel 7a (Android 17, system font scale 1.4) passed **22 focused
+isolated UI and regression checks in 42.671 seconds**. These covered
+ListeningSettingsTest, InterfaceCustomizationTest, ResponsiveInterfaceTest,
+PlannerScreenTest, PrivacyScreenTest, UndoPlannerTest and CompactSetupTest.
+
+New coverage checks Auto-detect/Adaptive persistence, restoring the prior manual
+language, no microphone activation from settings, the short start explanation,
+Cancel leaving preferences unchanged, saving the skip preference only on Start,
+and restoring the reminder in Settings. The start callback in the test is fake:
+it never starts a recording service. Existing large-text privacy/navigation,
+manual-note visibility, design/scale/home preferences, reminder Undo, language
+selection, guidance and optional-time paths pass through the new categories.
+
+An earlier broader run exposed an outdated reminder-test navigation path, a
+missing isolated notification permission, and keyboard interference on the
+large-text physical device. The test route/setup and keyboard handling were
+corrected before the final complete 22-check run. No app failure was waived.
+
+The category index, Listening page and shortened popup were inspected on the
+physical device using the isolated app; all primary popup controls fit without
+scrolling at its font setting. Normal 0.31.0/code49 was installed with install -r
+and its installed APK hash matched the local APK. The previously active normal
+session resumed via MY_PACKAGE_REPLACED assistant recovery. No normal personal
+app data was cleared or instrumented. Temporary test apps/screenshots were removed.
+
+Recognition engines/models were not modified. The separately measured recorded
+ASR recheck and quality limitations are described in RECOGNITION_NEXT_STEPS.md;
+this interface update does not claim improved transcription accuracy. The full
+older emulator layout matrix below belongs to 0.30 and was not rerun for 0.31.
+
 # 0.30 adaptive Android interface — November 13, 2026
 
 Final Linux CI for `8bd667f` passed on both

@@ -8,11 +8,13 @@ object LocalizedActivities {
     private data class Word(val key: String, val pattern: Regex)
     private fun rx(value: String) = Regex(value, RegexOption.IGNORE_CASE)
     private val events = listOf(
-        Word("party", rx("파티|派对|派對|聚会|聚會|\\bfête\\b|\\bsoirée\\b|\\bparty\\b|вечеринк[а-я]*")),
-        Word("meeting", rx("회[ \\t]*의|모임|会议|會議|\\bréunion\\b|\\btreffen\\b|\\bbesprechung\\b|встреч[а-я]*|совещани[а-я]*")),
-        Word("appointment", rx("약속|진료|预约|預約|\\brendez-vous\\b|\\btermin\\b|при[её]м[а-я]*")),
+        Word("party", rx("파[ \\t]*티|派对|派對|聚会|聚會|\\bfête\\b|\\bsoirée\\b|\\bparty\\b|вечеринк[а-я]*")),
+        // 미팅/어포인트먼트 are everyday Korean loanwords, and what a Korean reading writes for English "meeting"/"appointment".
+        Word("meeting", rx("회[ \\t]*의|모임|미팅|会议|會議|\\bréunion\\b|\\btreffen\\b|\\bbesprechung\\b|встреч[а-я]*|совещани[а-я]*")),
+        // English nouns count only inside a non-English sentence (see [foreign]); English-only text stays with ActivityTiming.
+        Word("appointment", rx("약속|진료|예약|치과|어포인트먼트|预约|預約|\\brendez-vous\\b|\\btermin\\b|при[её]м[а-я]*|\\b(?:appointment|dentist)\\b")),
         Word("concert", rx("콘서트|공연|音乐会|音樂會|\\bconcert\\b|\\bkonzert\\b|концерт[а-я]*")),
-        Word("dinner", rx("저녁 식사|晚餐|\\bdîner\\b|\\babendessen\\b|ужин[а-я]*")),
+        Word("dinner", rx("저녁\\s*식사|저녁\\s*(?:을\\s*)?먹|晚餐|\\bdîner\\b|\\babendessen\\b|ужин[а-я]*")),
         Word("class", rx("수업|课程|課程|\\bcours\\b|\\bunterricht\\b|урок[а-я]*")),
         Word("birthday", rx("생일|生日|\\banniversaire\\b|\\bgeburtstag\\b|день рождения")),
         Word("wedding", rx("결혼식|婚礼|婚禮|\\bmariage\\b|\\bhochzeit\\b|свадьб[а-я]*")),
@@ -23,7 +25,7 @@ object LocalizedActivities {
     private val endMarker = rx("끝|종료|까지|结束|結束|到午夜|\\b(finit|finir|termine|terminer|jusqu['’]à|endet|enden|bis|законч[а-я]*|заверш[а-я]*|до|ends?|finishes|until|till)\\b")
     private val personal = rx("(?:저는|나는|제가|내가|전\\s|난\\s).*(?:갈|가요|갑니다|참석)|我(?:明天|今天|会|會|将|將|要|打算|计划|計劃|去|参加|參加)|\\b(?:je vais|je compte aller|j['’]ai rendez-vous|j['’]irai|je participerai|ich habe(?=\\s+(?:(?:morgen|heute|um|am|einen|\\d{1,2}(?::\\d{2})?|uhr)\\s+){0,8}termin\\b)|ich werde|ich gehe|ich nehme|у меня(?=\\s+(?:(?:завтра|сегодня|в|на|\\d{1,2}(?::\\d{2})?)\\s+){0,8}при[её]м\\b)|я пойду|я приду|я собираюсь|я буду)\\b")
     private val reported = rx("[\"“”«»「」『』]|말했|말하|라고|说|說|\\b(?:dit|disait|sagt|sagte|сказал[а-я]*|говорит)\\b")
-    private val nextDay = rx("내일|明天|明晚|\\bdemain\\b|\\bmorgen\\b|\\bзавтра\\b|\\btomorrow\\b")
+    private val nextDay = rx("내[ \\t]*일|明天|明晚|\\bdemain\\b|\\bmorgen\\b|\\bзавтра\\b|\\btomorrow\\b")
     private val sameDay = rx("오늘|今天|今晚|\\baujourd['’]hui\\b|\\bce soir\\b|\\bheute\\b|\\bсегодня\\b|\\b(?:today|tonight)\\b")
     private val weekdays = listOf(
         "월요일|星期一|周一|週一|\\blundi\\b|\\bmontag\\b|\\bпонедельник\\b|\\bmonday\\b",
@@ -55,8 +57,8 @@ object LocalizedActivities {
     private val durationMarker = rx("동안|지속|持续|持續|\\b(?:dure|dauert|длится)\\b")
     private val duration = rx("($numeral)\\s*(시간|분|小时|小時|分钟|分鐘|heures?|minutes?|stunden?|minuten?|час[а-я]*|минут[а-я]*)")
     private val colon = rx("(?<!\\d)([01]?\\d|2[0-3]):([0-5]\\d)(?!\\d)")
-    private val midnight = rx("자정|午夜|\\bminuit\\b|\\bmitternacht\\b|\\bполноч[а-я]*\\b|\\bmidnight\\b")
-    private val noon = rx("정오|中午|\\bmidi\\b|\\bmittag\\b|\\bполдень\\b|\\bnoon\\b")
+    private val midnight = rx("자[ \\t]*정|午夜|\\bminuit\\b|\\bmitternacht\\b|\\bполноч[а-я]*\\b|\\bmidnight\\b")
+    private val noon = rx("정[ \\t]*오|中午|\\bmidi\\b|\\bmittag\\b|\\bполдень\\b|\\bnoon\\b")
     private data class Clock(val time: LocalTime, val position: Int)
 
     private fun number(value: String): Int? {
@@ -73,6 +75,10 @@ object LocalizedActivities {
         }
         return value.singleOrNull()?.let(digits::get)
     }
+    internal fun recognitionNumberContext(text: String): String = listOf(hourPattern, colon, germanEvening).fold(text) { value, pattern -> pattern.replace(value, " ") }
+
+    internal fun recognitionClocks(text: String): List<java.time.LocalTime> = runCatching { clocks(text).map { it.time } }.getOrDefault(emptyList())
+
     private fun clocks(text: String): List<Clock> {
         val values = mutableListOf<Clock>()
         colon.findAll(text).forEach { match ->
@@ -84,6 +90,8 @@ object LocalizedActivities {
                 values += Clock(LocalTime.of(hour, match.groupValues[2].toInt()), match.range.first)
             }
         }
+        // Same meaning as the colon form ("at 1230" == "12:30"), so it follows the same 24-hour reading.
+        EnglishClocks.digitless(text).forEach { (hour, minute, position) -> values += Clock(LocalTime.of(hour, minute), position) }
         midnight.findAll(text).forEach { values += Clock(LocalTime.MIDNIGHT, it.range.first) }
         noon.findAll(text).forEach { values += Clock(LocalTime.NOON, it.range.first) }
         rx("\\b(1[0-2]|0?[1-9])(?::([0-5]\\d))?\\s*([ap])\\.?m\\.?(?!\\w)").findAll(text).forEach { match ->
@@ -198,7 +206,7 @@ object LocalizedActivities {
     private fun place(text: String): PlaceHint {
         val explicit = listOf(
             rx("장소(?:는|가)\\s*(.+?)(?:입니다|이에요|예요|이다|[.!?。]|$)"),
-            rx("(?:\\d{1,2}|여덟|일곱|아홉|열|한|두|세|네)\\s*시(?:에)?\\s+(.+?)에서"),
+            rx("(?:\\d{1,2}|열한|열두|다섯|여섯|여덟|일곱|아홉|열|한|두|세|네)\\s*시(?:에)?\\s+(.+?)에서"),
             rx("(?:地点|地點|场地|場地)(?:是|在)?\\s*(.+?)(?:[.!?。]|$)"),
             rx("(?:le lieu est|lieu est|der ort ist|место(?: встречи)?[: ]+)\\s*(.+?)(?:[.!?。]|$)"),
             rx("在\\s*(.+?)(?:举办|舉辦|举行|舉行|有|[.!?。]|$)"),

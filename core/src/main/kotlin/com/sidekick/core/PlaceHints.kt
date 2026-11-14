@@ -11,8 +11,8 @@ object PlaceHints {
     fun extract(text: String): PlaceHint {
         val address = street.findAll(text).lastOrNull()?.value?.trimEnd('.')
         val name = venue.findAll(text).mapNotNull { match ->
-            var raw = match.groupValues[1].trim()
-            if (raw.firstOrNull()?.isDigit() == true || Regex("^(?:noon|midnight|home|work|least|most|about|around)\\b", RegexOption.IGNORE_CASE).containsMatchIn(raw)) return@mapNotNull null
+            var raw = match.groupValues[1].trim().split(Regex("\\s+instead\\s+of\\s+", RegexOption.IGNORE_CASE), limit = 2).first()
+            if (raw.firstOrNull()?.isDigit() == true || Regex("^(?:noon|midnight|home|work|least|most|about|around|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\\b", RegexOption.IGNORE_CASE).containsMatchIn(raw)) return@mapNotNull null
             raw = timing.split(raw, limit = 2).first().trim().trimEnd('.', ',')
             raw.takeIf { it.length in 2..120 && it.split(' ').size <= 12 }
         }.lastOrNull()

@@ -72,7 +72,7 @@ object ActivityTiming {
             val nounName = noun.value.lowercase()
             for (following in sentences.drop(index).take(24)) {
                 if (following != sentence) {
-                    if (LocalizedActivities.hasEvent(following)) break
+                    if (LocalizedActivities.hasEvent(following) && (LocalizedActivities.eventKey(following) != nounName || !LocalizedActivities.isContinuation(following))) break
                     val otherNouns = event.findAll(following).map { it.value.lowercase() }.toList()
                     // Do not attach an ambiguous "it ends" across another activity/topic.
                     if (otherNouns.any { it != nounName }) break

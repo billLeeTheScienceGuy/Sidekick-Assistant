@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -35,21 +36,21 @@ internal fun MemoryPrivacySection() {
                 }
                 result = "Exported $count saved events."
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { result = "Export failed; the destination may contain an incomplete file. Saved memory is unchanged." }
+            catch (_: Exception) { result = "Couldn’t save the copy. The file may be incomplete. Your saved plans are unchanged." }
             finally { working = false }
         }
     }
     HorizontalDivider()
-    Text("Memory & privacy", style = MaterialTheme.typography.titleMedium)
+    Text("Saved plans", style = MaterialTheme.typography.titleMedium)
     Row {
-        Switch(riskEnabled, app.guidance::setRiskAdvisories, modifier = Modifier.testTag("risk-advisories-setting").controlLabel("Local risk advisories"))
-        Text("Local risk advisories")
+        Switch(riskEnabled, app.guidance::setRiskAdvisories, modifier = Modifier.testTag("risk-advisories-setting").controlLabel("Scam warnings"))
+        Text("Scam warnings", Modifier.padding(start = 8.dp))
     }
-    Text("English warning-sign rules cover gift-card payments, private-code requests, remote access and safe-account transfers. No transcript is sent online; no source excerpt is saved in alerts. This is not a general scam detector.")
-    Text("Audio is discarded after processing. Recent conversation text is temporary. Saved events may include short source excerpts; deleting an event also removes its Undo history.")
+    QuietLabel("Checks common scam phrases in English on this phone. Can miss scams. Alerts don’t save conversation text.")
+    QuietLabel("Audio and full conversations aren’t saved. Saved plans may include source quotes. Deleting a plan also deletes its Undo history.")
     Box {
         TextButton(onClick = { menu = true }, modifier = Modifier.testTag("retention-choice")) {
-            Text(if (days == 0) "Retention: keep until I delete" else "Retention: $days days")
+            Text(if (days == 0) "Keep saved plans: keep until I delete" else "Keep saved plans: $days days")
         }
         DropdownMenu(menu, { menu = false }) {
             com.sidekick.core.MemoryRetention.choices.forEach { choice ->
@@ -60,21 +61,21 @@ internal fun MemoryPrivacySection() {
             }
         }
     }
-    Text("Opt-in cleanup runs on startup and daily while SideKick runs. Future items, undated accepted plans and undelivered reminders stay. Default: keep until deleted.")
+    QuietLabel("Cleanup runs while the app runs. Future plans, accepted plans without dates, and pending reminders stay.")
     Row {
-        Checkbox(excerpts, { excerpts = it }, enabled = !working, modifier = Modifier.testTag("export-excerpts").controlLabel("Include saved source excerpts in export"))
-        Text("Include saved source excerpts in export")
+        Checkbox(excerpts, { excerpts = it }, enabled = !working, modifier = Modifier.testTag("export-excerpts").controlLabel("Include source quotes"))
+        Text("Include source quotes", Modifier.padding(start = 8.dp))
     }
-    Text("Export contains saved events only. Temporary text, audio, voice profiles, message sender IDs and Undo history are excluded. Your chosen destination may sync files online.")
+    QuietLabel("Export saves a copy of your plans, not full conversations, audio, voice setup, sender IDs or Undo history. The folder you choose may sync online.")
     TextButton(enabled = !working, onClick = {
         exportingExcerpts = excerpts
         export.launch("SideKick-events-${java.time.LocalDate.now()}.json")
-    }, modifier = Modifier.testTag("export-memory")) { Text("Export saved events") }
+    }, modifier = Modifier.testTag("export-memory")) { Text("Save a copy of my plans") }
     if (working) LinearProgressIndicator(Modifier.fillMaxWidth())
     if (result.isNotBlank()) Text(result)
     if (pendingDays != null) AlertDialog(onDismissRequest = { pendingDays = null },
         title = { Text("Enable automatic cleanup?") },
-        text = { Text("Old eligible memories and their source excerpts will be permanently deleted after $pendingDays days. Future items, undated accepted plans and pending reminders stay. Deleted memories cannot be restored with Undo. Export first if you want a copy.") },
+        text = { Text("Permanently deletes old eligible plans and their quotes after $pendingDays days. Future plans, accepted plans without dates, and pending reminders stay. You can’t undo this. Save a copy first if needed.") },
         confirmButton = { TextButton(onClick = { app.guidance.setRetentionDays(pendingDays!!); pendingDays = null }) { Text("Enable cleanup") } },
         dismissButton = { TextButton(onClick = { pendingDays = null }) { Text("Cancel") } })
 }

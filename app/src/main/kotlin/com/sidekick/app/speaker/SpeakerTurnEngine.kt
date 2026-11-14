@@ -6,7 +6,9 @@ import com.sidekick.core.*
 
 /** One session's segmentation and anonymous identity; only independent enrollment grants USER. */
 class SpeakerTurnEngine(context: Context, profile: VoiceProfile, private val speaker: SpeakerEngine,
-    private val enabled: () -> Boolean = { true }) {
+    private val enabled: () -> Boolean = { true },
+    /** False where other people's voices must not be grouped at all (Illinois BIPA). */
+    private val groupVoices: () -> Boolean = { true }) {
     data class Attribution(val speaker: Speaker, val key: String, val label: String, val diagnostic: String)
     private val diarizer = NeuralDiarizer(context) { profile.model.value }
     private val voices = SessionVoices()
@@ -34,10 +36,13 @@ class SpeakerTurnEngine(context: Context, profile: VoiceProfile, private val spe
     }
     fun classify(samples: FloatArray, part: SpeakerPart): Attribution {
         val vector = if (!part.ambiguous) try { speaker.embedding(samples) } catch (_: IllegalArgumentException) { null } else null
-        val anonymous = try { vector?.let { voices.observe(it, SystemClock.elapsedRealtime()) } } finally { vector?.fill(0f) }
+        val anonymous = try { vector?.takeIf { groupVoices() }?.let { voices.observe(it, SystemClock.elapsedRealtime()) } } finally { vector?.fill(0f) }
         val key = anonymous?.key ?: "spk_${session}_unassigned${++unassigned}"
         val label = anonymous?.label ?: if (part.ambiguous) "Overlapping or uncertain speech" else "Unassigned voice"
-        if (previous != key || part.ambiguous) speaker.newTurn()
+        // Only evidence of a different voice ends a turn. An unclustered chunk gets a fresh "_unassigned" key,
+        // which says nothing about a change; short phrases still need their own profile and recent-voice scores.
+        val changed = previous != null && previous != key && anonymous != null && previous?.contains("_unassigned") == false
+        if (changed || part.ambiguous) speaker.newTurn()
         val identified = if (part.ambiguous) Speaker.UNKNOWN else speaker.identify(samples)
         previous = key
         val contextKey = if (identified == Speaker.USER) "spk_${session}_owner" else key

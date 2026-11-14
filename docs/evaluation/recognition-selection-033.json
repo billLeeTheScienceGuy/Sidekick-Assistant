@@ -1,0 +1,150 @@
+{
+  "durationRangeSeconds": [
+    1.2,
+    8
+  ],
+  "conditions": "First six eligible mixed ASCEND test clips without speaker balancing (limited speaker coverage), and first frozen FLEURS validation clip per supported language. Frozen before decoding; small development evaluation, not population accuracy.",
+  "clips": [
+    {
+      "file": "ascend-4.wav",
+      "reference": "呃what's the呃",
+      "code": "zh-en",
+      "dataset": "ASCEND",
+      "split": "test",
+      "row": 4,
+      "speaker": 17,
+      "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+      "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+      "license": "CC BY-SA 4.0",
+      "sha256": "dfab1159630a975fdc02f58f55408a628af4141efd25809f0350cde19a6d06a7"
+    },
+    {
+      "file": "ascend-9.wav",
+      "reference": "no我专业是那个i s m information systems management",
+      "code": "zh-en",
+      "dataset": "ASCEND",
+      "split": "test",
+      "row": 9,
+      "speaker": 17,
+      "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+      "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+      "license": "CC BY-SA 4.0",
+      "sha256": "b58f0a4013b0d4a7a0e48ad732467b2afce73b022e04fde3296da162ec878301"
+    },
+    {
+      "file": "ascend-55.wav",
+      "reference": "um运动啊男生一般不都喜欢运动",
+      "code": "zh-en",
+      "dataset": "ASCEND",
+      "split": "test",
+      "row": 55,
+      "speaker": 17,
+      "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+      "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+      "license": "CC BY-SA 4.0",
+      "sha256": "8a0e76d44b81fa4ca413df68db32ddde89e72890543967adc573180f9e4ec72b"
+    },
+    {
+      "file": "ascend-66.wav",
+      "reference": "哦这么technical",
+      "code": "zh-en",
+      "dataset": "ASCEND",
+      "split": "test",
+      "row": 66,
+      "speaker": 17,
+      "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+      "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+      "license": "CC BY-SA 4.0",
+      "sha256": "7fb0db332ad282deaf1c7b43666d230231c49f3f0529a6eefb167fc8353e59f7"
+    },
+    {
+      "file": "ascend-68.wav",
+      "reference": "computer languages是",
+      "code": "zh-en",
+      "dataset": "ASCEND",
+      "split": "test",
+      "row": 68,
+      "speaker": 17,
+      "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+      "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+      "license": "CC BY-SA 4.0",
+      "sha256": "3dfb5c7b9d52517733bfdc76c90daecb1268ba872dc7ab1cb75d1b1adf7e3317"
+    },
+    {
+      "file": "ascend-81.wav",
+      "reference": "所以我上学期也学了python",
+      "code": "zh-en",
+      "dataset": "ASCEND",
+      "split": "test",
+      "row": 81,
+      "speaker": 17,
+      "source": "https://huggingface.co/datasets/CAiRE/ASCEND",
+      "revision": "737e9800ae31be9932ba8464c80366559bd28424",
+      "license": "CC BY-SA 4.0",
+      "sha256": "c9d249b6a4885799681e1b742937c32d3d598375ec7cbcca32f54d8e0159d549"
+    },
+    {
+      "file": "robust-en-10.wav",
+      "reference": "as soon as you get out of the current swimming back is no more difficult than normally",
+      "code": "en",
+      "dataset": "FLEURS",
+      "source": "https://huggingface.co/datasets/google/fleurs",
+      "license": "CC BY 4.0",
+      "sha256": "6fb2c8a8dac6f06a208cbccc55a3fb5728f3bf6f2bdae368ba0be0347c17b5d2"
+    },
+    {
+      "file": "robust-ko-17.wav",
+      "reference": "화요일에 베어 쓰러뜨릴 예정이었으나 긴급 법원의 판결로 구조되었다",
+      "code": "ko",
+      "dataset": "FLEURS",
+      "source": "https://huggingface.co/datasets/google/fleurs",
+      "license": "CC BY 4.0",
+      "sha256": "c2c05e739f5bf80a8ee09620332014efd66967997773755d5f85247e5094fa5a"
+    },
+    {
+      "file": "robust-zh-11.wav",
+      "reference": "他 称 他 制 作 了 一 个 wifi 门 铃",
+      "code": "zh",
+      "dataset": "FLEURS",
+      "source": "https://huggingface.co/datasets/google/fleurs",
+      "license": "CC BY 4.0",
+      "sha256": "696af0c04a1c95f88490f8107748d60287b148c3259038fd2cc5987f6e57c8b3"
+    },
+    {
+      "file": "robust-fr-10.wav",
+      "reference": "la police a déclaré qu'il semblerait que le corps se trouvait là depuis un jour environ",
+      "code": "fr",
+      "dataset": "FLEURS",
+      "source": "https://huggingface.co/datasets/google/fleurs",
+      "license": "CC BY 4.0",
+      "sha256": "5221f57d605a93c30b071589fe0f32d02d101983a4443e55f074c957ec47acef"
+    },
+    {
+      "file": "robust-de-10.wav",
+      "reference": "seine allmacht beherrschte jeden vom könig bis zum einfachen bürger",
+      "code": "de",
+      "dataset": "FLEURS",
+      "source": "https://huggingface.co/datasets/google/fleurs",
+      "license": "CC BY 4.0",
+      "sha256": "217603f6b5ba7c3b651ae0c4fee858047fcad1a4a164b94dc4e877ca9aa67b9c"
+    },
+    {
+      "file": "robust-ru-12.wav",
+      "reference": "как только вы выйдете из течения плыть обратно будет не труднее чем обычно",
+      "code": "ru",
+      "dataset": "FLEURS",
+      "source": "https://huggingface.co/datasets/google/fleurs",
+      "license": "CC BY 4.0",
+      "sha256": "c4448309df6b1e8ea54ae02edb0dbf2f18053ccf636abbd2b820cc947a05c834"
+    },
+    {
+      "file": "robust-ar-14.wav",
+      "reference": "وقالت الشرطة إن الجثة بدت وكأنها كانت هناك منذ يوم تقريباً",
+      "code": "ar",
+      "dataset": "FLEURS",
+      "source": "https://huggingface.co/datasets/google/fleurs",
+      "license": "CC BY 4.0",
+      "sha256": "e66695b422cf64a6e7624da11096976ae31d6b6d6e5a8dcaed2b4072dba9f240"
+    }
+  ]
+}

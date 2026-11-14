@@ -27,6 +27,8 @@ class PlannerScreenTest {
         val previous = app.guidance.speechLanguage.value
         try {
             compose.onNodeWithTag("settings").performClick()
+            compose.onNodeWithTag("settings-page-LISTENING").performScrollTo().performClick()
+            compose.onNodeWithTag("language-choice").performClick()
             compose.onNodeWithTag("speech-language-ko").performScrollTo().performClick()
             assertEquals(com.sidekick.core.SpeechLanguage.KOREAN, GuidanceSettings(app).speechLanguage.value)
             compose.onNodeWithText("Close").performClick()
@@ -37,6 +39,7 @@ class PlannerScreenTest {
         val app = compose.activity.application as SidekickApplication
         assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         compose.onNodeWithTag("settings").performClick()
+        compose.onNodeWithTag("settings-page-LISTENING").performScrollTo().performClick()
         compose.onNodeWithText("Set up my voice").performScrollTo().performClick()
         compose.onNodeWithText("Start voice setup").performScrollTo().assertIsDisplayed()
         assertFalse(com.sidekick.app.audio.ListeningService.state.value.recording)
@@ -83,13 +86,22 @@ class PlannerScreenTest {
         try {
             app.temporary.add(fixture)
             compose.onNodeWithTag("settings").performClick()
+            compose.onNodeWithTag("settings-page-ADVANCED").performScrollTo().performClick()
+            compose.onNodeWithTag("phone-checks").performScrollTo().performClick()
             val allowed = compose.activity.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
-            compose.onNodeWithTag("location-permission-status").assertTextEquals("Location permission: ${if (allowed) "Allowed" else "Not allowed"}")
+            compose.onNodeWithTag("location-permission-status").performScrollTo().assertTextEquals("Location permission: ${if (allowed) "Allowed" else "Not allowed"}")
+            compose.onNodeWithTag("settings-back").performClick()
+            compose.onNodeWithTag("settings-page-PLANS").performScrollTo().performClick()
             compose.onNodeWithTag("mode-ask").performScrollTo().performClick()
             compose.onNodeWithText("Close").performClick()
             assertEquals(GuidanceMode.ASK, GuidanceSettings(app).mode.value)
             compose.onNodeWithTag("planner-tab").performClick()
             compose.onNodeWithTag("planner-search").performScrollTo().performTextInput("Guidance fixture")
+            compose.activity.runOnUiThread {
+                androidx.core.view.WindowCompat.getInsetsController(compose.activity.window, compose.activity.window.decorView)
+                    .hide(androidx.core.view.WindowInsetsCompat.Type.ime())
+            }
+            compose.waitForIdle()
             compose.onNodeWithText("Review & accept").performScrollTo().performClick()
             compose.onNodeWithText("When do you think this will last till?").performScrollTo().assertIsDisplayed()
             compose.onNodeWithText("I don’t know").performScrollTo().performClick()
@@ -99,6 +111,7 @@ class PlannerScreenTest {
             val saved = runBlocking { app.database.commitments().get(fixture.id)!! }
             assertNull(saved.activityStartAt); assertNull(saved.activityEndAt); assertNull(saved.dueAt)
             compose.onNodeWithTag("settings").performClick()
+            compose.onNodeWithTag("settings-page-PLANS").performScrollTo().performClick()
             compose.onNodeWithTag("mode-passive").performScrollTo().performClick()
             compose.onNodeWithText("Close").performClick()
             compose.onNodeWithTag("filter-UNSCHEDULED").performScrollTo().performClick()
@@ -133,6 +146,11 @@ class PlannerScreenTest {
             app.temporary.add(draft)
             compose.onNodeWithTag("planner-tab").performClick()
             compose.onNodeWithTag("planner-search").performScrollTo().performTextInput("Planner fixture")
+            compose.activity.runOnUiThread {
+                androidx.core.view.WindowCompat.getInsetsController(compose.activity.window, compose.activity.window.decorView)
+                    .hide(androidx.core.view.WindowInsetsCompat.Type.ime())
+            }
+            compose.waitForIdle()
             compose.onNodeWithText(draft.title).performScrollTo().assertExists()
             compose.onNodeWithTag("filter-REMINDERS").performScrollTo().performClick()
             compose.onNodeWithTag("main-list").performScrollToNode(hasText("Planner fixture scheduled"))

@@ -105,10 +105,16 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
 
     /** Reset reference context on speaker changes; unknown voices never create personal promises. */
     @Synchronized fun appendAttributedLive(text: String, capturedAt: Instant, zone: ZoneId, speaker: Speaker, continuation: Boolean = true,
-        speakerTrack: String? = null, speakerLabel: String = speaker.name) {
+        speakerTrack: String? = null, speakerLabel: String = speaker.name, recognitionReliable: Boolean = true) {
         if (text.isBlank()) return
         require(speakerTrack == null || VoiceSource.track("voice:0:$speakerTrack:${speaker.name}") == speakerTrack)
         mutableSpeakerTurns.value = (mutableSpeakerTurns.value + LiveSpeakerTurn(capturedAt, speakerLabel.take(80), speaker, text.take(500))).takeLast(12)
+        if (!recognitionReliable) {
+            // Keep the heard text, but never schedule/update from conflicting acoustic readings.
+            mutableText.value = LiveText.append(mutableText.value, text, !continuation).takeLast(6000)
+            voiceContext = ""; voiceContexts.clear(); correctionContext = null; voiceCommandTarget = null
+            return
+        }
         if (voiceTrack != speakerTrack) {
             voiceTrack?.takeUnless { it.contains("_unassigned") }?.let { previous ->
                 if (voiceContext.isNotBlank()) voiceContexts[previous] = VoiceContext(voiceContext.takeLast(1500), voiceAt, lastVoiceAt, voiceTurn, voiceSpeaker, correctionContext)

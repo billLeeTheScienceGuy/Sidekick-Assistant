@@ -4,6 +4,16 @@ import kotlin.math.sqrt
 
 /** Conservative prototype thresholds; identity is never consent or authentication. */
 object VoiceMatch {
+    /** Each whole turn must match one profile; never combine windows from different enrollments. */
+    fun identifyProfiles(profiles: List<FloatArray>, windows: List<FloatArray>): Speaker {
+        if (profiles.isEmpty()) return Speaker.UNKNOWN
+        val results = profiles.map { identifyTurn(it, windows) }
+        return when {
+            results.any { it == Speaker.USER } -> Speaker.USER
+            results.all { it == Speaker.OTHER } -> Speaker.OTHER
+            else -> Speaker.UNKNOWN
+        }
+    }
     fun identifyTurn(profile: FloatArray, windows: List<FloatArray>): Speaker {
         if (windows.size < 2) return Speaker.UNKNOWN
         val scores = windows.zipWithNext { first, second -> identify(profile, first, second) }

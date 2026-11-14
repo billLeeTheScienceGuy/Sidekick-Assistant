@@ -32,6 +32,7 @@ class InterfaceCustomizationTest {
     }
     @Test fun designAndSizeChoicesPersistAndResetWithoutChangingFeatures() {
         compose.onNodeWithTag("settings").performClick()
+        compose.onNodeWithTag("settings-page-DISPLAY").performScrollTo().performClick()
         compose.onNodeWithTag("design-WARM").performScrollTo().performClick()
         compose.onNodeWithTag("text-size-LARGE").performScrollTo().performClick()
         compose.onNodeWithTag("interface-size-LARGE").performScrollTo().performClick()
@@ -49,15 +50,17 @@ class InterfaceCustomizationTest {
     }
     @Test fun manualNotesCanBeHiddenWithoutDisablingListeningOrPlanner() {
         compose.onNodeWithTag("settings").performClick()
+        compose.onNodeWithTag("settings-page-DISPLAY").performScrollTo().performClick()
         compose.onNodeWithTag("manual-notes").performScrollTo().performClick()
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("transcript").assertDoesNotExist()
         compose.onNodeWithTag("manual-add").assertDoesNotExist()
-        compose.onNodeWithTag("main-list").performScrollToNode(hasText("Start live notes"))
-        compose.onNodeWithText("Start live notes").assertIsDisplayed()
+        compose.onNodeWithTag("main-list").performScrollToNode(hasText("Start listening"))
+        compose.onNodeWithText("Start listening").assertIsDisplayed()
         compose.onNodeWithTag("planner-tab").performClick()
         compose.onNodeWithTag("manual-add").assertDoesNotExist()
         compose.onNodeWithTag("settings").performClick()
+        compose.onNodeWithTag("settings-page-DISPLAY").performScrollTo().performClick()
         compose.onNodeWithTag("manual-notes").performScrollTo().performClick()
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("manual-add"))
@@ -65,20 +68,20 @@ class InterfaceCustomizationTest {
         assertFalse(ListeningService.state.value.recording)
     }
     @Test fun interfaceScaleChangesTargetsIndependentlyOfTextScale() {
-        fun button() = compose.onNodeWithTag("main-list").performScrollToNode(hasText("Start live notes"))
+        fun button() = compose.onNodeWithTag("main-list").performScrollToNode(hasText("Start listening"))
         fun textPixels(): Float {
             val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
-            compose.onNodeWithText("Start live notes", useUnmergedTree = true)
+            compose.onNodeWithText("Start listening", useUnmergedTree = true)
                 .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
             val input = layouts.single().layoutInput
             return with(input.density) { input.style.fontSize.toPx() }
         }
         button()
-        val before = compose.onNodeWithText("Start live notes").fetchSemanticsNode().boundsInRoot.height
+        val before = compose.onNodeWithText("Start listening").fetchSemanticsNode().boundsInRoot.height
         val textBefore = textPixels()
         app.guidance.setInterfaceSize(InterfaceSize.EXTRA_LARGE)
         compose.waitForIdle(); button()
-        val after = compose.onNodeWithText("Start live notes").fetchSemanticsNode().boundsInRoot.height
+        val after = compose.onNodeWithText("Start listening").fetchSemanticsNode().boundsInRoot.height
         val textAfter = textPixels()
         assertTrue("Controls should grow", after > before * 1.15f)
         // Layout-box padding/rounding may change with density; compare resolved font pixels.
@@ -89,6 +92,7 @@ class InterfaceCustomizationTest {
     }
     @Test fun oneScreenHomeKeepsEssentialsVisibleAndDetailsAvailable() {
         compose.onNodeWithTag("settings").performClick()
+        compose.onNodeWithTag("settings-page-DISPLAY").performScrollTo().performClick()
         compose.onNodeWithTag("home-simple").performScrollTo().performClick()
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("one-screen-home").assertIsDisplayed()

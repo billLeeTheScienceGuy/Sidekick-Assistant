@@ -62,7 +62,7 @@ internal fun CompactHome(
             }
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onDetails, modifier = Modifier.testTag("compact-details")) { Text("Detailed view") }
-            if (!tight) QuietLabel("On-device speech · audio discarded")
+            if (!tight) QuietLabel("Everyone must agree · audio discarded")
         }
     }
 }

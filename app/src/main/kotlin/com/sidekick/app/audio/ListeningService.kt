@@ -36,6 +36,12 @@ data class ListeningState(
     val diarizationMs: Long = 0, val speakerParts: Int = 0,
     val recognizer: String? = null,
     val note: String = "Microphone is off",
+    /** Which consent rule applies and what it is doing right now (see RecordingConsent in core). */
+    val consent: String = "",
+    /** True while other people's words are being dropped because notice has not been given. */
+    val noticeNeeded: Boolean = false,
+    /** Phrases from other voices discarded on arrival this session. */
+    val droppedChunks: Int = 0,
 )
 
 /** Explicitly enabled continuous listening. Only bounded RAM buffers hold audio. */
@@ -45,13 +51,44 @@ class ListeningService : Service() {
     @Volatile private var finish = false
     @Volatile private var discard = false
     private var enrollment = false
+    private var enrollmentTarget: com.sidekick.core.SpeechLanguage? = null
+    @Volatile private var gate: com.sidekick.core.ConsentGate? = null
+    private var noticeVoice: android.speech.tts.TextToSpeech? = null
     private val app get() = application as SidekickApplication
+
+    private fun refreshConsent() {
+        val g = gate ?: return
+        val now = SystemClock.elapsedRealtime()
+        mutableState.update { it.copy(consent = g.status(now) + " · " + g.place.reason,
+            noticeNeeded = g.place.rule == com.sidekick.core.RecordingJurisdiction.Rule.ALL_PARTY && g.noticeAtMs == null) }
+    }
+
+    /** The legal-minimum notice for all-party places: an audible line, then others' words are kept. */
+    private fun announce() {
+        val g = gate ?: return
+        noticeVoice?.shutdown()
+        noticeVoice = android.speech.tts.TextToSpeech(this) { status ->
+            val tts = noticeVoice
+            if (status == android.speech.tts.TextToSpeech.SUCCESS && tts != null) {
+                tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                    override fun onStart(id: String?) {}
+                    override fun onDone(id: String?) { g.noticeGiven(SystemClock.elapsedRealtime()); refreshConsent() }
+                    @Deprecated("Deprecated in Java") override fun onError(id: String?) {
+                        mutableState.update { it.copy(note = "Couldn't play the notice. Tell everyone you're taking notes, then tap \"I told everyone\".") }
+                    }
+                })
+                tts.speak(NOTICE, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "sidekick-notice")
+            } else mutableState.update { it.copy(note = "No text-to-speech voice. Tell everyone you're taking notes, then tap \"I told everyone\".") }
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             FINISH -> { app.assistant.disarm(); finish = true; if (capture == null) stopSelf(); return START_NOT_STICKY }
             CANCEL -> { app.assistant.disarm(); discard = true; capture?.cancel(); if (capture == null) stopSelf(); return START_NOT_STICKY }
+            ANNOUNCE -> { announce(); return START_NOT_STICKY }
+            NOTICE_GIVEN -> { gate?.noticeGiven(SystemClock.elapsedRealtime()); refreshConsent(); return START_NOT_STICKY }
         }
         val recovering = intent == null || intent.action == RESUME
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -64,6 +101,7 @@ class ListeningService : Service() {
         if (capture != null) return if (app.assistant.armed && !enrollment) START_STICKY else START_NOT_STICKY
         finish = false; discard = false
         enrollment = intent?.getBooleanExtra(ENROLL, false) == true
+        enrollmentTarget = intent?.getStringExtra(ENROLL_LANGUAGE)?.let { code -> com.sidekick.core.SpeechLanguage.entries.firstOrNull { it.code == code && it != com.sidekick.core.SpeechLanguage.AUTO } }
         if (!enrollment && !recovering) app.assistant.rememberUserStart()
         try {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
@@ -91,6 +129,8 @@ class ListeningService : Service() {
             .setContentText(if (app.guidance.handsOffMode.value && !enrollment) "On-device · events save automatically · Undo in event notifications" else "On-device only. No audio files. Tap to review.")
             .setContentIntent(open).setOngoing(true)
             .apply { if (recording) addAction(Notification.Action.Builder(null, "Finish", done).build()) }
+            .apply { if (recording && !enrollment) addAction(Notification.Action.Builder(null, "Announce",
+                PendingIntent.getService(this@ListeningService, 4, Intent(this@ListeningService, ListeningService::class.java).setAction(ANNOUNCE), PendingIntent.FLAG_IMMUTABLE)).build()) }
             .addAction(Notification.Action.Builder(null, if (app.guidance.handsOffMode.value && !enrollment) "Stop & clear text" else "Discard session", cancel).build()).build()
     }
 
@@ -102,8 +142,13 @@ class ListeningService : Service() {
         val setupLanguage = app.guidance.speechLanguage.value
         app.voiceProfile.selectLanguage(setupLanguage)
         val setupModel = app.voiceProfile.model.value
+        // Auto-detect has no single language, so setup records the profile the user picked (English by default).
+        val profileTarget = if (setupLanguage == com.sidekick.core.SpeechLanguage.AUTO) enrollmentTarget ?: com.sidekick.core.SpeechLanguage.ENGLISH else setupLanguage
         val speaker = SpeakerEngine(this, app.voiceProfile)
-        val turns = com.sidekick.app.speaker.SpeakerTurnEngine(this, app.voiceProfile, speaker) { app.guidance.diarization.value }
+        // Until the location lookup answers, the strictest rule applies.
+        val consent = com.sidekick.core.ConsentGate(com.sidekick.core.RecordingJurisdiction.unknown("Checking location…"))
+        if (!enrollment) gate = consent
+        val turns = com.sidekick.app.speaker.SpeakerTurnEngine(this, app.voiceProfile, speaker, { app.guidance.diarization.value }) { consent.place.groupsOtherVoices }
         val enrollmentSamples = mutableListOf<FloatArray>()
         val wake = getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SideKick:LiveNotes")
         wake.setReferenceCounted(false)
@@ -123,6 +168,14 @@ class ListeningService : Service() {
             val startedClock = SystemClock.elapsedRealtime()
             if (!enrollment) app.temporary.beginSession()
             coroutineScope {
+                if (!enrollment) launch {
+                    refreshConsent()
+                    while (isActive) { // offline satellite fix + bundled borders; re-checked every 10 minutes
+                        consent.moveTo(JurisdictionLocator.locate(this@ListeningService))
+                        refreshConsent()
+                        delay(10 * 60_000L)
+                    }
+                }
                 var identified = Speaker.UNKNOWN
                 var voiceTrack = "spk_session_unassigned0"
                 var voiceLabel = "Unassigned voice"
@@ -139,6 +192,7 @@ class ListeningService : Service() {
                             val attributed = turns.classify(samples, part)
                             changedVoice = voiceTrack != attributed.key || identified != attributed.speaker
                             identified = attributed.speaker; voiceTrack = attributed.key; voiceLabel = attributed.label
+                            if (identified == Speaker.USER) { consent.ownerSpoke(SystemClock.elapsedRealtime()); refreshConsent() }
                             mutableState.update { it.copy(userVoiceChunks = it.userVoiceChunks + if (identified == Speaker.USER) 1 else 0,
                                 voiceDiagnostics = (it.voiceDiagnostics + attributed.diagnostic).takeLast(20),
                                 otherVoiceChunks = it.otherVoiceChunks + if (identified == Speaker.OTHER) 1 else 0,
@@ -148,14 +202,24 @@ class ListeningService : Service() {
                                     Speaker.OTHER -> "$voiceLabel · information only"
                                     Speaker.UNKNOWN -> "$voiceLabel · identity unassigned"
                                 }) }
+                            // Speech the consent rule does not allow is dropped before recognition: never transcribed.
+                            if (!consent.keep(identified, SystemClock.elapsedRealtime())) {
+                                mutableState.update { it.copy(droppedChunks = it.droppedChunks + 1) }
+                                return@LiveSpeechProcessor false
+                            }
                         }
+                        true
                     }, inspect = { samples ->
                     if (enrollment) {
-                        if (!discard && enrollmentSamples.size < 3 && samples.size >= 48_000) {
-                            enrollmentSamples += speaker.embedding(samples)
-                            mutableState.update { it.copy(voiceSamples = enrollmentSamples.size, note = "Voice setup: ${enrollmentSamples.size}/3 samples") }
-                            if (enrollmentSamples.size == 3) {
-                                finish = true
+                        if (!discard && enrollmentSamples.size < 3 && samples.size < 48_000) {
+                            mutableState.update { it.copy(note = String.format(java.util.Locale.US, "That phrase was only %.1f s. Read a full sentence of at least four seconds, then pause (%d/3 kept).", samples.size / 16000.0, enrollmentSamples.size)) }
+                        } else if (!discard && enrollmentSamples.size < 3) {
+                            try {
+                                enrollmentSamples += speaker.enrollmentEmbedding(samples)
+                                mutableState.update { it.copy(voiceSamples = enrollmentSamples.size, note = "Voice setup: ${enrollmentSamples.size}/3 checked samples") }
+                                if (enrollmentSamples.size == 3) finish = true
+                            } catch (e: IllegalArgumentException) {
+                                mutableState.update { it.copy(note = "${e.message} Try another sentence (${enrollmentSamples.size}/3 kept).") }
                             }
                         }
                         false
@@ -166,13 +230,13 @@ class ListeningService : Service() {
                     ensureActive()
                     if (!discard) {
                         app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text)
-                        app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified, continuation, voiceTrack, voiceLabel)
+                        app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified, continuation, voiceTrack, voiceLabel, recognitionReliable = !app.speech.lastUncertain)
                         app.automation.process()
                     }
                     mutableState.update { it.copy(chunks = it.chunks + 1, lastLatencyMs = latency,
                         recognizer = app.speech.lastBackend,
-                        recognitionDiagnostics = (it.recognitionDiagnostics + listOfNotNull(app.speech.lastClockDiagnostic)).takeLast(5),
-                        note = if (it.recording) { if (app.guidance.handsOffMode.value) "Listening · saving events automatically" else "Listening · live text is ready for review" } else "Finishing remaining speech…") }
+                        recognitionDiagnostics = (it.recognitionDiagnostics + listOfNotNull(app.speech.lastClockDiagnostic, app.speech.lastRetryDiagnostic)).takeLast(8),
+                        note = if (it.recording) { if (app.speech.lastUncertain) "Listening · unclear phrase kept as text only" else if (app.guidance.handsOffMode.value) "Listening · saving events automatically" else "Listening · live text is ready for review" } else "Finishing remaining speech…") }
                 }
                 processor = pipeline
                 val worker = launch { pipeline.consume() }
@@ -224,11 +288,11 @@ class ListeningService : Service() {
             currentCoroutineContext().ensureActive()
             if (enrollment && !discard && enrollmentSamples.size == 3) {
                 check(app.voiceProfile.language.value == setupLanguage && app.voiceProfile.model.value == setupModel) { "Voice settings changed. Repeat setup in the selected language." }
-                app.voiceProfile.save(enrollmentSamples)
+                app.voiceProfile.save(enrollmentSamples, profileTarget)
             }
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
                 note = if (enrollment) {
-                    if (enrollmentSamples.size == 3) "Voice setup complete. Your local voice profile is ready."
+                    if (enrollmentSamples.size == 3) "Voice setup complete. Your ${profileTarget.label} voice profile is saved."
                     else "Voice setup incomplete. Speak in longer phrases and try again; any previous profile is unchanged."
                 } else if (it.chunks == 0) "No speech detected. Try speaking closer to the microphone." else if (app.guidance.handsOffMode.value) app.automation.status.value else "Session finished. Review and approve commitments below.") }
         } catch (e: CancellationException) {
@@ -252,12 +316,16 @@ class ListeningService : Service() {
     }
 
     override fun onTimeout(startId: Int) { CaptureStatusAlerts.stopped(this); app.assistant.disarm("Android stopped listening"); capture?.cancel(); stopSelf() }
-    override fun onDestroy() { scope.cancel(); stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy() }
+    override fun onDestroy() { noticeVoice?.shutdown(); noticeVoice = null; gate = null; scope.cancel(); stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy() }
     companion object {
         private const val CHANNEL = "listening"
         const val FINISH = "com.sidekick.FINISH"
         const val CANCEL = "com.sidekick.CANCEL"
         const val ENROLL = "com.sidekick.ENROLL"
+        const val ENROLL_LANGUAGE = "com.sidekick.ENROLL_LANGUAGE"
+        const val ANNOUNCE = "com.sidekick.ANNOUNCE"
+        const val NOTICE_GIVEN = "com.sidekick.NOTICE_GIVEN"
+        const val NOTICE = "Just so you know, SideKick is taking notes on this conversation."
         const val RESUME = "com.sidekick.RESUME_ASSISTANT"
         private val mutableState = MutableStateFlow(ListeningState())
         val state = mutableState.asStateFlow()
