@@ -1,7 +1,7 @@
 # SideKick foundation plan
 
 This records the original foundation design. Use [ROADMAP.md](ROADMAP.md) and
-[STATUS.md](STATUS.md) for current implemented features, limits and remaining work.
+[STATUS.md](../project/DEVELOPMENT_LOG.md) for current implemented features, limits and remaining work.
 
 ## Product and scope
 

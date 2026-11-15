@@ -1,4 +1,4 @@
-# Live voice-match and consent check on the Pixel (USB debugging on). See docs/PHONE_TESTS.md for what to say and do.
+# Live voice-match and consent check on the Pixel (USB debugging on). See docs/guides/PHONE_TESTS.md for what to say and do.
 # Reads only the app's "SidekickVoice" log lines: voice scores and consent decisions, never words or location.
 #   .\scripts\phone-tests\live-check.ps1 -Minutes 3
 param([double]$Minutes = 3)
@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 if (-not (& $adb get-state 2>$null)) { throw "Phone not connected. Plug in the Pixel and allow USB debugging." }
 & $adb logcat -c
-Write-Host "Start listening in SideKick now. You have $Minutes minute(s); follow the steps in docs/PHONE_TESTS.md." -ForegroundColor Cyan
+Write-Host "Start listening in SideKick now. You have $Minutes minute(s); follow the steps in docs/guides/PHONE_TESTS.md." -ForegroundColor Cyan
 $end = (Get-Date).AddMinutes($Minutes)
 while ((Get-Date) -lt $end) { Write-Host -NoNewline ("`r{0:mm\:ss} left " -f ($end - (Get-Date))); Start-Sleep 1 }
 Write-Host "`rTime's up. Tap Finish in SideKick, then wait a few seconds..."; Start-Sleep 8

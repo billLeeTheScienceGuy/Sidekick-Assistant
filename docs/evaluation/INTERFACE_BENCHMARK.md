@@ -76,11 +76,11 @@ See VALIDATION.md for measured outcomes and the exact matrix.
 
 Synthetic/empty emulator data only. These are actual app screenshots.
 
-![Simple home, Calm design](images/simple-home.png)
+![Simple home, Calm design](../images/simple-home.png)
 
-![Classic design in a short landscape window](images/classic-landscape.png)
+![Classic design in a short landscape window](../images/classic-landscape.png)
 
-![Detailed view, Warm design, scrolled to listening controls](images/warm-detailed.png)
+![Detailed view, Warm design, scrolled to listening controls](../images/warm-detailed.png)
 
 ## Plain-language review — November 13, 2026
 

@@ -4,7 +4,7 @@ A clear same-source announcement and later personal attendance at the same time 
 become one personal event with a reminder and Undo. Matching preserves names and
 venue differences. Older automatic announcement duplicates can move to History with
 Undo; manual edits and ambiguous matches stay protected. Smart analysis failures
-retain local results. See [VALIDATION.md](VALIDATION.md) for scope and tests.
+retain local results. See [VALIDATION.md](../evaluation/VALIDATION.md) for scope and tests.
 
 # Hands-off automation — 0.13.0
 
@@ -44,7 +44,7 @@ clear when the venue changes. Unresolved venues stay as spoken; online address
 suggestions still are not automatically treated as verified addresses.
 
 Version 0.15 adds bounded explicit English rescheduling/cancellation; see
-[EVENT_CHANGES.md](EVENT_CHANGES.md). Fuzzy event matching, arbitrary corrections
+[EVENT_CHANGES.md](../design/EVENT_CHANGES.md). Fuzzy event matching, arbitrary corrections
 and general multilingual reasoning remain unimplemented. Ambiguous references may remain unresolved instead of changing a
 possibly unrelated event. More automation does not establish recognition accuracy.
 

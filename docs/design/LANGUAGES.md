@@ -11,7 +11,7 @@ phrases and Omnilingual for longer speech. German uses full-context Whisper tiny
 short phrases and Omnilingual for longer speech. Russian uses base for short phrases
 and full-context tiny for longer speech. English keeps its prior short-phrase boost.
 Auto retains Whisper language detection. Explicit Fast/Base choices remain available.
-See [measurements and limits](ASR_EVALUATION.md) and [Arabic scope](ARABIC.md).
+See [measurements and limits](../evaluation/ASR_EVALUATION.md) and [Arabic scope](ARABIC.md).
 
 # Multilingual speech — 0.10.0
 

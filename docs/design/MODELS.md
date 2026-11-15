@@ -37,7 +37,7 @@ For extraction require structured output with source evidence, actor, action, ra
 
 ## Benchmark record (fill on target hardware)
 
-Device: Pixel 7a (Tensor G2, 8 GB RAM), Android 17, ARM64. Whisper tiny.en passed known-speech and cancellation/recovery tests. One known-recording test took about 5.7 seconds including setup/loading. Peak RAM, sustained latency, battery and end-to-end accuracy remain unmeasured. Qwen3 is not integrated. See [validation](VALIDATION.md).
+Device: Pixel 7a (Tensor G2, 8 GB RAM), Android 17, ARM64. Whisper tiny.en passed known-speech and cancellation/recovery tests. One known-recording test took about 5.7 seconds including setup/loading. Peak RAM, sustained latency, battery and end-to-end accuracy remain unmeasured. Qwen3 is not integrated. See [validation](../evaluation/VALIDATION.md).
 
 ## Shipped artifacts
 

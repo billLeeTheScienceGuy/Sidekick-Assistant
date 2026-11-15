@@ -275,7 +275,7 @@ recovery was skipped; no real microphone was opened. See VALIDATION.md.
 
 Previous 0.23.0:
 
-Current source: 0.23.0/code39, branch `codex/android-foundation`.
+Current source: 0.23.0/code39.
 Conversation context is implemented; see CONVERSATION_CONTEXT.md. Split date/time
 assembly supports seven languages; English pronoun attendance and named end/place
 details remain bounded and grounded. Untimed plans and later explicit dates update
@@ -299,7 +299,7 @@ long listening trial remains explicitly deferred. No commit or push requested.
 
 Previous 0.22.1:
 
-Current source: 0.22.1/code38, branch `codex/android-foundation`.
+Current source: 0.22.1/code38.
 User did not perceive the reminder. Real DB shows the diagnostic was delivered
 14.037s after due; Android NotificationRecord is still active, importance DEFAULT,
 not DND-intercepted. Phone ringer is SILENT, notification stream muted; channel

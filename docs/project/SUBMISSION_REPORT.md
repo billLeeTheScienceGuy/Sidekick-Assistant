@@ -8,14 +8,14 @@ Version 0.29 adds a frozen public-speech robustness evaluation, measured Automat
 and longer multilingual routing, private capture-interruption alerts, PCM-stall
 detection and permission-revocation recovery protection. Owner context remains
 stable across anonymous cluster changes; continuous Chinese/Korean overlap is
-removed without altering numerals. See [broader quality evidence](ROBUSTNESS_EVALUATION.md).
+removed without altering numerals. See [broader quality evidence](../evaluation/ROBUSTNESS_EVALUATION.md).
 Short Arabic clocks remain imperfect, and no all-day battery claim is made.
 
 Version 0.30 adds Simple and Detailed home layouts over the same saved data,
 app-local text and control sizing, three design presets and three appearance
 modes. Manual note-taking can be hidden independently of reviewing detected
 plans. Navigation responds to the current window, with large-text and RTL checks.
-The user explicitly excluded iPhone work. See [interface comparisons and methods](INTERFACE_BENCHMARK.md).
+The user explicitly excluded iPhone work. See [interface comparisons and methods](../evaluation/INTERFACE_BENCHMARK.md).
 
 ## Implemented system
 
@@ -42,8 +42,8 @@ navigation checks. Pending reminders, future items and undated accepted plans ar
 protected from retention cleanup. Local English risk advisories cover a small set
 of gift-card, private-code, remote-access and safe-account warning signs. They are
 nonblocking, dismissible and disableable, and never copy credentials into alerts.
-See [privacy and risk behavior](PRIVACY_AND_RISK.md), the
-[architecture](ARCHITECTURE.md) and [acceptance checklist](CAPSTONE_CHECKLIST.md).
+See [privacy and risk behavior](../design/PRIVACY_AND_RISK.md), the
+[architecture](../design/ARCHITECTURE.md) and [acceptance checklist](CAPSTONE_CHECKLIST.md).
 
 Version 0.28 adds neural speaker-turn segmentation and bounded RAM-only anonymous
 voices with separate correction context. Owner attribution remains an independent
@@ -54,7 +54,7 @@ owner. Aggregate processing work was 265.306 seconds and final queue drain 1.581
 seconds; maximum process PSS was 399.3 MiB and reported thermal status stayed zero.
 USB was connected and public/synthetic fixtures were repeated. This does not
 measure microphone accuracy, battery drain or population speaker error rates.
-See [speaker turns](SPEAKER_TURNS.md) and [the sustained trial](SUSTAINED_TURNS.md).
+See [speaker turns](../design/SPEAKER_TURNS.md) and [the sustained trial](../evaluation/SUSTAINED_TURNS.md).
 
 Calendar mirroring is separately confirmed and can expose event metadata through
 the selected calendar account. It never copies excerpts or creates invitations.
@@ -75,7 +75,7 @@ functional examples, not a blind holdout, native-speaker audit or user study.
 On this corpus, event-subject precision is 100%, recall 98.8%, matched-event exact
 time accuracy 100% and matched-event attendance accuracy 100%. There are no false
 or mistimed reminders in these cases; one expected reminder is missed. Failed language cases
-remain in [the full report](ACCURACY_REPORT.md); the aggregate scores must not be
+remain in [the full report](../evaluation/ACCURACY_REPORT.md); the aggregate scores must not be
 presented as real-world speech accuracy. Speaker labels were supplied, not inferred.
 Optional Qwen and live action execution are not measured by this text benchmark.
 
@@ -95,7 +95,7 @@ spelling was corrected to match the source's ё, without changing its semantics.
 Core unit checks additionally cover parsing, Undo semantics, date boundaries,
 buffering, profile logic, source ownership and model-pack safety. Emulator
 instrumentation tests cover the app/database/notification/UI paths; see
-[VALIDATION.md](VALIDATION.md) for counts and exact scope. A fresh compact install
+[VALIDATION.md](../evaluation/VALIDATION.md) for counts and exact scope. A fresh compact install
 successfully imported verified weights and ran native Whisper Base on a fixture.
 These are software checks, not measurements of natural conversations or all-day
 phone behavior.

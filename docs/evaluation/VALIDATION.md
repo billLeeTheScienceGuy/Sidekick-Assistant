@@ -1098,7 +1098,7 @@ The earlier emulator/debug-server command was blocked by automatic approval revi
 
 All inference is local and the main app has no INTERNET permission. Whisper is integrated; neural VAD, speaker identification, diarization, Qwen extraction and calendar conflict checking remain unimplemented. Commitments still use a labeled rule extractor and require review.
 
-Development branch: `codex/android-foundation`. APK/model/build caches are ignored by Git; model preparation scripts reproduce the verified asset for fresh checkouts.
+APK/model/build caches are ignored by Git; model preparation scripts reproduce the verified asset for fresh checkouts.
 
 The connected-test runner removed its app installation after the test run. The normal debug APK was then reinstalled and successfully launched on the phone. Until a separate test application ID is configured, run connected instrumentation only with disposable app data; use normal APK updates for user testing.
 # 0.19.0 Korean speech quality — 2026-10-28

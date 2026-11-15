@@ -84,5 +84,5 @@ proposal; the saved record changes only when that proposal is approved. Manual c
 are respected and completed/deleted records are not revived. Associations are bounded
 and temporary; they do not connect arbitrary conversations after restart.
 
-See [places and messages](PLACES_AND_MESSAGES.md) for 0.8 settings, information-only
+See [places and messages](../design/PLACES_AND_MESSAGES.md) for 0.8 settings, information-only
 events, optional venue/address fields and message ingestion.
