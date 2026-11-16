@@ -183,11 +183,14 @@ Because SideKick may listen all day in one session, a notice no longer lasts the
 
 - **Minimum volume:** the media volume is raised to at least 50% for the notice and restored afterwards. A muted phone, or a
   volume that cannot be raised, makes the notice not count ("Notice too quiet…").
-- **Loudness check:** while the notice plays, the microphone's frame levels (numbers only) are measured. The notice counts only
-  if the loudest quarter of frames averages at least 0.01 RMS (`NoticeAudibility.MIN_LEVEL`). **This threshold is not yet
-  calibrated on the phone**: the calibration run was stopped because a real conversation was in progress. Each notice logs
-  `SidekickNotice: volume=…% level=… audible=…` (numbers only) for calibration. Next step: one notice with the phone on a table
-  and one with it in a pocket, then set the threshold between them.
+- **Loudness check, calibrated on the Pixel 7a at 68% volume:** on a table **0.0485** and **0.0464**; bottom edge covered by a
+  hand **0.0768**. Covering made it *louder*: the microphone sits next to the speaker, so the phone's own microphone cannot tell
+  a covered phone from an open one. The check is kept, with threshold 0.01 (about 5× margin), only to catch "no sound came out".
+- **Pocket / covered check added: proximity sensor.** If it reads near, the notice is not played and not counted ("Phone seems
+  covered or in a pocket…"). On the phone: uncovered → `proximity=5.0 covered=false`, played, level 0.0464, counted; palm over the
+  top / pocket → `proximity=0.0 covered=true`, not played (no speech synthesis), recorded as not counted.
+- **Headphones / Bluetooth check:** if a wired, USB, Bluetooth or BLE headset or speaker, or a hearing aid, is connected, the
+  notice is not played and not counted. Not tested on the phone (no headset connected).
 - **Auto-announce** (setting, off by default): plays the notice when a voice classified as someone else is first heard while no
   notice is in effect, and drops that phrase; at the 2-hour cap during an ongoing meeting it plays right away. Retries after a
   failure at most every 2 minutes.

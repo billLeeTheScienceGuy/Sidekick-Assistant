@@ -3,10 +3,14 @@ package com.sidekick.core
 import kotlin.math.ceil
 
 /**
- * Was the spoken notice loud enough to count? The phone's volume is raised to at least [MIN_VOLUME_FRACTION] for the
- * notice, and the microphone measures how loud the playback actually was (no audio is kept, only frame levels).
- * A notice that was barely picked up (phone in a pocket, speaker covered) does not count. This shows the notice was
- * audible near the phone, not that everyone heard it.
+ * Did the spoken notice actually play out loud? Checks, in order:
+ * 1. Sound goes to the phone's own speaker, not headphones or Bluetooth.
+ * 2. The proximity sensor does not read "near" (pocket, bag, face-down, covered top).
+ * 3. The media volume is at least [MIN_VOLUME_FRACTION] (raised for the notice, then restored) and not muted.
+ * 4. The microphone measured real playback (no audio kept, only frame levels).
+ * Calibration on a Pixel 7a: on a table 0.0485, bottom edge covered by a hand 0.0768. The phone's own microphone sits
+ * next to its speaker, so loudness cannot tell a covered phone from an open one; check 4 only catches "no sound came
+ * out". Pockets are caught by check 2. None of this shows that everyone heard it.
  */
 object NoticeAudibility {
     const val MIN_VOLUME_FRACTION = 0.5f
@@ -24,6 +28,8 @@ object NoticeAudibility {
         return top.sum() / top.size
     }
     fun audible(levels: List<Float>, minimum: Float = MIN_LEVEL): Boolean = loudness(levels) >= minimum
+    /** Proximity reading: anything below the sensor's maximum range means something is right in front of it. */
+    fun covered(distance: Float, maxRange: Float): Boolean = distance.isFinite() && maxRange > 0f && distance < maxRange
 }
 
 /**

@@ -115,6 +115,53 @@ class ListeningService : Service() {
      */
     private fun announce(auto: Boolean = false) {
         val g = gate ?: return
+        val method = if (auto) com.sidekick.core.NoticeMethod.SPOKEN_AUTO else com.sidekick.core.NoticeMethod.SPOKEN
+        fun refuse(note: String) {
+            autoAnnouncer.failed(); recordNotice(g, method, null, null, false)
+            mutableState.update { it.copy(note = note) }
+        }
+        if (!speakerOutput()) {
+            refuse("Notice not played: sound would go to headphones or Bluetooth. Use the phone speaker, or tell everyone."); return
+        }
+        checkCovered { covered ->
+            if (covered) refuse("Phone seems covered or in a pocket. Take it out and announce again, or tell everyone.")
+            else speakNotice(auto)
+        }
+    }
+
+    /** Media goes to the phone's own speaker (no headphones, Bluetooth audio or USB headset connected). */
+    private fun speakerOutput(): Boolean {
+        val audio = getSystemService(AudioManager::class.java) ?: return false
+        val elsewhere = setOf(AudioDeviceInfo.TYPE_WIRED_HEADSET, AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+            AudioDeviceInfo.TYPE_USB_HEADSET, AudioDeviceInfo.TYPE_HEARING_AID) +
+            (if (Build.VERSION.SDK_INT >= 31) setOf(AudioDeviceInfo.TYPE_BLE_HEADSET, AudioDeviceInfo.TYPE_BLE_SPEAKER) else emptySet())
+        return audio.getDevices(AudioManager.GET_DEVICES_OUTPUTS).none { it.type in elsewhere }
+    }
+
+    /** One proximity reading (pocket, bag, face-down); no sensor or no answer within 800 ms counts as not covered. */
+    private fun checkCovered(done: (Boolean) -> Unit) {
+        val sensors = getSystemService(android.hardware.SensorManager::class.java)
+        val sensor = sensors?.getDefaultSensor(android.hardware.Sensor.TYPE_PROXIMITY)
+        if (sensors == null || sensor == null) { done(false); return }
+        var finished = false
+        lateinit var listener: android.hardware.SensorEventListener
+        val timeout = Runnable { if (!finished) { finished = true; sensors.unregisterListener(listener); done(false) } }
+        listener = object : android.hardware.SensorEventListener {
+            override fun onSensorChanged(event: android.hardware.SensorEvent) {
+                if (finished) return
+                finished = true; sensors.unregisterListener(this); mainHandler.removeCallbacks(timeout)
+                val covered = com.sidekick.core.NoticeAudibility.covered(event.values[0], sensor.maximumRange)
+                android.util.Log.i("SidekickNotice", "proximity=${event.values[0]} max=${sensor.maximumRange} covered=$covered")
+                done(covered)
+            }
+            override fun onAccuracyChanged(s: android.hardware.Sensor?, accuracy: Int) {}
+        }
+        sensors.registerListener(listener, sensor, android.hardware.SensorManager.SENSOR_DELAY_NORMAL, mainHandler)
+        mainHandler.postDelayed(timeout, 800)
+    }
+
+    private fun speakNotice(auto: Boolean) {
+        val g = gate ?: return
         val includesVoice = true // the voice-analysis line is spoken in every state
         val text = com.sidekick.core.ConsentNotice.text(includesVoice)
         val method = if (auto) com.sidekick.core.NoticeMethod.SPOKEN_AUTO else com.sidekick.core.NoticeMethod.SPOKEN

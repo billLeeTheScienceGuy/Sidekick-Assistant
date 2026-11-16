@@ -218,3 +218,12 @@ class NoticeDeliveryTest {
         assertTrue(auto.otherVoice(20_500_000, noticeActive = false))
     }
 }
+
+class NoticeCoverTest {
+    @Test fun `proximity near means covered`() {
+        assertTrue(NoticeAudibility.covered(0f, 5f))      // pocket or hand over the top
+        assertFalse(NoticeAudibility.covered(5f, 5f))     // nothing in front
+        assertFalse(NoticeAudibility.covered(Float.NaN, 5f))
+        assertFalse(NoticeAudibility.covered(0f, 0f))     // broken sensor data: do not block
+    }
+}

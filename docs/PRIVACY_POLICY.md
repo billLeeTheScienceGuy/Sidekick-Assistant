@@ -44,8 +44,9 @@ outside the US, or during a phone call, it uses the strictest rules.
   ("I consent and sign"), before anything is recorded. Under 18: a parent or guardian must agree.
 
 The spoken notice plays at **at least half volume** (the phone's media volume is raised for it and put back afterwards).
-While it plays, the microphone measures only how loud it was (a number, no audio). If the phone is muted or the notice
-was barely picked up, it does not count and you are asked to repeat it or tell everyone. Each notice record stores the
+It is not played, and does not count, if sound would go to headphones or Bluetooth, if the proximity sensor shows the
+phone is covered or in a pocket, or if the phone is muted. While it plays, the microphone measures only how loud it was
+(a number, no audio) to confirm sound actually came out. None of this proves that everyone heard it. Each notice record stores the
 volume, the measured loudness and whether it counted. *Announce automatically when a new conversation starts* (off by
 default) plays the notice when another voice is first heard; that first phrase is not kept.
 
