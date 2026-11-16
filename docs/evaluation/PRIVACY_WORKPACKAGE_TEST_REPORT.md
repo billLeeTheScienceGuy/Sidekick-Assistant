@@ -179,6 +179,23 @@ Because SideKick may listen all day in one session, a notice no longer lasts the
 - Tests: 4 new core cases (conversation gap, 2-hour cap, Texas grouping stop, 30-minute voice groups); two old tests updated
   for the new lifetimes. Core 250/250.
 
+### Follow-up: notice delivery (owner's decisions)
+
+- **Minimum volume:** the media volume is raised to at least 50% for the notice and restored afterwards. A muted phone, or a
+  volume that cannot be raised, makes the notice not count ("Notice too quiet…").
+- **Loudness check:** while the notice plays, the microphone's frame levels (numbers only) are measured. The notice counts only
+  if the loudest quarter of frames averages at least 0.01 RMS (`NoticeAudibility.MIN_LEVEL`). **This threshold is not yet
+  calibrated on the phone**: the calibration run was stopped because a real conversation was in progress. Each notice logs
+  `SidekickNotice: volume=…% level=… audible=…` (numbers only) for calibration. Next step: one notice with the phone on a table
+  and one with it in a pocket, then set the threshold between them.
+- **Auto-announce** (setting, off by default): plays the notice when a voice classified as someone else is first heard while no
+  notice is in effect, and drops that phrase; at the 2-hour cap during an ongoing meeting it plays right away. Retries after a
+  failure at most every 2 minutes.
+- **Records:** Room v8 adds `volumePercent`, `measuredLevel`, `audible`, and the method `SPOKEN_AUTO`. Session details show
+  "volume X% · heard by the phone" or "too quiet, not counted". The owner's phone upgraded from v7 to v8 with all 13 records kept.
+- Tests: 3 new core cases (volume target, audibility, auto-announce state machine); device migration test now covers v6 → v8.
+  Core 253/253; device tests 9/9; lint 0 errors.
+
 ## Evidence for the presentation numbers (task 11)
 
 | Claim | Source now committed | Result |

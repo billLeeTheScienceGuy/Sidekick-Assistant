@@ -86,6 +86,10 @@ class GuidanceSettings(context: Context) {
     private val alwaysAnnounceValue = MutableStateFlow(preferences.getBoolean("always_show_announce", true))
     val alwaysShowAnnounce = alwaysAnnounceValue.asStateFlow()
     fun setAlwaysShowAnnounce(value: Boolean) { preferences.edit().putBoolean("always_show_announce", value).apply(); alwaysAnnounceValue.value = value }
+    /** Play the notice automatically when a new conversation starts (off by default). */
+    private val autoAnnounceValue = MutableStateFlow(preferences.getBoolean("auto_announce", false))
+    val autoAnnounce = autoAnnounceValue.asStateFlow()
+    fun setAutoAnnounce(value: Boolean) { preferences.edit().putBoolean("auto_announce", value).apply(); autoAnnounceValue.value = value }
     /** The precise-location request is shown once. */
     val preciseLocationAsked: Boolean get() = preferences.getBoolean("precise_location_asked", false)
     fun markPreciseLocationAsked() { preferences.edit().putBoolean("precise_location_asked", true).apply() }

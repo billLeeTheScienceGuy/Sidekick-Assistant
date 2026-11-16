@@ -17,6 +17,7 @@ internal fun ConsentRulesSection(settings: GuidanceSettings) {
     val voiceLine by settings.voiceLineEverywhere.collectAsState()
     val listening by ListeningService.state.collectAsState()
     val alwaysAnnounce by settings.alwaysShowAnnounce.collectAsState()
+    val autoAnnounce by settings.autoAnnounce.collectAsState()
     Text("Conversation rules", style = MaterialTheme.typography.titleMedium)
     QuietLabel("SideKick follows the stricter of nearby states' recording and voice rules. Not legal advice.")
     SettingsToggle("Treat every place as the strictest state",
@@ -27,6 +28,10 @@ internal fun ConsentRulesSection(settings: GuidanceSettings) {
     SettingsToggle("Always show the Announce button",
         "Announce or re-announce note-taking any time while listening, not only when a notice is needed.", alwaysAnnounce,
         settings::setAlwaysShowAnnounce, "always-show-announce")
+    SettingsToggle("Announce automatically when a new conversation starts",
+        "Plays the notice when another voice is first heard. That first phrase is not kept. Can speak up in quiet places.", autoAnnounce,
+        settings::setAutoAnnounce, "auto-announce")
+    QuietLabel("The notice plays at least at half volume. If the phone is muted or the notice is barely heard, it doesn't count.")
     QuietLabel("A notice covers one conversation: it ends after 30 minutes without other voices, or after 2 hours.")
     if (listening.recording) QuietLabel("Changes apply now; turning off \"strictest\" applies from the next session.")
     TextButton(onClick = {

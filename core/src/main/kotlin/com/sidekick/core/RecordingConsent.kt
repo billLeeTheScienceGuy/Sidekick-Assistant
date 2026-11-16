@@ -172,7 +172,7 @@ object ConsentNotice {
     fun text(includeVoice: Boolean) = if (includeVoice) "$BASE $VOICE" else BASE
 }
 
-enum class NoticeMethod { SPOKEN, ATTESTED }
+enum class NoticeMethod { SPOKEN, SPOKEN_AUTO, ATTESTED }
 
 /** What a notice covered, kept per session (no audio, no voice data). Washington treats a recorded announcement as consent. */
 data class NoticeRecord(
@@ -209,8 +209,12 @@ class ConsentGate(
         const val CONVERSATION_GAP_MS = SessionVoices.KEEP_MS
         /** A notice never lasts longer than this, even in one continuous meeting. */
         const val NOTICE_MAX_AGE_MS = 2 * 60 * 60_000L
+        const val EXPIRED_GAP = "conversation ended"
+        const val EXPIRED_MAX_AGE = "2 hours passed"
     }
-    @Volatile private var othersLastMs: Long? = null
+    /** When someone other than the owner last spoke. */
+    @Volatile var othersLastMs: Long? = null
+        private set
     /** Why the last notice ended ("conversation ended", "2 hours passed"); cleared by a new notice. */
     @Volatile var noticeExpired: String? = null
         private set
@@ -241,8 +245,8 @@ class ConsentGate(
         val at = noticeAtMs ?: return null
         val lastTalk = maxOf(at, othersLastMs ?: at)
         val reason = when {
-            nowMs - at > noticeMaxAgeMs -> "${noticeMaxAgeMs / 3_600_000} hours passed"
-            nowMs - lastTalk > conversationGapMs -> "conversation ended"
+            nowMs - at > noticeMaxAgeMs -> EXPIRED_MAX_AGE
+            nowMs - lastTalk > conversationGapMs -> EXPIRED_GAP
             else -> return null
         }
         noticeAtMs = null; noticePlace = null; noticeIncludedVoice = false; noticeExpired = reason

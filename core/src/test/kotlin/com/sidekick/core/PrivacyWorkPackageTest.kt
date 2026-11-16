@@ -182,3 +182,39 @@ class SessionVoiceLifetimeTest {
         assertNull(voices.nameOf(later.key))
     }
 }
+
+class NoticeDeliveryTest {
+    @Test fun `volume is raised to half for the notice, never lowered`() {
+        assertEquals(8, NoticeAudibility.targetVolume(3, 15))
+        assertEquals(12, NoticeAudibility.targetVolume(12, 15))
+        assertEquals(15, NoticeAudibility.targetVolume(15, 15))
+        assertEquals(53, NoticeAudibility.percent(8, 15))
+    }
+    @Test fun `quiet or covered playback does not count`() {
+        val loud = List(40) { if (it % 4 == 0) .08f else .02f }
+        assertTrue(NoticeAudibility.audible(loud))
+        val pocket = List(40) { .002f }
+        assertFalse(NoticeAudibility.audible(pocket))
+        assertFalse(NoticeAudibility.audible(listOf(.5f, .5f)))                 // too few frames to judge
+        assertFalse(NoticeAudibility.audible(List(40) { Float.NaN }))
+    }
+    @Test fun `auto announce on a new conversation, and at the two-hour cap in a meeting`() {
+        val auto = AutoAnnouncer(cooldownMs = 120_000)
+        assertFalse(auto.otherVoice(0, noticeActive = false))                   // setting off
+        auto.enabled = true
+        assertTrue(auto.otherVoice(1_000, noticeActive = false))                // first other voice of the session
+        assertFalse(auto.otherVoice(2_000, noticeActive = false))               // already handled
+        auto.failed()                                                            // too quiet
+        assertFalse(auto.otherVoice(60_000, noticeActive = false))              // cooldown
+        assertTrue(auto.otherVoice(130_000, noticeActive = false))              // retried after the cooldown
+        assertFalse(auto.otherVoice(140_000, noticeActive = true))
+        // Conversation ended: wait for the next voice, do not speak to an empty room.
+        assertFalse(auto.expired(ConsentGate.EXPIRED_GAP, 2_000_000, othersLastMs = 200_000))
+        assertTrue(auto.otherVoice(2_100_000, noticeActive = false))
+        // Two-hour cap while people are talking: play right away.
+        assertTrue(auto.expired(ConsentGate.EXPIRED_MAX_AGE, 9_000_000, othersLastMs = 8_990_000))
+        // Two-hour cap after everyone went quiet: wait for the next voice.
+        assertFalse(auto.expired(ConsentGate.EXPIRED_MAX_AGE, 20_000_000, othersLastMs = 10_000_000))
+        assertTrue(auto.otherVoice(20_500_000, noticeActive = false))
+    }
+}

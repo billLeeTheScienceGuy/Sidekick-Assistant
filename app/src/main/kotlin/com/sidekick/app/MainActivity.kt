@@ -307,7 +307,10 @@ class MainActivity : ComponentActivity() {
                                 Text("Notice record", style = MaterialTheme.typography.titleSmall)
                                 sessionNotices.forEach { record ->
                                     val time = java.time.Instant.ofEpochMilli(record.noticeAt).atZone(ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
-                                    Text("$time · ${if (record.method == "SPOKEN") "spoken" else "you told everyone"} · ${record.stateCodes.ifBlank { "unknown place" }} · " +
+                                    val how = when (record.method) { "SPOKEN" -> "spoken"; "SPOKEN_AUTO" -> "spoken automatically"; else -> "you told everyone" }
+                                    val delivery = if (record.audible == null) "" else " · volume ${record.volumePercent ?: 0}%" +
+                                        if (record.audible == true) " · heard by the phone" else " · too quiet, not counted"
+                                    Text("$time · $how$delivery · ${record.stateCodes.ifBlank { "unknown place" }} · " +
                                         "${if (record.recordingRule == "ALL_PARTY") "all-party" else "one-party"} · voice ${record.biometricRule.lowercase()}" +
                                         (if (record.includesVoice) " · incl. voice line" else "") + " · text v${record.textVersion}",
                                         style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("notice-record"))

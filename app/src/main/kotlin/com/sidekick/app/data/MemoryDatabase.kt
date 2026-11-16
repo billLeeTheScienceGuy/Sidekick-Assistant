@@ -42,8 +42,12 @@ data class NoticeRecordEntity(
     val biometricRule: String,
     val textVersion: Int,
     val includesVoice: Boolean,
-    /** SPOKEN or ATTESTED. */
+    /** SPOKEN, SPOKEN_AUTO or ATTESTED. */
     val method: String,
+    /** Spoken notices: media volume used (percent), measured loudness (RMS, loudest quarter), and whether it counted. */
+    val volumePercent: Int? = null,
+    val measuredLevel: Double? = null,
+    val audible: Boolean? = null,
 )
 
 @Dao
@@ -101,12 +105,19 @@ interface CommitmentDao {
     @Transaction suspend fun deleteAll() { deleteRows(); clearChanges() }
 }
 
-@Database(entities = [CommitmentEntity::class, AutomaticChange::class, CalendarLink::class, NoticeRecordEntity::class], version = 7, exportSchema = true)
+@Database(entities = [CommitmentEntity::class, AutomaticChange::class, CalendarLink::class, NoticeRecordEntity::class], version = 8, exportSchema = true)
 abstract class MemoryDatabase : RoomDatabase() {
     abstract fun commitments(): CommitmentDao
     abstract fun calendarLinks(): CalendarLinkDao
     abstract fun noticeRecords(): NoticeRecordDao
     companion object {
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE notice_records ADD COLUMN volumePercent INTEGER")
+                db.execSQL("ALTER TABLE notice_records ADD COLUMN measuredLevel REAL")
+                db.execSQL("ALTER TABLE notice_records ADD COLUMN audible INTEGER")
+            }
+        }
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS notice_records (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, sessionId TEXT NOT NULL, noticeAt INTEGER NOT NULL, stateCodes TEXT NOT NULL, recordingRule TEXT NOT NULL, biometricRule TEXT NOT NULL, textVersion INTEGER NOT NULL, includesVoice INTEGER NOT NULL, method TEXT NOT NULL)")

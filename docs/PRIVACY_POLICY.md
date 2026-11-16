@@ -20,7 +20,7 @@ how the app works, not legal advice. Last updated: November 16, 2026 (voiceprint
 | --- | --- | --- | --- | --- |
 | **Your voice signature** (numbers that describe your voice; no audio) | Recognize your own plans and reminders | App's no-backup storage, this phone only | Until you delete it, or automatically after **12 months unused** | Settings → Listening → *Delete my voice setup* |
 | **Your voice consent record** (the name you typed, time, notice version, method) | Proof of your written consent before your voice signature was made | App settings, this phone only | Deleted together with your voice signature | Same as above |
-| **Notice records** (time, state code(s), recording rule, voice rule, notice text version, spoken or "I told everyone") | Shows when and how people were told about note-taking. No audio, no voice data | App database | Same as your saved plans (Settings → Privacy → retention); deleted with the session if you discard it | *Discard session*, retention setting, or *Delete all* |
+| **Notice records** (time, state code(s), recording rule, voice rule, notice text version, spoken / spoken automatically / "I told everyone", volume, measured loudness, counted or not) | Shows when and how people were told about note-taking. No audio, no voice data | App database | Same as your saved plans (Settings → Privacy → retention); deleted with the session if you discard it | *Discard session*, retention setting, or *Delete all* |
 | **Saved plans and events** (title, time, place; optional short text excerpt) | Your reminders and calendar items | App database | Until you delete them, or the retention period you choose | Planner, or Settings → Privacy |
 | **Recent live text** | Review before saving | Memory only | Until the session ends or you clear it | *Discard session* |
 
@@ -42,6 +42,12 @@ outside the US, or during a phone call, it uses the strictest rules.
   - Elsewhere: grouping is allowed unless you turn on *Group voices only after notice, in every state*.
 - **Your own voice signature** needs your written consent in every state: a notice, your typed name and a ticked box
   ("I consent and sign"), before anything is recorded. Under 18: a parent or guardian must agree.
+
+The spoken notice plays at **at least half volume** (the phone's media volume is raised for it and put back afterwards).
+While it plays, the microphone measures only how loud it was (a number, no audio). If the phone is muted or the notice
+was barely picked up, it does not count and you are asked to repeat it or tell everyone. Each notice record stores the
+volume, the measured loudness and whether it counted. *Announce automatically when a new conversation starts* (off by
+default) plays the notice when another voice is first heard; that first phrase is not kept.
 
 A notice covers **one conversation**: it ends after 30 minutes without other people speaking, or 2 hours after it was given,
 whichever comes first, and then has to be given again. *Always show the Announce button* (on by default) lets you re-announce at any time.

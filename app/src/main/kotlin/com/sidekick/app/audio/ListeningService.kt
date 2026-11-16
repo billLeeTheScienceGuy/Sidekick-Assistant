@@ -70,6 +70,10 @@ class ListeningService : Service() {
     @Volatile private var muteUntil = 0L
     @Volatile private var noticePlaying = false
     private fun speakingNotice(now: Long) = noticePlaying || now < muteUntil
+    /** Microphone frame levels (numbers only) measured while the notice plays: was it loud enough to count? */
+    private val noticeLevels = java.util.concurrent.ConcurrentLinkedQueue<Float>()
+    private val autoAnnouncer = com.sidekick.core.AutoAnnouncer()
+    private val mainHandler by lazy { android.os.Handler(android.os.Looper.getMainLooper()) }
     private val app get() = application as SidekickApplication
 
     private fun refreshConsent() {
@@ -90,23 +94,46 @@ class ListeningService : Service() {
     }
 
     /** Persist what a notice covered for this session: rules, state codes, text version, method. No audio or voice data. */
-    private fun recordNotice(g: com.sidekick.core.ConsentGate, method: com.sidekick.core.NoticeMethod) {
+    private fun recordNotice(g: com.sidekick.core.ConsentGate, method: com.sidekick.core.NoticeMethod,
+        volumePercent: Int? = null, level: Float? = null, audible: Boolean? = null) {
         val session = sessionId ?: return
         val record = g.record(System.currentTimeMillis(), method)
         scope.launch {
             runCatching {
                 app.database.noticeRecords().put(com.sidekick.app.data.NoticeRecordEntity(sessionId = session, noticeAt = record.atEpochMs,
                     stateCodes = record.stateCodes.joinToString(","), recordingRule = record.recording.name, biometricRule = record.biometric.name,
-                    textVersion = record.textVersion, includesVoice = record.includesVoice, method = record.method.name))
+                    textVersion = record.textVersion, includesVoice = record.includesVoice, method = record.method.name,
+                    volumePercent = volumePercent, measuredLevel = level?.toDouble(), audible = audible))
             }
         }
     }
 
-    /** Spoken notice: the base line plus the voice-analysis line, in every state. */
-    private fun announce() {
+    /**
+     * Spoken notice: the base line plus the voice-analysis line, in every state. The media volume is raised to at least
+     * half for the notice and put back afterwards; the microphone measures how loud it was. A muted phone or a notice
+     * that was barely picked up does not count. [auto]: played by "Announce automatically when a new conversation starts".
+     */
+    private fun announce(auto: Boolean = false) {
         val g = gate ?: return
         val includesVoice = true // the voice-analysis line is spoken in every state
         val text = com.sidekick.core.ConsentNotice.text(includesVoice)
+        val method = if (auto) com.sidekick.core.NoticeMethod.SPOKEN_AUTO else com.sidekick.core.NoticeMethod.SPOKEN
+        val audio = getSystemService(AudioManager::class.java)
+        val stream = AudioManager.STREAM_MUSIC
+        val max = audio.getStreamMaxVolume(stream)
+        val original = audio.getStreamVolume(stream)
+        val target = com.sidekick.core.NoticeAudibility.targetVolume(original, max)
+        if (target > original) runCatching { audio.setStreamVolume(stream, target, 0) }
+        val volume = audio.getStreamVolume(stream)
+        fun restore() { if (volume != original) runCatching { audio.setStreamVolume(stream, original, 0) } }
+        val percent = com.sidekick.core.NoticeAudibility.percent(volume, max)
+        if (audio.isStreamMute(stream) || volume < target) {
+            restore(); autoAnnouncer.failed()
+            recordNotice(g, method, percent, null, false)
+            mutableState.update { it.copy(note = "Notice too quiet: raise the volume or tell everyone, then tap \"I told everyone\".") }
+            return
+        }
+        noticeLevels.clear()
         noticeVoice?.shutdown()
         noticeVoice = android.speech.tts.TextToSpeech(this) { status ->
             val tts = noticeVoice
@@ -115,17 +142,34 @@ class ListeningService : Service() {
                     override fun onStart(id: String?) { noticePlaying = true }
                     override fun onDone(id: String?) {
                         noticePlaying = false; muteUntil = SystemClock.elapsedRealtime() + 700
-                        g.noticeGiven(SystemClock.elapsedRealtime(), includesVoice)
-                        recordNotice(g, com.sidekick.core.NoticeMethod.SPOKEN); refreshConsent()
+                        restore()
+                        val levels = noticeLevels.toList(); noticeLevels.clear()
+                        val loudness = com.sidekick.core.NoticeAudibility.loudness(levels)
+                        val audible = com.sidekick.core.NoticeAudibility.audible(levels)
+                        // Numbers only: for calibrating the audibility threshold. Never words or location.
+                        android.util.Log.i("SidekickNotice", "volume=$percent% level=${"%.4f".format(java.util.Locale.US, loudness)} frames=${levels.size} audible=$audible auto=$auto")
+                        recordNotice(g, method, percent, loudness, audible)
+                        if (audible) { g.noticeGiven(SystemClock.elapsedRealtime(), includesVoice); refreshConsent() }
+                        else {
+                            autoAnnouncer.failed()
+                            mutableState.update { it.copy(note = "Notice too quiet to count. Uncover the phone or raise the volume and announce again, or tell everyone.") }
+                        }
                     }
                     @Deprecated("Deprecated in Java") override fun onError(id: String?) {
                         noticePlaying = false; muteUntil = SystemClock.elapsedRealtime() + 700
+                        restore(); autoAnnouncer.failed()
                         mutableState.update { it.copy(note = "Couldn't play the notice. Tell everyone you're taking notes, then tap \"I told everyone\".") }
                     }
                 })
                 noticePlaying = true // mute before audio starts; onDone/onError release it
-                if (tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "sidekick-notice") != android.speech.tts.TextToSpeech.SUCCESS) noticePlaying = false
-            } else mutableState.update { it.copy(note = "No text-to-speech voice. Tell everyone you're taking notes, then tap \"I told everyone\".") }
+                val params = android.os.Bundle().apply { putInt(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_STREAM, stream) }
+                if (tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "sidekick-notice") != android.speech.tts.TextToSpeech.SUCCESS) {
+                    noticePlaying = false; restore(); autoAnnouncer.failed()
+                }
+            } else {
+                restore(); autoAnnouncer.failed()
+                mutableState.update { it.copy(note = "No text-to-speech voice. Tell everyone you're taking notes, then tap \"I told everyone\".") }
+            }
         }
     }
 
@@ -257,6 +301,7 @@ class ListeningService : Service() {
                         catch (_: Exception) { applyPlace(com.sidekick.core.RecordingJurisdiction.unknown("Location lookup failed")) }
                     }
                     follower?.let(watchers::add)
+                    watchers += launch { app.guidance.autoAnnounce.collect { autoAnnouncer.enabled = it } }
                     watchers += launch { app.guidance.voiceLineEverywhere.collect { consent.voiceNoticeEverywhere = it; refreshConsent() } }
                     watchers += launch { app.guidance.strictestEverywhere.collect { on ->
                         // Turned on mid-session: stop all location requests and apply the strictest rule.
@@ -268,7 +313,12 @@ class ListeningService : Service() {
                         while (isActive) {
                             val calling = manager.mode == AudioManager.MODE_IN_CALL || manager.mode == AudioManager.MODE_IN_COMMUNICATION
                             // A notice covers one conversation: 30 min without other voices, or 2 hours at most.
-                            if (consent.expireIfStale(SystemClock.elapsedRealtime()) != null) refreshConsent()
+                            val nowMs = SystemClock.elapsedRealtime()
+                            consent.expireIfStale(nowMs)?.let { reason ->
+                                refreshConsent()
+                                // 2-hour cap in an ongoing meeting: renew right away if the setting is on.
+                                if (autoAnnouncer.expired(reason, nowMs, consent.othersLastMs)) mainHandler.post { announce(auto = true) }
+                            }
                             if (calling != inCall) {
                                 inCall = calling
                                 consent.moveTo(if (calling) com.sidekick.core.RecordingJurisdiction.duringCall() else located)
@@ -309,7 +359,13 @@ class ListeningService : Service() {
                                     Speaker.UNKNOWN -> "$voiceLabel · identity unassigned"
                                 }) }
                             // Speech the consent rule does not allow is dropped before recognition: never transcribed.
-                            val kept = consent.keep(identified, SystemClock.elapsedRealtime())
+                            // New conversation and no notice in effect: with the setting on, announce now and drop this
+                            // phrase, which was said before the notice.
+                            // Only a voice classified as someone else: the owner's own short phrases are often "unassigned".
+                            val autoNow = identified == Speaker.OTHER && !speakingNotice(SystemClock.elapsedRealtime()) &&
+                                autoAnnouncer.otherVoice(SystemClock.elapsedRealtime(), consent.noticeAtMs != null)
+                            if (autoNow) mainHandler.post { announce(auto = true) }
+                            val kept = !autoNow && consent.keep(identified, SystemClock.elapsedRealtime())
                             // For phone tests and scripts/phone-tests/voice_tuning_report.py: voice scores and the consent decision only;
                             // never words, location, voice labels or names.
                             android.util.Log.i("SidekickVoice", "speaker=$identified kept=$kept rule=${consent.place.recording} biometric=${consent.place.biometric} " +
@@ -380,6 +436,7 @@ class ListeningService : Service() {
                     if (filled == raw.size) {
                         val samples = FloatArray(filled) { raw[it] / 32768f }
                         val level = sqrt(samples.sumOf { it.toDouble() * it } / samples.size).toFloat()
+                        if (noticePlaying) noticeLevels.add(level)
                         if (speakingNotice(SystemClock.elapsedRealtime())) samples.fill(0f)
                         val detected = try { pipeline.accept(samples) } finally { samples.fill(0f); raw.fill(0) }
                         filled = 0

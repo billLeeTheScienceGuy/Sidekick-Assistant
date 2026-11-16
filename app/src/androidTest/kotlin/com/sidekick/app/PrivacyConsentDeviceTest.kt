@@ -34,9 +34,10 @@ class PrivacyConsentDeviceTest {
         migration.createDatabase("privacy-6-7", 6).use { db ->
             db.execSQL("INSERT INTO commitments (id,title,evidence,capturedAt,zoneId,reviewNote,state,informational) VALUES ('keep','Lunch','Lunch at noon',1,'UTC','r','ACCEPTED',0)")
         }
-        migration.runMigrationsAndValidate("privacy-6-7", 7, true, MemoryDatabase.MIGRATION_6_7).use { db ->
+        migration.runMigrationsAndValidate("privacy-6-7", 8, true, MemoryDatabase.MIGRATION_6_7, MemoryDatabase.MIGRATION_7_8).use { db ->
             db.query("SELECT title FROM commitments WHERE id='keep'").use { assertTrue(it.moveToFirst()); assertEquals("Lunch", it.getString(0)) }
             db.query("SELECT COUNT(*) FROM notice_records").use { assertTrue(it.moveToFirst()); assertEquals(0, it.getInt(0)) }
+            db.query("SELECT volumePercent, measuredLevel, audible FROM notice_records").use { assertEquals(3, it.columnCount) }
         }
     }
 
