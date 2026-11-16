@@ -26,6 +26,9 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 - Stricter owner matching before notice in all-party places; threshold-tuning script and scaffold
   ([speaker tuning](docs/evaluation/SPEAKER_TUNING.md)). Test report: [privacy work package](docs/evaluation/PRIVACY_WORKPACKAGE_TEST_REPORT.md).
 - Fix: a finished session no longer waits on the background location loop.
+- Fix: recognizer loops ("thank you" ×12) keep one copy (RepeatFilter; no change to about 20,000 human transcripts,
+  34 real loops caught in saved recognizer output). Whisper decodes a looping reading once more with a little randomness
+  and caps output length; ordinary phrases are decoded exactly once, as before.
 
 ## 0.35.0
 

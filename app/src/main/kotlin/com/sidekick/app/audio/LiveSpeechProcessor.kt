@@ -59,8 +59,9 @@ class LiveSpeechProcessor(
                     val heard = try { withTimeout(30_000) { speech.transcribe(window, 2, true, speech.liveContext(shortBoost), shortPhrase = shortBoost, voiceKey = voiceKey()) } }
                         catch (_: TimeoutCancellationException) { error("Transcription timed out. Listening stopped; review text captured so far.") }
                         finally { if (window !== chunk.samples) window.fill(0f) }
-                    // Music and noise scraps are never shown or used (see PhraseFilter).
-                    val text = if (com.sidekick.core.PhraseFilter.isNoise(heard, audio.size * 1000L / 16000)) { noise.incrementAndGet(); "" } else heard
+                    // Recognizer loops ("thank you" ×12) keep one copy; music and noise scraps are never shown or used.
+                    val unlooped = com.sidekick.core.RepeatFilter.collapse(heard)
+                    val text = if (com.sidekick.core.PhraseFilter.isNoise(unlooped, audio.size * 1000L / 16000)) { noise.incrementAndGet(); "" } else unlooped
                     onBoundary(continues)
                     onText(text, sourceStart, android.os.SystemClock.elapsedRealtime() - start)
                     } finally { if (audio !== chunk.samples) audio.fill(0f) }
