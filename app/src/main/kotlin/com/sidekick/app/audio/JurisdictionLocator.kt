@@ -22,7 +22,8 @@ import kotlin.coroutines.resume
 /**
  * Which recording-consent and biometric rules apply here. Satellite positioning works without cell or Wi-Fi; the state
  * lookup uses borders bundled in the app. The position is used only for this lookup: never stored, logged or sent.
- * Any failure returns the strictest rule (RecordingJurisdiction.unknown).
+ * Any failure returns the strictest rule (RecordingJurisdiction.unknown), and so does a position from a mock-location
+ * app. The city in Settings is never used here: only the phone's own position can loosen the rules.
  */
 object JurisdictionLocator {
     const val UPDATE_MIN_TIME_MS = 60_000L
@@ -35,8 +36,12 @@ object JurisdictionLocator {
     fun place(context: Context, location: Location): RecordingJurisdiction.Place {
         val ageMs = (SystemClock.elapsedRealtimeNanos() - location.elapsedRealtimeNanos) / 1_000_000
         return RecordingJurisdiction.locate(location.latitude, location.longitude,
-            if (location.hasAccuracy()) location.accuracy.toDouble() else null, ageMs, precise = fine(context))
+            if (location.hasAccuracy()) location.accuracy.toDouble() else null, ageMs, precise = fine(context), simulated = simulated(location))
     }
+
+    @Suppress("DEPRECATION")
+    private fun simulated(location: Location): Boolean =
+        if (Build.VERSION.SDK_INT >= 31) location.isMock else location.isFromMockProvider
 
     suspend fun locate(context: Context): RecordingJurisdiction.Place = withContext(Dispatchers.IO) {
         try {

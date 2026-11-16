@@ -22,6 +22,23 @@ class RecordingConsentTest {
         assertEquals(Rule.ONE_PARTY, at(29.7604, -95.3698).recording)         // Houston, TX
         assertEquals(Rule.ONE_PARTY, at(21.3069, -157.8583).recording)        // Honolulu, HI
     }
+    @Test fun `a faked location never loosens the rules`() {
+        // Madison, WI is one-party with no voice rule, but a position from a mock-location app gets the strictest rules.
+        val faked = RecordingJurisdiction.locate(43.0731, -89.4012, 5.0, 1_000, precise = true, simulated = true)
+        assertRules(Rule.ALL_PARTY, BiometricRule.STRICT, faked)
+        assertNull(faked.code)
+        assertEquals(RecordingJurisdiction.SIMULATED, faked.reason)
+    }
+    @Test fun `home screen line follows the place`() {
+        val madison = ConsentGate(at(43.0731, -89.4012))
+        assertEquals("Wisconsin: one-party, others kept while you take part · audio discarded", madison.homeLabel())
+        val border = ConsentGate(at(42.5131, -89.0))
+        assertEquals("Wisconsin (near IL): all-party, announce to keep others · audio discarded", border.homeLabel())
+        border.noticeGiven(0)
+        assertEquals("Wisconsin (near IL): all-party, notice given · audio discarded", border.homeLabel())
+        assertEquals("Texas: one-party, voice notice before grouping · audio discarded", ConsentGate(at(29.7604, -95.3698)).homeLabel())
+        assertTrue(ConsentGate(RecordingJurisdiction.unknown("No location fix")).homeLabel().contains("strictest rules"))
+    }
     @Test fun `bundled data has two rule columns`() {
         assertEquals(Rule.ALL_PARTY to BiometricRule.STRICT, RecordingJurisdiction.rulesFor("IL"))
         assertEquals(Rule.ONE_PARTY to BiometricRule.NOTICE, RecordingJurisdiction.rulesFor("TX"))

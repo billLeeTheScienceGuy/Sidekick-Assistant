@@ -51,7 +51,7 @@ class ListeningSettingsTest {
                     else AppSettingsDialog(app.guidance) { }
                 }
             }
-            compose.onNodeWithText("Make sure everyone agrees.").assertIsDisplayed()
+            compose.onNodeWithText("SideKick follows the recording rules", substring = true).assertIsDisplayed()
             compose.onNodeWithText("Voice matching does not verify consent.", substring = true).assertDoesNotExist()
             compose.onNodeWithTag("skip-listening-intro").performScrollTo().performClick()
             compose.onNodeWithText("Cancel").performClick()

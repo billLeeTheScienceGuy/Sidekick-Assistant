@@ -30,7 +30,7 @@ Android backup is turned off for voice data; the voice signature lives in no-bac
 
 SideKick follows the **stricter** of the rules of the state you are in and any state within the location error margin
 (about 1.5–2 km with precise location, about 5.5 km with approximate location). If the location is unknown, stale,
-outside the US, or during a phone call, it uses the strictest rules.
+outside the US, during a phone call, or set by a mock-location app, it uses the strictest rules. The city you enter in Settings is never used for these rules.
 
 - **Recording rule** (whose words are kept). All-party states (CA, FL, IL, MD, MA, MT, NH, PA, WA, and CT, DE, MI, NV, OR, VT treated as all-party):
   other people's words are kept only after the spoken notice ("Just so you know, SideKick is taking notes on this conversation.

@@ -16,6 +16,8 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 - The spoken notice plays at least at half volume (raised and restored) and counts only if the microphone measured it
   as loud enough; volume, loudness and the result go into the notice record (Room v8). Optional "Announce automatically
   when a new conversation starts" (off by default).
+- A location from a mock-location app (Developer options) gets the strictest rules; the city in Settings never sets them.
+  The "Listening & privacy" panel now says what SideKick does while listening, and links the Wisconsin statute (968.31).
 - Settings: "Treat every place as the strictest state", "Group voices only after notice, in every state", privacy policy link.
 - Owner voice setup asks for written consent first (name, checkbox, optional signature; guardian for under-18s);
   profiles without a consent record stop matching until accepted; profiles unused for 12 months are deleted.

@@ -53,7 +53,7 @@ internal fun PrivacyGuidanceSection(settings: GuidanceSettings) {
     val guidance = PrivacyRegions.guidance(region)
     Text(guidance.label, style = MaterialTheme.typography.titleMedium)
     Text(if (phone != null) "Using your nearby region. Refresh after 24 hours."
-        else "Using the city and state you chose, if recognized. A city name alone may be unclear.")
+        else "Using the city and state you chose, if recognized (for this panel only). A city name alone may be unclear.")
     Text(guidance.note)
     Row {
         Switch(usePhone, { enabled ->

@@ -38,6 +38,8 @@ data class ListeningState(
     val note: String = "Microphone is off",
     /** Which consent rule applies and what it is doing right now (see RecordingConsent in core). */
     val consent: String = "",
+    /** One line for the home screen: the rule where you are, set once listening has checked the location. */
+    val rulesLabel: String = "",
     /** True while other people's words are being dropped because notice has not been given. */
     val noticeNeeded: Boolean = false,
     /** Phrases from other voices discarded on arrival this session. */
@@ -81,7 +83,7 @@ class ListeningService : Service() {
         val now = SystemClock.elapsedRealtime()
         // Voice grouping is never allowed here (STRICT, or NOTICE before notice): forget every other voice at once.
         if (!g.groupingAllowed()) forgetOthers()
-        mutableState.update { it.copy(consent = g.status(now) + " · " + g.place.reason, noticeNeeded = g.noticeNeeded(),
+        mutableState.update { it.copy(consent = g.status(now) + " · " + g.place.reason, rulesLabel = g.homeLabel(), noticeNeeded = g.noticeNeeded(),
             attestLabel = g.attestLabel(), namingAllowed = g.namingAllowed(now), noticeActive = g.noticeAtMs != null) }
     }
 

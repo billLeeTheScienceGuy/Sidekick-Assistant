@@ -15,7 +15,7 @@ internal fun ListeningStartDialog(settings: GuidanceSettings, handsOff: Boolean,
     var details by remember { mutableStateOf(false) }
     AlertDialog(onDismissRequest = onCancel, title = { Text("Start listening?") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Make sure everyone agrees.")
+            Text("SideKick follows the recording rules of the state you're in. In all-party states like Illinois, or if your location is unknown, others' words are kept only after you announce note-taking.")
             Text("SideKick transcribes on this phone and discards the audio. Listening continues with the screen off.")
             QuietLabel(if (handsOff) "Plans save automatically. You can undo changes." else "Review plans before saving them.")
             if (recovery) QuietLabel("This session can resume after a phone restart until you stop it.")

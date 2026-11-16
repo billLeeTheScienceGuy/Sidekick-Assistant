@@ -62,7 +62,8 @@ internal fun CompactHome(
             }
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onDetails, modifier = Modifier.testTag("compact-details")) { Text("Detailed view") }
-            if (!tight) QuietLabel("Everyone must agree · audio discarded")
+            if (!tight) QuietLabel(listening.rulesLabel.takeIf { listening.recording && it.isNotBlank() }
+                ?: "Rules follow your state · audio discarded", Modifier.testTag("compact-rules"))
         }
     }
 }

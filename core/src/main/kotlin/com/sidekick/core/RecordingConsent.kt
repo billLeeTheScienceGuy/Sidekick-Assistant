@@ -90,8 +90,12 @@ object RecordingJurisdiction {
     /** A phone call can reach someone in any state. */
     fun duringCall() = Place(null, "Phone call", Rule.ALL_PARTY, BiometricRule.STRICT, "Call detected: strictest rule")
 
-    fun locate(lat: Double?, lon: Double?, accuracyMeters: Double?, fixAgeMs: Long?, precise: Boolean = false): Place = try {
-        locateOrThrow(lat, lon, accuracyMeters, fixAgeMs, precise)
+    /** Reason shown for a location set by a mock-location app (Developer options): it can't be trusted. */
+    const val SIMULATED = "Simulated location (mock-location app): strictest rule"
+
+    /** [simulated]: the fix came from a mock-location app. A faked position never loosens the rules. */
+    fun locate(lat: Double?, lon: Double?, accuracyMeters: Double?, fixAgeMs: Long?, precise: Boolean = false, simulated: Boolean = false): Place = try {
+        if (simulated) unknown(SIMULATED) else locateOrThrow(lat, lon, accuracyMeters, fixAgeMs, precise)
     } catch (e: Exception) {
         unknown("Location lookup failed")
     }
@@ -294,6 +298,19 @@ class ConsentGate(
 
     fun record(nowEpochMs: Long, method: NoticeMethod): NoticeRecord = NoticeRecord(nowEpochMs,
         listOfNotNull(place.code) + place.forcedBy, place.recording, place.biometric, ConsentNotice.VERSION, noticeIncludedVoice, method)
+
+    /** One short line for the home screen: what the rule here means right now. */
+    fun homeLabel(): String {
+        val words = when {
+            place.code == null -> "strictest rules, announce to keep others"
+            place.recording == RecordingJurisdiction.Rule.ALL_PARTY && noticeAtMs == null -> "all-party, announce to keep others"
+            place.recording == RecordingJurisdiction.Rule.ALL_PARTY -> "all-party, notice given"
+            place.biometric == RecordingJurisdiction.BiometricRule.NOTICE && !groupingAllowed() -> "one-party, voice notice before grouping"
+            else -> "one-party, others kept while you take part"
+        }
+        val near = if (place.forcedBy.isEmpty()) "" else " (near ${place.forcedBy.joinToString("/")})"
+        return "${place.name}$near: $words · audio discarded"
+    }
 
     /** Short status for the listening screen. */
     fun status(nowMs: Long): String {
