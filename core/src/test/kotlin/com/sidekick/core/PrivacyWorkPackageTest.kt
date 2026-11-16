@@ -143,3 +143,28 @@ class InvitationDatingTest {
         assertNull(VoiceInvitations.propose("25", at, zone))
     }
 }
+
+class AddressedNameTest {
+    @Test fun `recognizer-style lowercase names are found after a greeting`() {
+        assertEquals("Sarah", VoiceInvitations.addressed("hey sarah, are you free later"))
+        assertEquals("Sarah", VoiceInvitations.addressed("Hey, Sarah. What time works?"))
+        assertEquals("Sarah", VoiceInvitations.addressed("hi sarah"))
+        assertEquals("Sarah", VoiceInvitations.addressed("Sarah, what time works?"))
+        assertNull(VoiceInvitations.addressed("sarah, what time works?"))        // no greeting: needs a capital
+        assertNull(VoiceInvitations.addressed("so, what do you think"))
+        assertNull(VoiceInvitations.addressed("hey guys"))
+        assertNull(VoiceInvitations.addressed("hey everyone, listen up"))
+        assertNull(VoiceInvitations.addressed("I talked to Sarah yesterday"))
+    }
+    @Test fun `any voice may address, but never names itself`() {
+        val naming = SessionNaming()
+        val t0 = Instant.parse("2026-11-16T10:00:00Z")
+        // Owner not recognized (short phrase): an unassigned voice says the name, a grouped voice answers.
+        naming.spoke("hey sarah, are you coming", "spk_s_unassigned3", t0)
+        assertEquals(SessionNaming.Suggestion("spk_s_2", "Sarah"), naming.voiceSpoke("spk_s_2", null, t0.plusSeconds(2)))
+        // The grouped voice that said the name is not the one being named.
+        naming.spoke("hey sarah", "spk_s_2", t0.plusSeconds(10))
+        assertNull(naming.voiceSpoke("spk_s_2", null, t0.plusSeconds(11)))
+        assertEquals("Sarah", naming.voiceSpoke("spk_s_3", null, t0.plusSeconds(12))?.name)
+    }
+}

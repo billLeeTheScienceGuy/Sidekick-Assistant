@@ -152,8 +152,9 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         val nameable = grouped && speaker != Speaker.USER && speakerTrack != null && !speakerTrack.contains("_unassigned")
         mutableSpeakerTurns.value = (mutableSpeakerTurns.value + LiveSpeakerTurn(capturedAt, speakerLabel.take(80), speaker, text.take(500),
             speakerTrack.takeIf { nameable })).takeLast(12)
-        if (speaker == Speaker.USER) naming.ownerSpoke(text, capturedAt)
-        else if (nameable) naming.voiceSpoke(speakerTrack!!, speakerName, capturedAt)?.let { mutableNameSuggestion.value = it }
+        // A different grouped voice answering a just-addressed name gets a suggestion; then this phrase may address someone.
+        if (nameable) naming.voiceSpoke(speakerTrack!!, speakerName, capturedAt)?.let { mutableNameSuggestion.value = it }
+        naming.spoke(text, if (speaker == Speaker.USER) "owner" else speakerTrack, capturedAt)
         if (!recognitionReliable) {
             // Keep the heard text, but never schedule/update from conflicting acoustic readings.
             mutableText.value = LiveText.append(mutableText.value, text, !continuation).takeLast(6000)

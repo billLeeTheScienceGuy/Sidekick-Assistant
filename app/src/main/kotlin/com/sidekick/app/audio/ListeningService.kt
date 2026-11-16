@@ -64,6 +64,10 @@ class ListeningService : Service() {
     @Volatile private var turnEngine: com.sidekick.app.speaker.SpeakerTurnEngine? = null
     @Volatile private var sessionId: String? = null
     private var noticeVoice: android.speech.tts.TextToSpeech? = null
+    /** While the spoken notice plays (plus a short tail), microphone input is replaced by silence: SideKick never transcribes itself. */
+    @Volatile private var muteUntil = 0L
+    @Volatile private var noticePlaying = false
+    private fun speakingNotice(now: Long) = noticePlaying || now < muteUntil
     private val app get() = application as SidekickApplication
 
     private fun refreshConsent() {
@@ -106,16 +110,19 @@ class ListeningService : Service() {
             val tts = noticeVoice
             if (status == android.speech.tts.TextToSpeech.SUCCESS && tts != null) {
                 tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
-                    override fun onStart(id: String?) {}
+                    override fun onStart(id: String?) { noticePlaying = true }
                     override fun onDone(id: String?) {
+                        noticePlaying = false; muteUntil = SystemClock.elapsedRealtime() + 700
                         g.noticeGiven(SystemClock.elapsedRealtime(), includesVoice)
                         recordNotice(g, com.sidekick.core.NoticeMethod.SPOKEN); refreshConsent()
                     }
                     @Deprecated("Deprecated in Java") override fun onError(id: String?) {
+                        noticePlaying = false; muteUntil = SystemClock.elapsedRealtime() + 700
                         mutableState.update { it.copy(note = "Couldn't play the notice. Tell everyone you're taking notes, then tap \"I told everyone\".") }
                     }
                 })
-                tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "sidekick-notice")
+                noticePlaying = true // mute before audio starts; onDone/onError release it
+                if (tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "sidekick-notice") != android.speech.tts.TextToSpeech.SUCCESS) noticePlaying = false
             } else mutableState.update { it.copy(note = "No text-to-speech voice. Tell everyone you're taking notes, then tap \"I told everyone\".") }
         }
     }
@@ -369,6 +376,7 @@ class ListeningService : Service() {
                     if (filled == raw.size) {
                         val samples = FloatArray(filled) { raw[it] / 32768f }
                         val level = sqrt(samples.sumOf { it.toDouble() * it } / samples.size).toFloat()
+                        if (speakingNotice(SystemClock.elapsedRealtime())) samples.fill(0f)
                         val detected = try { pipeline.accept(samples) } finally { samples.fill(0f); raw.fill(0) }
                         filled = 0
                         mutableState.update { it.copy(level = level, speechActive = detected, seconds = ((SystemClock.elapsedRealtime() - startedClock) / 1000).toInt()) }

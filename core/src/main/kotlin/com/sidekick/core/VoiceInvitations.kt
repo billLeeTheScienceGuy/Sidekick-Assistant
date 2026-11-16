@@ -13,10 +13,13 @@ object VoiceInvitations {
     private val invite = Regex("\\b(?:meet me|see you|let['’]?s meet|let us meet)\\s+(?:at\\s+)?($CLOCK$DAY)\\b", RegexOption.IGNORE_CASE)
     private val reply = Regex("\\bi(?:['’]ll| will) (?:meet|see) you (?:there )?(?:at\\s+)?($CLOCK$DAY)\\b", RegexOption.IGNORE_CASE)
     private val acceptance = Regex("^(?:sure|ok|okay|yes|yeah|yep|sounds good|deal|see you then|see you there|perfect)(?:[,!.]?\\s*(?:sure|ok|okay|see you then|see you there|sounds good))?[.!]*$", RegexOption.IGNORE_CASE)
-    private val address = Regex("^(?i:hey|hi|hello|so|ok|okay)?[\\s,]*([A-Z][a-z]{1,20})(?:\\s*,|\\s*[!?.]\\s*$)|^(?i:hey|hi|hello)\\s+([A-Z][a-z]{1,20})\\b")
+    // "Sarah, ..." needs a capital letter; after a greeting ("hey sarah") any case works, because speech
+    // recognition often writes names in lowercase.
+    private val address = Regex("^(?i:hey|hi|hello)[\\s,]+(\\p{L}{2,21})\\b|^(?i:hey|hi|hello|so|ok|okay)?[\\s,]*(\\p{Lu}\\p{Ll}{1,20})(?:\\s*,|\\s*[!?.]\\s*$)")
     private val notNames = setOf("Hey", "Hi", "Hello", "So", "Ok", "Okay", "Yes", "Yeah", "No", "Well", "Sure", "Thanks", "Thank", "Sorry",
         "Please", "And", "But", "Then", "Now", "Today", "Tomorrow", "Tonight", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
-        "Saturday", "Sunday", "I", "Actually", "Right", "Wait", "Look", "Listen", "Guys", "Everyone", "Alright", "Great", "Cool")
+        "Saturday", "Sunday", "I", "Actually", "Right", "Wait", "Look", "Listen", "Guys", "Everyone", "Alright", "Great", "Cool",
+        "There", "You", "Everybody", "All", "Folks", "Man", "Dude", "Again", "Anyway", "What", "How", "Why", "Who", "Where", "When")
 
     /** The clock phrase of another speaker's dated invitation, e.g. "5" or "5 pm tomorrow"; null if none. */
     fun invitation(text: String): String? = invite.find(text)?.groupValues?.get(1)?.trim()
@@ -25,7 +28,8 @@ object VoiceInvitations {
     fun isAcceptance(text: String): Boolean = acceptance.matches(text.trim())
     /** The name the owner addresses ("Hey Sarah", "Sarah, ..."); null if none. */
     fun addressed(text: String): String? = address.find(text.trim())?.let { m -> m.groupValues.drop(1).firstOrNull { it.isNotEmpty() } }
-        ?.takeIf { it !in notNames }
+        ?.lowercase()?.replaceFirstChar { it.titlecase() }
+        ?.takeIf { name -> notNames.none { it.equals(name, ignoreCase = true) } }
 
     /** Event text from another speaker: "<who>: meet at <clock>"; information only, never a reminder. */
     fun otherTitle(who: String, clock: String) = "$who: meet at $clock"
@@ -56,27 +60,31 @@ object VoiceInvitations {
 
 /**
  * Session-only conversation memory for naming and invitations. Holds names and timestamps in memory; [clear] wipes it.
- * - The owner addresses "<Name>" and a different grouped voice speaks within [suggestWindowMs] -> suggest that name.
+ * - Someone says "Hey <Name>" and a different grouped voice speaks within [suggestWindowMs] -> suggest that name.
+ *   Any voice may address (the owner is often not recognized on a short phrase); the owner still applies it only by tapping.
  * - A named voice invites at a time, then the owner accepts within [acceptWindowMs] -> owner event for Review.
  */
 class SessionNaming(private val suggestWindowMs: Long = 5_000, private val acceptWindowMs: Long = 30_000) {
     data class Suggestion(val voiceKey: String, val name: String)
     data class Invitation(val voiceKey: String, val name: String, val clock: String, val at: Instant)
-    private var addressed: Pair<String, Instant>? = null
+    private data class Addressed(val name: String, val by: String?, val at: Instant)
+    private var addressed: Addressed? = null
     private var lastNamedVoice: Pair<String, Instant>? = null // name, at
     private var invitation: Invitation? = null
 
-    /** Owner spoke; returns nothing. Remembers an addressed name. */
-    fun ownerSpoke(text: String, at: Instant) {
-        VoiceInvitations.addressed(text)?.let { addressed = it to at }
+    /** Anyone spoke ([voiceKey] = their session voice, if known). Remembers an addressed name. */
+    fun spoke(text: String, voiceKey: String?, at: Instant) {
+        VoiceInvitations.addressed(text)?.let { addressed = Addressed(it, voiceKey, at) }
     }
+    fun ownerSpoke(text: String, at: Instant) = spoke(text, null, at)
     /** A grouped voice spoke. Returns a name suggestion when the owner just addressed someone and this voice has no name. */
     fun voiceSpoke(voiceKey: String, currentName: String?, at: Instant): Suggestion? {
         if (currentName != null) { lastNamedVoice = currentName to at; return null }
-        val (name, when_) = addressed ?: return null
-        if (Duration.between(when_, at).toMillis() !in 0..suggestWindowMs) return null
+        val found = addressed ?: return null
+        if (found.by == voiceKey) return null // the person who said the name is not the one being named
+        if (Duration.between(found.at, at).toMillis() !in 0..suggestWindowMs) return null
         addressed = null
-        return Suggestion(voiceKey, name)
+        return Suggestion(voiceKey, found.name)
     }
     fun invited(voiceKey: String, name: String, clock: String, at: Instant) { invitation = Invitation(voiceKey, name, clock, at) }
     /** The named voice the owner is answering, if one spoke within the accept window. */
