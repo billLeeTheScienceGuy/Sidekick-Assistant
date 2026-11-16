@@ -165,6 +165,20 @@ and (2) the "Sarah?" suggestion never appeared. Findings from the phone's logs a
   "I told everyone (incl. voice analysis)". The setting was renamed "Group voices only after notice, in every state": it no longer
   changes the wording, only whether grouping waits for the notice outside Texas and Washington.
 
+### Follow-up: notice lifetime (owner's decisions)
+
+Because SideKick may listen all day in one session, a notice no longer lasts the whole session:
+- It **expires after 30 minutes with no speech from other people** ("conversation ended"), or **2 hours after it was given**.
+  The status line then shows "notice expired (…)" and the Announce buttons come back. Any expiry in Texas or Washington also stops
+  voice grouping, so other voices are forgotten.
+- **Voice groups now last 30 minutes** without that voice (was 15), matching the conversation gap. Trade-offs: the 8-group limit fills
+  sooner in busy places (new people then stay "Unassigned voice"), and a group's signature has more time to drift. Both values are
+  single constants (`SessionVoices.KEEP_MS`, `ConsentGate.NOTICE_MAX_AGE_MS`).
+- Not built, by the owner's choice: expiry on moving 500 m (cars), and asking again when a new voice joins (a quiet listener may have heard it).
+- New setting **"Always show the Announce button"** (on by default): "Announce again" / "I told everyone" are shown during every session.
+- Tests: 4 new core cases (conversation gap, 2-hour cap, Texas grouping stop, 30-minute voice groups); two old tests updated
+  for the new lifetimes. Core 250/250.
+
 ## Evidence for the presentation numbers (task 11)
 
 | Claim | Source now committed | Result |

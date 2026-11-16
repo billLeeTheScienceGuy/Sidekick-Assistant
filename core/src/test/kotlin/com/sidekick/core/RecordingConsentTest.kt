@@ -105,7 +105,8 @@ class RecordingConsentTest {
         assertFalse(california.keep(Speaker.OTHER, 1_000))           // participation is not enough in CA
         california.noticeGiven(2_000)
         assertTrue(california.keep(Speaker.OTHER, 3_000))
-        assertTrue(california.keep(Speaker.OTHER, 3_600_000))        // notice lasts the session
+        assertTrue(california.keep(Speaker.OTHER, 20 * 60_000))      // still the same conversation
+        assertFalse(california.keep(Speaker.OTHER, 60 * 60_000))     // 40 min with no other voices: notice ended
     }
     @Test fun `moving into an all-party state mid-session tightens the rule`() {
         val gate = ConsentGate(at(43.0731, -89.4012))
@@ -189,5 +190,39 @@ class RecordingConsentTest {
         california.noticeGiven(0)
         assertFalse(california.strictOwnerMatch())
         assertFalse(ConsentGate(at(39.9612, -82.9988)).strictOwnerMatch())
+    }
+    @Test fun `a notice covers one conversation, not an all-day session`() {
+        val min = 60_000L
+        val gate = ConsentGate(at(37.7749, -122.4194))                         // California: all-party
+        gate.noticeGiven(0)
+        assertTrue(gate.keep(Speaker.OTHER, 10 * min))                          // others keep talking: still covered
+        assertTrue(gate.keep(Speaker.OTHER, 39 * min))                          // 29 min after the last other voice
+        assertNull(gate.expireIfStale(60 * min))                                // 21 min quiet: not yet
+        assertEquals("conversation ended", gate.expireIfStale(70 * min))       // 31 min with no other voices
+        assertNull(gate.noticeAtMs)
+        assertFalse(gate.keep(Speaker.OTHER, 71 * min))                         // a new conversation needs a new notice
+        assertTrue(gate.status(71 * min).contains("notice expired (conversation ended)"), gate.status(71 * min))
+        assertTrue(gate.noticeNeeded())
+        gate.noticeGiven(72 * min)
+        assertFalse(gate.status(73 * min).contains("expired"))
+        // A quiet person who heard it is still covered: the owner talking alone does not end it before 30 min.
+        gate.ownerSpoke(90 * min)
+        assertNull(gate.expireIfStale(100 * min))
+    }
+    @Test fun `a notice never lasts more than two hours`() {
+        val min = 60_000L
+        val gate = ConsentGate(at(37.7749, -122.4194))
+        gate.noticeGiven(0)
+        var t = 0L
+        while (t < 119 * min) { t += 10 * min; assertTrue(gate.keep(Speaker.OTHER, t)) }   // continuous meeting
+        assertEquals("2 hours passed", gate.expireIfStale(121 * min))
+        assertFalse(gate.keepOthers(121 * min))
+    }
+    @Test fun `texas grouping stops when its notice expires`() {
+        val texas = ConsentGate(at(29.7604, -95.3698))
+        texas.noticeGiven(0)
+        assertTrue(texas.groupingAllowed())
+        texas.expireIfStale(ConsentGate.CONVERSATION_GAP_MS + 1)
+        assertFalse(texas.groupingAllowed())                                     // the service then forgets other voices
     }
 }

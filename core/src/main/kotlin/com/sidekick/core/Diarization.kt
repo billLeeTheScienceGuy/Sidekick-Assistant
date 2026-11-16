@@ -65,7 +65,7 @@ class SessionVoices(private val session: String = java.util.UUID.randomUUID().to
     fun observe(vector: FloatArray, now: Long): SessionVoice? {
         val normalized = VoiceMatch.normalized(vector)
         try {
-            clusters.filter { now - it.seen !in 0..900_000 }.toList().forEach { it.vector.fill(0f); clusters.remove(it) }
+            clusters.filter { now - it.seen !in 0..KEEP_MS }.toList().forEach { it.vector.fill(0f); clusters.remove(it) }
             val ranked = clusters.map { it to VoiceMatch.similarity(it.vector, normalized) }.sortedByDescending { it.second }
             val best = ranked.firstOrNull()
             if (best != null && best.second >= .75f && best.second - (ranked.getOrNull(1)?.second ?: -1f) >= .12f) {
@@ -82,6 +82,8 @@ class SessionVoices(private val session: String = java.util.UUID.randomUUID().to
     }
     fun clear() { clusters.forEach { it.vector.fill(0f); it.name = null }; clusters.clear() }
     companion object {
+        /** A voice group (and its session name) is forgotten after this long without that voice. */
+        const val KEEP_MS = 30 * 60_000L
         /** Short plain names only: letters, spaces, apostrophes, hyphens and dots, up to 40 characters. */
         fun cleanName(value: String): String? = value.trim().replace(Regex("\\s+"), " ")
             .takeIf { it.length in 1..40 && it.all { c -> c.isLetter() || c in " '’-." } && it.any(Char::isLetter) }

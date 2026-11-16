@@ -9,7 +9,7 @@ how the app works, not legal advice. Last updated: November 16, 2026 (voiceprint
 - **Audio.** Microphone audio exists only in short in-memory buffers while it is being transcribed, then it is overwritten. No recordings are kept.
 - **Other people's voice data.** To tell speakers apart, SideKick turns a stretch of speech into a voice signature
   (a list of numbers) in memory, compares it once, then erases it. Signatures of other people, the anonymous
-  "Voice 1 / Voice 2" groups and any name you give a voice for a session are never written to the database,
+  "Voice 1 / Voice 2" groups (forgotten after 30 minutes without that voice) and any name you give a voice for a session are never written to the database,
   settings, logs, exports or backups. They are cleared when the session ends, and immediately when the rules
   where you are do not allow voice grouping.
 - **Your location.** Location is used only to look up which state's rules apply, with state borders bundled in the app. The position is not saved, logged or sent anywhere.
@@ -42,6 +42,9 @@ outside the US, or during a phone call, it uses the strictest rules.
   - Elsewhere: grouping is allowed unless you turn on *Group voices only after notice, in every state*.
 - **Your own voice signature** needs your written consent in every state: a notice, your typed name and a ticked box
   ("I consent and sign"), before anything is recorded. Under 18: a parent or guardian must agree.
+
+A notice covers **one conversation**: it ends after 30 minutes without other people speaking, or 2 hours after it was given,
+whichever comes first, and then has to be given again. *Always show the Announce button* (on by default) lets you re-announce at any time.
 
 Settings → Privacy → *Treat every place as the strictest state* turns off all location checks and applies the strictest rules everywhere.
 

@@ -168,3 +168,17 @@ class AddressedNameTest {
         assertEquals("Sarah", naming.voiceSpoke("spk_s_3", null, t0.plusSeconds(12))?.name)
     }
 }
+
+class SessionVoiceLifetimeTest {
+    private fun vector(seed: Int) = FloatArray(192) { i -> if (i % 12 == seed % 12) 1f else .01f * ((i * 31 + seed) % 7) }
+    @Test fun `voice groups last 30 minutes without that voice`() {
+        val voices = SessionVoices("life")
+        val a = voices.observe(vector(0), 0)!!
+        voices.name(a.key, "Sarah")
+        assertEquals(a.key, voices.observe(vector(0), 29 * 60_000L)?.key)          // back after 29 min: same group, same name
+        assertEquals("Sarah", voices.nameOf(a.key))
+        val later = voices.observe(vector(0), 29 * 60_000L + SessionVoices.KEEP_MS + 1)!!
+        assertNotEquals(a.key, later.key)                                           // quiet > 30 min: new anonymous group
+        assertNull(voices.nameOf(later.key))
+    }
+}

@@ -16,6 +16,7 @@ internal fun ConsentRulesSection(settings: GuidanceSettings) {
     val strictest by settings.strictestEverywhere.collectAsState()
     val voiceLine by settings.voiceLineEverywhere.collectAsState()
     val listening by ListeningService.state.collectAsState()
+    val alwaysAnnounce by settings.alwaysShowAnnounce.collectAsState()
     Text("Conversation rules", style = MaterialTheme.typography.titleMedium)
     QuietLabel("SideKick follows the stricter of nearby states' recording and voice rules. Not legal advice.")
     SettingsToggle("Treat every place as the strictest state",
@@ -23,6 +24,10 @@ internal fun ConsentRulesSection(settings: GuidanceSettings) {
     SettingsToggle("Group voices only after notice, in every state",
         "The notice always mentions voice analysis. With this on, voices are grouped only after it everywhere, as in Texas and Washington.", voiceLine, settings::setVoiceLineEverywhere,
         "voice-line-everywhere", !strictest)
+    SettingsToggle("Always show the Announce button",
+        "Announce or re-announce note-taking any time while listening, not only when a notice is needed.", alwaysAnnounce,
+        settings::setAlwaysShowAnnounce, "always-show-announce")
+    QuietLabel("A notice covers one conversation: it ends after 30 minutes without other voices, or after 2 hours.")
     if (listening.recording) QuietLabel("Changes apply now; turning off \"strictest\" applies from the next session.")
     TextButton(onClick = {
         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }

@@ -46,6 +46,8 @@ data class ListeningState(
     val attestLabel: String = "I told everyone (incl. voice analysis)",
     /** A grouped voice may be named for this session right now (ConsentGate.namingAllowed). */
     val namingAllowed: Boolean = false,
+    /** A notice is currently in effect (for "Announce again"). */
+    val noticeActive: Boolean = false,
     /** A phone call is active: strictest rule for the call. */
     val callActive: Boolean = false,
     /** Identifies this listening session's notice records (no audio, no voice data). */
@@ -76,7 +78,7 @@ class ListeningService : Service() {
         // Voice grouping is never allowed here (STRICT, or NOTICE before notice): forget every other voice at once.
         if (!g.groupingAllowed()) forgetOthers()
         mutableState.update { it.copy(consent = g.status(now) + " · " + g.place.reason, noticeNeeded = g.noticeNeeded(),
-            attestLabel = g.attestLabel(), namingAllowed = g.namingAllowed(now)) }
+            attestLabel = g.attestLabel(), namingAllowed = g.namingAllowed(now), noticeActive = g.noticeAtMs != null) }
     }
 
     /** SessionVoices, session names, naming context and recent anchors: memory only, cleared together. */
@@ -265,6 +267,8 @@ class ListeningService : Service() {
                         val manager = getSystemService(AudioManager::class.java)
                         while (isActive) {
                             val calling = manager.mode == AudioManager.MODE_IN_CALL || manager.mode == AudioManager.MODE_IN_COMMUNICATION
+                            // A notice covers one conversation: 30 min without other voices, or 2 hours at most.
+                            if (consent.expireIfStale(SystemClock.elapsedRealtime()) != null) refreshConsent()
                             if (calling != inCall) {
                                 inCall = calling
                                 consent.moveTo(if (calling) com.sidekick.core.RecordingJurisdiction.duringCall() else located)

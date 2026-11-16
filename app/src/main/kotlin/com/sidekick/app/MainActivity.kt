@@ -98,6 +98,7 @@ class MainActivity : ComponentActivity() {
         var showFullLiveText by rememberSaveable { mutableStateOf(false) }
         var showSessionDetails by rememberSaveable { mutableStateOf(false) }
         var showNoteTools by rememberSaveable { mutableStateOf(false) }
+        val alwaysAnnounce by (application as SidekickApplication).guidance.alwaysShowAnnounce.collectAsStateWithLifecycle()
         val nameSuggestion by (application as SidekickApplication).temporary.nameSuggestion.collectAsStateWithLifecycle()
         val noticeRecords by (application as SidekickApplication).database.noticeRecords().observeRecent().collectAsStateWithLifecycle(emptyList())
         val voiceConsentNeeded by (application as SidekickApplication).voiceProfile.consentNeeded.collectAsStateWithLifecycle()
@@ -252,8 +253,10 @@ class MainActivity : ComponentActivity() {
                                 if (listening.consent.isNotBlank()) QuietLabel(listening.consent, Modifier.testTag("consent-status"))
                                 if (listening.droppedChunks > 0) QuietLabel("${listening.droppedChunks} phrases from other voices dropped, never saved")
                                 if (listening.callActive) QuietLabel("Call detected: strictest rule", Modifier.testTag("call-status"))
-                                if (listening.noticeNeeded) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedButton(onClick = { serviceAction(ListeningService.ANNOUNCE) }, modifier = Modifier.testTag("announce-notice")) { Text("Announce note-taking") }
+                                if (listening.noticeNeeded || alwaysAnnounce) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedButton(onClick = { serviceAction(ListeningService.ANNOUNCE) }, modifier = Modifier.testTag("announce-notice")) {
+                                        Text(if (listening.noticeActive) "Announce again" else "Announce note-taking")
+                                    }
                                     TextButton(onClick = { serviceAction(ListeningService.NOTICE_GIVEN) }, modifier = Modifier.testTag("notice-given")) { Text(listening.attestLabel) }
                                 }
                                 nameSuggestion?.takeIf { listening.namingAllowed }?.let { suggestion ->

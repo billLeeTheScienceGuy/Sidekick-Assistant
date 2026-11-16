@@ -82,6 +82,10 @@ class GuidanceSettings(context: Context) {
     private val voiceLineValue = MutableStateFlow(preferences.getBoolean("voice_line_everywhere", false))
     val voiceLineEverywhere = voiceLineValue.asStateFlow()
     fun setVoiceLineEverywhere(value: Boolean) { preferences.edit().putBoolean("voice_line_everywhere", value).apply(); voiceLineValue.value = value }
+    /** Show Announce / "I told everyone" during every session, not only when a notice is needed. */
+    private val alwaysAnnounceValue = MutableStateFlow(preferences.getBoolean("always_show_announce", true))
+    val alwaysShowAnnounce = alwaysAnnounceValue.asStateFlow()
+    fun setAlwaysShowAnnounce(value: Boolean) { preferences.edit().putBoolean("always_show_announce", value).apply(); alwaysAnnounceValue.value = value }
     /** The precise-location request is shown once. */
     val preciseLocationAsked: Boolean get() = preferences.getBoolean("precise_location_asked", false)
     fun markPreciseLocationAsked() { preferences.edit().putBoolean("precise_location_asked", true).apply() }

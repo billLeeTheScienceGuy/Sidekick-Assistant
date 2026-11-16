@@ -11,6 +11,8 @@ Version notes for SideKick, newest first. Links point to the measurements and li
   stricter asks for a new notice; entering a strict place forgets every other voice at once.
 - The spoken notice now always includes a voice-analysis line, in every state; each notice is recorded per session
   (time, state, rules, text version, spoken or attested), with no audio or voice data.
+- A notice covers one conversation: it ends after 30 minutes without other voices, or after 2 hours. Voice groups now last
+  30 minutes without that voice (was 15). Optional "Always show the Announce button" (on by default).
 - Settings: "Treat every place as the strictest state", "Group voices only after notice, in every state", privacy policy link.
 - Owner voice setup asks for written consent first (name, checkbox, optional signature; guardian for under-18s);
   profiles without a consent record stop matching until accepted; profiles unused for 12 months are deleted.

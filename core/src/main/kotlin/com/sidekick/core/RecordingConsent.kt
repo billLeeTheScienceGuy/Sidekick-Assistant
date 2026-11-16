@@ -193,12 +193,27 @@ data class NoticeRecord(
  * Voice grouping (anonymous "Voice N" labels and session names) is allowed with biometric NONE, or with NOTICE after a
  * notice that included the voice line; never with STRICT. [voiceNoticeEverywhere] (setting) requires the voice line
  * before grouping in every state.
+ *
+ * A notice covers one conversation, not a whole (possibly all-day) session: it expires after [conversationGapMs] with no
+ * speech from other people, and in any case [noticeMaxAgeMs] after it was given. Call [expireIfStale] regularly.
  */
 class ConsentGate(
     place: RecordingJurisdiction.Place,
     private val ownerWindowMs: Long = 120_000L,
     @Volatile var voiceNoticeEverywhere: Boolean = false,
+    private val conversationGapMs: Long = CONVERSATION_GAP_MS,
+    private val noticeMaxAgeMs: Long = NOTICE_MAX_AGE_MS,
 ) {
+    companion object {
+        /** No speech from other people this long: the conversation the notice covered is over. Matches SessionVoices. */
+        const val CONVERSATION_GAP_MS = SessionVoices.KEEP_MS
+        /** A notice never lasts longer than this, even in one continuous meeting. */
+        const val NOTICE_MAX_AGE_MS = 2 * 60 * 60_000L
+    }
+    @Volatile private var othersLastMs: Long? = null
+    /** Why the last notice ended ("conversation ended", "2 hours passed"); cleared by a new notice. */
+    @Volatile var noticeExpired: String? = null
+        private set
     @Volatile var place: RecordingJurisdiction.Place = place
         private set
     @Volatile private var ownerLastMs: Long? = null
@@ -219,9 +234,23 @@ class ConsentGate(
         return true
     }
     fun ownerSpoke(nowMs: Long) { ownerLastMs = nowMs }
+    /** Someone other than the owner spoke (kept or dropped): the conversation is still going. */
+    fun othersSpoke(nowMs: Long) { othersLastMs = nowMs }
+    /** Ends a notice whose conversation is over or that is too old. Returns the reason if it just expired. */
+    @Synchronized fun expireIfStale(nowMs: Long): String? {
+        val at = noticeAtMs ?: return null
+        val lastTalk = maxOf(at, othersLastMs ?: at)
+        val reason = when {
+            nowMs - at > noticeMaxAgeMs -> "${noticeMaxAgeMs / 3_600_000} hours passed"
+            nowMs - lastTalk > conversationGapMs -> "conversation ended"
+            else -> return null
+        }
+        noticeAtMs = null; noticePlace = null; noticeIncludedVoice = false; noticeExpired = reason
+        return reason
+    }
     /** [includesVoice]: the notice included the voice-analysis line (spoken, or attested "incl. voice analysis"). */
     @Synchronized fun noticeGiven(nowMs: Long, includesVoice: Boolean = true) {
-        noticeAtMs = nowMs; noticePlace = place; noticeIncludedVoice = includesVoice
+        noticeAtMs = nowMs; noticePlace = place; noticeIncludedVoice = includesVoice; noticeExpired = null
     }
 
     /** The voice-analysis line belongs in the spoken notice here. */
@@ -241,7 +270,10 @@ class ConsentGate(
         RecordingJurisdiction.Rule.ONE_PARTY -> ownerLastMs?.let { nowMs - it in 0..ownerWindowMs } == true || noticeAtMs != null
         RecordingJurisdiction.Rule.ALL_PARTY -> noticeAtMs != null
     }
-    fun keep(speaker: Speaker, nowMs: Long): Boolean = speaker == Speaker.USER || keepOthers(nowMs)
+    fun keep(speaker: Speaker, nowMs: Long): Boolean {
+        if (speaker != Speaker.USER) { expireIfStale(nowMs); othersSpoke(nowMs) }
+        return speaker == Speaker.USER || keepOthers(nowMs)
+    }
     /** Naming a voice for this session: grouping allowed and others' words may be kept. */
     fun namingAllowed(nowMs: Long): Boolean = groupingAllowed() && keepOthers(nowMs)
     /** Before notice in an all-party place, owner matching uses the stricter thresholds and no short phrases. */
@@ -272,6 +304,7 @@ class ConsentGate(
             keepOthers(nowMs) -> "you're in the conversation, others' words kept as information"
             else -> "only your words are kept until you speak"
         }
-        return "${place.name}: $words$voice"
+        val expired = noticeExpired?.takeIf { noticeAtMs == null }?.let { " · notice expired ($it)" } ?: ""
+        return "${place.name}: $words$voice$expired"
     }
 }
