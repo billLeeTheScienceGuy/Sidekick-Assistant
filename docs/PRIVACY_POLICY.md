@@ -33,13 +33,13 @@ SideKick follows the **stricter** of the rules of the state you are in and any s
 outside the US, or during a phone call, it uses the strictest rules.
 
 - **Recording rule** (whose words are kept). All-party states (CA, FL, IL, MD, MA, MT, NH, PA, WA, and CT, DE, MI, NV, OR, VT treated as all-party):
-  other people's words are kept only after the spoken notice ("Just so you know, SideKick is taking notes on this conversation.")
+  other people's words are kept only after the spoken notice ("Just so you know, SideKick is taking notes on this conversation.
+  It briefly analyzes voices to tell speakers apart. Nothing about anyone's voice is saved." Both lines are spoken in every state.)
   or after you tap *I told everyone*. One-party states: other people's words are kept as information while you take part in the conversation.
 - **Voice rule** (whether voices may be grouped).
   - Illinois: other voices are never grouped or named.
-  - Texas and Washington: voices are grouped only after the notice includes the line
-    "It briefly analyzes voices to tell speakers apart. Nothing about anyone's voice is saved."
-  - Elsewhere: grouping is allowed unless you turn on *Include the voice-analysis line in every state*.
+  - Texas and Washington: voices are grouped only after the notice (or after you tap *I told everyone (incl. voice analysis)*).
+  - Elsewhere: grouping is allowed unless you turn on *Group voices only after notice, in every state*.
 - **Your own voice signature** needs your written consent in every state: a notice, your typed name and a ticked box
   ("I consent and sign"), before anything is recorded. Under 18: a parent or guardian must agree.
 

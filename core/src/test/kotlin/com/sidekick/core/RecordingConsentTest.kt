@@ -122,7 +122,7 @@ class RecordingConsentTest {
         val oregon = at(44.9429, -123.0351)  // Salem, OR: ALL/NONE
         val gate = ConsentGate(ohio)
         gate.noticeGiven(1_000)
-        assertFalse(gate.noticeIncludedVoice)                         // Ohio: the voice line is not required
+        assertTrue(gate.noticeIncludedVoice)                          // the voice line is spoken in every state
         assertTrue(gate.moveTo(washington))                           // stricter in both rules: new notice needed
         assertNull(gate.noticeAtMs)
         assertTrue(gate.noticeNeeded())
@@ -164,7 +164,7 @@ class RecordingConsentTest {
     }
     @Test fun `illinois never groups even after notice`() {
         val illinois = ConsentGate(at(39.7817, -89.6501))
-        assertEquals("I told everyone", illinois.attestLabel())
+        assertEquals("I told everyone (incl. voice analysis)", illinois.attestLabel())
         illinois.noticeGiven(0)
         assertTrue(illinois.keepOthers(1_000))                        // recording consent still works
         assertFalse(illinois.groupingAllowed())
@@ -181,7 +181,7 @@ class RecordingConsentTest {
         val off = ConsentGate(at(39.9612, -82.9988))
         assertTrue(off.groupingAllowed())
         assertFalse(off.noticeNeeded())
-        assertEquals(ConsentNotice.BASE, off.noticeText())
+        assertEquals(ConsentNotice.text(true), off.noticeText())       // spoken everywhere, even with the setting off
     }
     @Test fun `stricter owner match only before notice in all-party places`() {
         val california = ConsentGate(at(37.7749, -122.4194))

@@ -43,7 +43,7 @@ data class ListeningState(
     /** Phrases from other voices discarded on arrival this session. */
     val droppedChunks: Int = 0,
     /** Label of the owner's attestation button (TX/WA: "I told everyone (incl. voice analysis)"). */
-    val attestLabel: String = "I told everyone",
+    val attestLabel: String = "I told everyone (incl. voice analysis)",
     /** A grouped voice may be named for this session right now (ConsentGate.namingAllowed). */
     val namingAllowed: Boolean = false,
     /** A phone call is active: strictest rule for the call. */
@@ -100,10 +100,10 @@ class ListeningService : Service() {
         }
     }
 
-    /** Spoken notice: the base line, plus the voice-analysis line where required (TX, WA, IL, unknown, or the setting). */
+    /** Spoken notice: the base line plus the voice-analysis line, in every state. */
     private fun announce() {
         val g = gate ?: return
-        val includesVoice = g.voiceLineRequired()
+        val includesVoice = true // the voice-analysis line is spoken in every state
         val text = com.sidekick.core.ConsentNotice.text(includesVoice)
         noticeVoice?.shutdown()
         noticeVoice = android.speech.tts.TextToSpeech(this) { status ->

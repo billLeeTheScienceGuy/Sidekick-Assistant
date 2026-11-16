@@ -161,8 +161,9 @@ and (2) the "Sarah?" suggestion never appeared. Findings from the phone's logs a
   suggestion (still applied only on tap); after a greeting, lowercase names work. `AddressedNameTest` (2 cases) covers both.
   Core tests 246/246; device tests `PrivacyConsentDeviceTest`, `SpeakerTurnsTest`, `TrackedVoiceChangesTest` 7/7; lint 0 errors.
   A live two-person "Sarah?" check is still for the owner to do.
-- **Not changed:** in states without a voice rule, the voice line is spoken only with the setting on. Speaking it everywhere by
-  default would be a product decision.
+- **Changed by the owner's decision:** the voice-analysis line is now spoken in **every** state, and the attestation button always reads
+  "I told everyone (incl. voice analysis)". The setting was renamed "Group voices only after notice, in every state": it no longer
+  changes the wording, only whether grouping waits for the notice outside Texas and Washington.
 
 ## Evidence for the presentation numbers (task 11)
 

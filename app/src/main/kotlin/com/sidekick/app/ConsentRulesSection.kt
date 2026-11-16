@@ -20,8 +20,8 @@ internal fun ConsentRulesSection(settings: GuidanceSettings) {
     QuietLabel("SideKick follows the stricter of nearby states' recording and voice rules. Not legal advice.")
     SettingsToggle("Treat every place as the strictest state",
         "No location checks. Notice is always needed and voices are never grouped.", strictest, settings::setStrictestEverywhere, "strictest-everywhere")
-    SettingsToggle("Include the voice-analysis line in every state",
-        "The spoken notice also says voices are briefly analyzed. Voices are grouped only after it.", voiceLine, settings::setVoiceLineEverywhere,
+    SettingsToggle("Group voices only after notice, in every state",
+        "The notice always mentions voice analysis. With this on, voices are grouped only after it everywhere, as in Texas and Washington.", voiceLine, settings::setVoiceLineEverywhere,
         "voice-line-everywhere", !strictest)
     if (listening.recording) QuietLabel("Changes apply now; turning off \"strictest\" applies from the next session.")
     TextButton(onClick = {

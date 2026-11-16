@@ -220,13 +220,15 @@ class ConsentGate(
     }
     fun ownerSpoke(nowMs: Long) { ownerLastMs = nowMs }
     /** [includesVoice]: the notice included the voice-analysis line (spoken, or attested "incl. voice analysis"). */
-    @Synchronized fun noticeGiven(nowMs: Long, includesVoice: Boolean = voiceLineRequired()) {
+    @Synchronized fun noticeGiven(nowMs: Long, includesVoice: Boolean = true) {
         noticeAtMs = nowMs; noticePlace = place; noticeIncludedVoice = includesVoice
     }
 
     /** The voice-analysis line belongs in the spoken notice here. */
+    /** The voice notice must come before voice grouping here (TX, WA, or the "every state" setting). */
     fun voiceLineRequired(): Boolean = place.biometric != RecordingJurisdiction.BiometricRule.NONE || voiceNoticeEverywhere
-    fun noticeText(): String = ConsentNotice.text(voiceLineRequired())
+    /** The spoken notice always includes the voice-analysis line, in every state (product decision, Nov 16, 2026). */
+    fun noticeText(): String = ConsentNotice.text(true)
     private fun voiceNoticeGiven() = noticeAtMs != null && noticeIncludedVoice
 
     fun groupingAllowed(): Boolean = when (place.biometric) {
@@ -252,8 +254,7 @@ class ConsentGate(
             (voiceNoticeEverywhere && place.biometric == RecordingJurisdiction.BiometricRule.NONE && !voiceNoticeGiven())
 
     /** Button label for the owner's attestation. */
-    fun attestLabel(): String = if (voiceLineRequired() && place.biometric != RecordingJurisdiction.BiometricRule.STRICT)
-        "I told everyone (incl. voice analysis)" else "I told everyone"
+    fun attestLabel(): String = "I told everyone (incl. voice analysis)"
 
     fun record(nowEpochMs: Long, method: NoticeMethod): NoticeRecord = NoticeRecord(nowEpochMs,
         listOfNotNull(place.code) + place.forcedBy, place.recording, place.biometric, ConsentNotice.VERSION, noticeIncludedVoice, method)
