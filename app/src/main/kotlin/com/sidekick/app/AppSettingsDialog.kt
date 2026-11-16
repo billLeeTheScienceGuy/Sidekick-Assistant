@@ -157,6 +157,12 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                                 Text("My voice", style = MaterialTheme.typography.titleMedium)
                                 val enrolledVoices by voice.enrolled.collectAsState()
                                 QuietLabel(if (voiceReady) "Your voice is set up: ${enrolledVoices.keys.joinToString(", ") { it.label }}." else "Set up your voice so SideKick can recognize your plans.")
+                                val voiceConsentNeeded by voice.consentNeeded.collectAsState()
+                                if (voiceConsentNeeded) {
+                                    Text("Voice consent needed. Voice matching is off until you agree.", color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("voice-consent-needed"))
+                                    TextButton(onClick = { context.startActivity(Intent(context, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java)
+                                        .putExtra(com.sidekick.app.speaker.VoiceEnrollmentActivity.CONSENT_ONLY, true)) }) { Text("Review voice consent") }
+                                }
                                 SettingsToggle("Recognize my voice", "Other people’s plans won’t become your commitments. Voice matching can be wrong.", voiceEnabled, voice::setEnabled, "voice-matching", voiceReady && !listening.recording && !listening.processing)
                                 TextButton(enabled = !listening.recording && !listening.processing, onClick = { context.startActivity(Intent(context, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java)) }) { Text(if (voiceReady) "Update my voice profiles" else "Set up my voice") }
                             }
@@ -215,6 +221,7 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                                 }
                             }
                             "PRIVACY" -> {
+                                ConsentRulesSection(settings)
                                 MemoryPrivacySection()
                                 PrivacyGuidanceSection(settings)
                             }

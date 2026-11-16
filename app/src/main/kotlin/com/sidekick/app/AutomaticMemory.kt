@@ -100,7 +100,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
             currentCoroutineContext().ensureActive()
             if (!settings.handsOffMode.value) break
             if (candidate.evidence == "Manually added") continue
-            if (candidate.sourceKey?.startsWith("confirm:") == true) continue // unclear time: always waits in Review
+            if (candidate.sourceKey?.startsWith("confirm:") == true || candidate.sourceKey?.startsWith("review:") == true) continue // unclear time or weak acceptance: always waits in Review
             try {
                 var target = temporary.updateTarget(candidate.id) ?: candidate.id
                 var linked = false

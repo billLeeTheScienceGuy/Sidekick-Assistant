@@ -2,6 +2,24 @@
 
 Version notes for SideKick, newest first. Links point to the measurements and limits behind each change.
 
+## Unreleased (privacy, consent and location work package)
+
+- Two independent rules per state: recording (one-party / all-party) and voice (none / notice in TX and WA / strict in IL).
+  SideKick takes the strictest of the containing state and every state within the location error margin; anything
+  unknown (no fix, stale fix, abroad, lookup error, phone call) is all-party + strict. Borders updated to Census 1:500k.
+- Rules follow you during a session (location updates every 500 m / 60 s plus a 5-minute check). Moving somewhere
+  stricter asks for a new notice; entering a strict place forgets every other voice at once.
+- Spoken notice adds a voice-analysis line in Texas, Washington and (optionally) everywhere; each notice is recorded per session
+  (time, state, rules, text version, spoken or attested), with no audio or voice data.
+- Settings: "Treat every place as the strictest state", "Include the voice-analysis line in every state", privacy policy link.
+- Owner voice setup asks for written consent first (name, checkbox, optional signature; guardian for under-18s);
+  profiles without a consent record stop matching until accepted; profiles unused for 12 months are deleted.
+- Name a voice for one session only; invitations from named voices ("meet me at 5") become information-only events;
+  a short "sure" from you goes to Review.
+- Stricter owner matching before notice in all-party places; threshold-tuning script and scaffold
+  ([speaker tuning](docs/evaluation/SPEAKER_TUNING.md)). Test report: [privacy work package](docs/evaluation/PRIVACY_WORKPACKAGE_TEST_REPORT.md).
+- Fix: a finished session no longer waits on the background location loop.
+
 ## 0.35.0
 
 - Auto-detect routing rebuilt around a benchmark of 16 open speech models: SenseVoice tags the language first,

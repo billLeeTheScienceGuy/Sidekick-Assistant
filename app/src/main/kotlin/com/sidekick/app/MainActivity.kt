@@ -12,6 +12,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -97,6 +98,14 @@ class MainActivity : ComponentActivity() {
         var showFullLiveText by rememberSaveable { mutableStateOf(false) }
         var showSessionDetails by rememberSaveable { mutableStateOf(false) }
         var showNoteTools by rememberSaveable { mutableStateOf(false) }
+        val nameSuggestion by (application as SidekickApplication).temporary.nameSuggestion.collectAsStateWithLifecycle()
+        val noticeRecords by (application as SidekickApplication).database.noticeRecords().observeRecent().collectAsStateWithLifecycle(emptyList())
+        val voiceConsentNeeded by (application as SidekickApplication).voiceProfile.consentNeeded.collectAsStateWithLifecycle()
+        var namingVoice by remember { mutableStateOf<String?>(null) }
+        var preciseDialog by remember { mutableStateOf(false) }
+        var voiceConsentDialog by remember { mutableStateOf(false) }
+        var voiceConsentAskedThisRun by remember { mutableStateOf(false) }
+        var requestListeningAfterChecks: () -> Unit = {}
         var showVoiceDiagnostics by remember { mutableStateOf(false) }
         var showSpeakerTurns by remember { mutableStateOf(false) }
         var deleteDialog by remember { mutableStateOf(false) }
@@ -139,15 +148,26 @@ class MainActivity : ComponentActivity() {
             } else if (!granted) error = "Notifications are disabled. You can save commitments without reminders."
             else model.notificationPermissionChanged()
         }
+        val preciseLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
+            // Either answer is fine: coarse-only still works with a larger border buffer.
+            requestListeningAfterChecks()
+        }
         fun beginListening() {
             if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 awaitingLiveNotifications = true; notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
             } else microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
         }
         fun requestListening() {
-            if ((application as SidekickApplication).guidance.skipListeningIntro.value) beginListening()
+            val app = application as SidekickApplication
+            // Existing voice profiles without a consent record: ask before the next session (matching stays off until then).
+            if (app.voiceProfile.consentNeeded.value && !voiceConsentAskedThisRun) { voiceConsentAskedThisRun = true; voiceConsentDialog = true; return }
+            // Ask once for precise location: more accurate state detection near borders. Skipped with "strictest everywhere".
+            if (!app.guidance.strictestEverywhere.value && !app.guidance.preciseLocationAsked &&
+                checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) { preciseDialog = true; return }
+            if (app.guidance.skipListeningIntro.value) beginListening()
             else micDialog = true
         }
+        requestListeningAfterChecks = ::requestListening
         val wavPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri?.let { consent = false; model.importWav(it) }
         }
@@ -231,9 +251,20 @@ class MainActivity : ComponentActivity() {
                                 Text(listening.voiceStatus)
                                 if (listening.consent.isNotBlank()) QuietLabel(listening.consent, Modifier.testTag("consent-status"))
                                 if (listening.droppedChunks > 0) QuietLabel("${listening.droppedChunks} phrases from other voices dropped, never saved")
-                                if (listening.noticeNeeded) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (listening.callActive) QuietLabel("Call detected: strictest rule", Modifier.testTag("call-status"))
+                                if (listening.noticeNeeded) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OutlinedButton(onClick = { serviceAction(ListeningService.ANNOUNCE) }, modifier = Modifier.testTag("announce-notice")) { Text("Announce note-taking") }
-                                    TextButton(onClick = { serviceAction(ListeningService.NOTICE_GIVEN) }, modifier = Modifier.testTag("notice-given")) { Text("I told everyone") }
+                                    TextButton(onClick = { serviceAction(ListeningService.NOTICE_GIVEN) }, modifier = Modifier.testTag("notice-given")) { Text(listening.attestLabel) }
+                                }
+                                nameSuggestion?.takeIf { listening.namingAllowed }?.let { suggestion ->
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                        AssistChip(onClick = {
+                                            try { startService(Intent(this@MainActivity, ListeningService::class.java).setAction(ListeningService.NAME_VOICE)
+                                                .putExtra(ListeningService.VOICE_KEY, suggestion.voiceKey).putExtra(ListeningService.VOICE_NAME, suggestion.name)) }
+                                            catch (_: Exception) { error = "Could not name this voice." }
+                                        }, label = { Text("${suggestion.name}?") }, modifier = Modifier.testTag("name-suggestion"))
+                                        TextButton(onClick = { (application as SidekickApplication).temporary.dismissNameSuggestion() }) { Text("Not now") }
+                                    }
                                 }
                                 LinearProgressIndicator(progress = { (listening.level * 5).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                                 Text("${listening.seconds / 60}m ${listening.seconds % 60}s · ${listening.chunks} speech chunks")
@@ -250,10 +281,13 @@ class MainActivity : ComponentActivity() {
                                 if (speakerTurns.isNotEmpty()) {
                                     TextButton(onClick = { showSpeakerTurns = !showSpeakerTurns }, modifier = Modifier.testTag("speaker-turns-toggle")) { Text(if (showSpeakerTurns) "Hide speaker turns" else "Show speaker turns") }
                                     if (showSpeakerTurns) {
-                                        Text("Anonymous voice labels last only for this session. They do not identify people or verify consent.", style = MaterialTheme.typography.bodySmall)
+                                        Text("Anonymous voice labels last only for this session. They do not identify people or verify consent." +
+                                            if (listening.namingAllowed && listening.recording) " Tap a voice label to name it for this session." else "", style = MaterialTheme.typography.bodySmall)
                                         speakerTurns.forEachIndexed { index, turn ->
                                             val time = turn.at.atZone(ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
-                                            Text("$time · ${turn.label} · ${if (turn.speaker == com.sidekick.core.Speaker.USER) "likely you" else "identity unassigned"}", style = MaterialTheme.typography.labelLarge)
+                                            val nameable = turn.voiceKey != null && listening.namingAllowed && listening.recording
+                                            Text("$time · ${turn.label} · ${if (turn.speaker == com.sidekick.core.Speaker.USER) "likely you" else "identity unassigned"}", style = MaterialTheme.typography.labelLarge,
+                                                modifier = if (nameable) Modifier.clickable { namingVoice = turn.voiceKey }.testTag("voice-label-$index") else Modifier)
                                             Text(turn.text, modifier = Modifier.testTag("speaker-turn-$index"))
                                         }
                                     }
@@ -265,6 +299,17 @@ class MainActivity : ComponentActivity() {
                                 Text(if (showSessionDetails) "Hide session details" else "Session details")
                             }
                             if (showSessionDetails) {
+                            val sessionNotices = noticeRecords.filter { it.sessionId == listening.sessionId }
+                            if (sessionNotices.isNotEmpty()) {
+                                Text("Notice record", style = MaterialTheme.typography.titleSmall)
+                                sessionNotices.forEach { record ->
+                                    val time = java.time.Instant.ofEpochMilli(record.noticeAt).atZone(ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+                                    Text("$time · ${if (record.method == "SPOKEN") "spoken" else "you told everyone"} · ${record.stateCodes.ifBlank { "unknown place" }} · " +
+                                        "${if (record.recordingRule == "ALL_PARTY") "all-party" else "one-party"} · voice ${record.biometricRule.lowercase()}" +
+                                        (if (record.includesVoice) " · incl. voice line" else "") + " · text v${record.textVersion}",
+                                        style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("notice-record"))
+                                }
+                            }
                             Text("Speech detection · ${speechLanguage.label} · on-device transcription")
                             Text("New times use phone timezone: ${ZoneId.systemDefault().id}", style = MaterialTheme.typography.bodySmall)
                             Text(if (speechQuality.usesSenseVoice(speechLanguage)) "SenseVoice int8 · ${speechLanguage.label} · on-device" else if (speechQuality.usesOmni(speechLanguage, true)) "Omnilingual int8 · ${speechLanguage.label} · on-device" else speechQuality.label, style = MaterialTheme.typography.bodySmall)
@@ -398,6 +443,37 @@ class MainActivity : ComponentActivity() {
             }
             }
         }
+        namingVoice?.let { key ->
+            var name by remember(key) { mutableStateOf("") }
+            AlertDialog(onDismissRequest = { namingVoice = null }, title = { Text("Name this voice for this session") },
+                text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(name, { name = it.take(40) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.testTag("voice-name-field"))
+                    QuietLabel("Forgotten when this session ends. Never saved.")
+                } },
+                confirmButton = { TextButton(enabled = com.sidekick.core.SessionVoices.cleanName(name) != null, onClick = {
+                    try { startService(Intent(this@MainActivity, ListeningService::class.java).setAction(ListeningService.NAME_VOICE)
+                        .putExtra(ListeningService.VOICE_KEY, key).putExtra(ListeningService.VOICE_NAME, name)) }
+                    catch (_: Exception) { error = "Could not name this voice." }
+                    namingVoice = null
+                }, modifier = Modifier.testTag("voice-name-save")) { Text("Name") } },
+                dismissButton = { TextButton(onClick = { namingVoice = null }) { Text("Cancel") } })
+        }
+        if (preciseDialog) AlertDialog(onDismissRequest = { preciseDialog = false; (application as SidekickApplication).guidance.markPreciseLocationAsked(); requestListening() },
+            title = { Text("Precise location?") },
+            text = { Text("More accurate state detection near borders. Location is used only on this phone and never saved. Without it, SideKick uses wider border margins.") },
+            confirmButton = { TextButton(onClick = {
+                preciseDialog = false; (application as SidekickApplication).guidance.markPreciseLocationAsked()
+                preciseLocation.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            }, modifier = Modifier.testTag("precise-location-allow")) { Text("Continue") } },
+            dismissButton = { TextButton(onClick = { preciseDialog = false; (application as SidekickApplication).guidance.markPreciseLocationAsked(); requestListening() }) { Text("Not now") } })
+        if (voiceConsentDialog) AlertDialog(onDismissRequest = { voiceConsentDialog = false; requestListening() },
+            title = { Text("Voice consent needed") },
+            text = { Text(if (voiceConsentNeeded) "Your saved voice setup needs your written consent. Until then, voice matching is off." else "Thanks. Voice matching is on.") },
+            confirmButton = { TextButton(onClick = {
+                voiceConsentDialog = false
+                startActivity(Intent(this@MainActivity, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java).putExtra(com.sidekick.app.speaker.VoiceEnrollmentActivity.CONSENT_ONLY, true))
+            }, modifier = Modifier.testTag("voice-consent-review")) { Text("Review consent") } },
+            dismissButton = { TextButton(onClick = { voiceConsentDialog = false; requestListening() }) { Text("Listen without it") } })
         if (micDialog) ListeningStartDialog(
             settings = (application as SidekickApplication).guidance,
             handsOff = handsOff,
@@ -447,7 +523,7 @@ private fun Editor(item: CommitmentEntity, entries: List<CommitmentEntity>, erro
     AlertDialog(onDismissRequest = onClose, title = { Text("Review commitment") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (item.sourceKey?.startsWith("uncertain:") == true || item.sourceKey?.startsWith("confirm:") == true) Text(item.reviewNote, color = MaterialTheme.colorScheme.error)
+                if (item.sourceKey?.startsWith("uncertain:") == true || item.sourceKey?.startsWith("confirm:") == true || item.sourceKey?.startsWith("review:") == true) Text(item.reviewNote, color = MaterialTheme.colorScheme.error)
                 OutlinedTextField(value = title, onValueChange = { if (it.length <= 500) title = it }, label = { Text(if (informational) "Event or note" else "What will you do?") }, modifier = Modifier.testTag("edit-title"))
                 Row {
                     Checkbox(informational, { informational = it }, modifier = Modifier.testTag("event-informational").controlLabel("Information only; attendance is unconfirmed"))

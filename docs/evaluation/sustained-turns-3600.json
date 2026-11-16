@@ -1,0 +1,3264 @@
+{
+  "device": "Pixel 7a",
+  "sdk": 37,
+  "requestedAudioSeconds": 3600,
+  "wallMs": 4124421,
+  "completed": true,
+  "emittedSegments": 1079,
+  "processingWorkMs": 1540206,
+  "queueDrainMs": 1592,
+  "partyKeywordSegments": 360,
+  "falseOwnerPartySegments": 0,
+  "conditions": "USB-connected controlled public\/synthetic playback; no microphone, no battery-drain claim",
+  "observations": [
+    {
+      "elapsedMs": 11096,
+      "batchMs": 3548,
+      "audioSamples": 86016,
+      "processPssKiB": 343852,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 238,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 23128,
+      "batchMs": 4248,
+      "audioSamples": 160000,
+      "processPssKiB": 388199,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 238,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 34611,
+      "batchMs": 4284,
+      "audioSamples": 160000,
+      "processPssKiB": 396937,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 238,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 46065,
+      "batchMs": 4284,
+      "audioSamples": 160000,
+      "processPssKiB": 393249,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 238,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 57541,
+      "batchMs": 4285,
+      "audioSamples": 160000,
+      "processPssKiB": 401857,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 238,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 68795,
+      "batchMs": 4316,
+      "audioSamples": 160000,
+      "processPssKiB": 392747,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 238,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 80095,
+      "batchMs": 4248,
+      "audioSamples": 160000,
+      "processPssKiB": 401103,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 238,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 91492,
+      "batchMs": 4257,
+      "audioSamples": 160000,
+      "processPssKiB": 392759,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 238,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 102973,
+      "batchMs": 4262,
+      "audioSamples": 160000,
+      "processPssKiB": 283427,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 238,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 114364,
+      "batchMs": 4333,
+      "audioSamples": 160000,
+      "processPssKiB": 394165,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 238,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 125746,
+      "batchMs": 4273,
+      "audioSamples": 160000,
+      "processPssKiB": 392908,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 137143,
+      "batchMs": 4273,
+      "audioSamples": 160000,
+      "processPssKiB": 401439,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 148597,
+      "batchMs": 4277,
+      "audioSamples": 160000,
+      "processPssKiB": 390463,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 159971,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 399067,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 171378,
+      "batchMs": 4279,
+      "audioSamples": 160000,
+      "processPssKiB": 407839,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 182793,
+      "batchMs": 4302,
+      "audioSamples": 160000,
+      "processPssKiB": 391177,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 194103,
+      "batchMs": 4286,
+      "audioSamples": 160000,
+      "processPssKiB": 399743,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 205548,
+      "batchMs": 4281,
+      "audioSamples": 160000,
+      "processPssKiB": 390357,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 216801,
+      "batchMs": 4281,
+      "audioSamples": 160000,
+      "processPssKiB": 398939,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 228224,
+      "batchMs": 4293,
+      "audioSamples": 160000,
+      "processPssKiB": 390443,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 239617,
+      "batchMs": 4256,
+      "audioSamples": 160000,
+      "processPssKiB": 386999,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 250981,
+      "batchMs": 4266,
+      "audioSamples": 160000,
+      "processPssKiB": 395359,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 262394,
+      "batchMs": 4279,
+      "audioSamples": 160000,
+      "processPssKiB": 392859,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 273754,
+      "batchMs": 4282,
+      "audioSamples": 160000,
+      "processPssKiB": 401475,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 285112,
+      "batchMs": 4265,
+      "audioSamples": 160000,
+      "processPssKiB": 388171,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 296554,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 396735,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 307824,
+      "batchMs": 4311,
+      "audioSamples": 160000,
+      "processPssKiB": 392423,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 319122,
+      "batchMs": 4276,
+      "audioSamples": 160000,
+      "processPssKiB": 389454,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 330495,
+      "batchMs": 4233,
+      "audioSamples": 160000,
+      "processPssKiB": 390755,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 342033,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 399491,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 353515,
+      "batchMs": 4281,
+      "audioSamples": 160000,
+      "processPssKiB": 389059,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 364949,
+      "batchMs": 4293,
+      "audioSamples": 160000,
+      "processPssKiB": 397547,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 376409,
+      "batchMs": 4304,
+      "audioSamples": 160000,
+      "processPssKiB": 392039,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 387827,
+      "batchMs": 4300,
+      "audioSamples": 160000,
+      "processPssKiB": 400503,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 399294,
+      "batchMs": 4294,
+      "audioSamples": 160000,
+      "processPssKiB": 389431,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 410717,
+      "batchMs": 4245,
+      "audioSamples": 160000,
+      "processPssKiB": 397979,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 240,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 422222,
+      "batchMs": 4299,
+      "audioSamples": 160000,
+      "processPssKiB": 392879,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 433657,
+      "batchMs": 4280,
+      "audioSamples": 160000,
+      "processPssKiB": 401347,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 445114,
+      "batchMs": 4261,
+      "audioSamples": 160000,
+      "processPssKiB": 392979,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 456559,
+      "batchMs": 4244,
+      "audioSamples": 160000,
+      "processPssKiB": 401467,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 468067,
+      "batchMs": 4292,
+      "audioSamples": 160000,
+      "processPssKiB": 389487,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 479483,
+      "batchMs": 4244,
+      "audioSamples": 160000,
+      "processPssKiB": 397863,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 491027,
+      "batchMs": 4247,
+      "audioSamples": 160000,
+      "processPssKiB": 393571,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 502537,
+      "batchMs": 4296,
+      "audioSamples": 160000,
+      "processPssKiB": 402047,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 513944,
+      "batchMs": 4240,
+      "audioSamples": 160000,
+      "processPssKiB": 390103,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 525486,
+      "batchMs": 4284,
+      "audioSamples": 160000,
+      "processPssKiB": 398767,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 536906,
+      "batchMs": 4251,
+      "audioSamples": 160000,
+      "processPssKiB": 392687,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 548412,
+      "batchMs": 4280,
+      "audioSamples": 160000,
+      "processPssKiB": 401243,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 559862,
+      "batchMs": 4266,
+      "audioSamples": 160000,
+      "processPssKiB": 388563,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 571300,
+      "batchMs": 4276,
+      "audioSamples": 160000,
+      "processPssKiB": 397111,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 250,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 582731,
+      "batchMs": 4278,
+      "audioSamples": 160000,
+      "processPssKiB": 392435,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 594135,
+      "batchMs": 4290,
+      "audioSamples": 160000,
+      "processPssKiB": 390999,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 605523,
+      "batchMs": 4244,
+      "audioSamples": 160000,
+      "processPssKiB": 399587,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 616993,
+      "batchMs": 4281,
+      "audioSamples": 160000,
+      "processPssKiB": 393009,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 628339,
+      "batchMs": 4213,
+      "audioSamples": 160000,
+      "processPssKiB": 401339,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 639875,
+      "batchMs": 4289,
+      "audioSamples": 160000,
+      "processPssKiB": 390583,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 651291,
+      "batchMs": 4248,
+      "audioSamples": 160000,
+      "processPssKiB": 399111,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 662743,
+      "batchMs": 4251,
+      "audioSamples": 160000,
+      "processPssKiB": 393751,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 674230,
+      "batchMs": 4269,
+      "audioSamples": 160000,
+      "processPssKiB": 402243,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 685646,
+      "batchMs": 4239,
+      "audioSamples": 160000,
+      "processPssKiB": 391467,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 697096,
+      "batchMs": 4254,
+      "audioSamples": 160000,
+      "processPssKiB": 386643,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 708573,
+      "batchMs": 4299,
+      "audioSamples": 160000,
+      "processPssKiB": 395063,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 719994,
+      "batchMs": 4276,
+      "audioSamples": 160000,
+      "processPssKiB": 393831,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 731417,
+      "batchMs": 4247,
+      "audioSamples": 160000,
+      "processPssKiB": 402287,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 742929,
+      "batchMs": 4296,
+      "audioSamples": 160000,
+      "processPssKiB": 388355,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 754361,
+      "batchMs": 4279,
+      "audioSamples": 160000,
+      "processPssKiB": 396787,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 765844,
+      "batchMs": 4298,
+      "audioSamples": 160000,
+      "processPssKiB": 392727,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 777249,
+      "batchMs": 4289,
+      "audioSamples": 160000,
+      "processPssKiB": 401247,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 788714,
+      "batchMs": 4289,
+      "audioSamples": 160000,
+      "processPssKiB": 366128,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 800163,
+      "batchMs": 4277,
+      "audioSamples": 160000,
+      "processPssKiB": 149149,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 811600,
+      "batchMs": 4279,
+      "audioSamples": 160000,
+      "processPssKiB": 387287,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 822990,
+      "batchMs": 4298,
+      "audioSamples": 160000,
+      "processPssKiB": 395867,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 253,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 834394,
+      "batchMs": 4288,
+      "audioSamples": 160000,
+      "processPssKiB": 392139,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 845798,
+      "batchMs": 4281,
+      "audioSamples": 160000,
+      "processPssKiB": 400855,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 857275,
+      "batchMs": 4274,
+      "audioSamples": 160000,
+      "processPssKiB": 387487,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 868712,
+      "batchMs": 4266,
+      "audioSamples": 160000,
+      "processPssKiB": 395975,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 880151,
+      "batchMs": 4250,
+      "audioSamples": 160000,
+      "processPssKiB": 392075,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 891552,
+      "batchMs": 4295,
+      "audioSamples": 160000,
+      "processPssKiB": 353507,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 903006,
+      "batchMs": 4293,
+      "audioSamples": 160000,
+      "processPssKiB": 394751,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 914465,
+      "batchMs": 4286,
+      "audioSamples": 160000,
+      "processPssKiB": 394299,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 925904,
+      "batchMs": 4282,
+      "audioSamples": 160000,
+      "processPssKiB": 402995,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 937359,
+      "batchMs": 4284,
+      "audioSamples": 160000,
+      "processPssKiB": 387583,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 948766,
+      "batchMs": 4234,
+      "audioSamples": 160000,
+      "processPssKiB": 396131,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 960245,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 392151,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 971673,
+      "batchMs": 4286,
+      "audioSamples": 160000,
+      "processPssKiB": 400699,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 983094,
+      "batchMs": 4264,
+      "audioSamples": 160000,
+      "processPssKiB": 388675,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 994530,
+      "batchMs": 4293,
+      "audioSamples": 160000,
+      "processPssKiB": 397335,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1005902,
+      "batchMs": 4244,
+      "audioSamples": 160000,
+      "processPssKiB": 391755,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1017363,
+      "batchMs": 4263,
+      "audioSamples": 160000,
+      "processPssKiB": 400315,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1028825,
+      "batchMs": 4301,
+      "audioSamples": 160000,
+      "processPssKiB": 408907,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1040236,
+      "batchMs": 4297,
+      "audioSamples": 160000,
+      "processPssKiB": 391603,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1051693,
+      "batchMs": 4295,
+      "audioSamples": 160000,
+      "processPssKiB": 400135,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 256,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1063136,
+      "batchMs": 4265,
+      "audioSamples": 160000,
+      "processPssKiB": 408479,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1074579,
+      "batchMs": 4271,
+      "audioSamples": 160000,
+      "processPssKiB": 390647,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1086021,
+      "batchMs": 4255,
+      "audioSamples": 160000,
+      "processPssKiB": 399167,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1097490,
+      "batchMs": 4279,
+      "audioSamples": 160000,
+      "processPssKiB": 390759,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1108941,
+      "batchMs": 4281,
+      "audioSamples": 160000,
+      "processPssKiB": 399359,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1120397,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 390903,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1131877,
+      "batchMs": 4288,
+      "audioSamples": 160000,
+      "processPssKiB": 399487,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1143302,
+      "batchMs": 4261,
+      "audioSamples": 160000,
+      "processPssKiB": 387663,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1154796,
+      "batchMs": 4315,
+      "audioSamples": 160000,
+      "processPssKiB": 396291,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1166214,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 390187,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1177610,
+      "batchMs": 4264,
+      "audioSamples": 160000,
+      "processPssKiB": 398859,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1189057,
+      "batchMs": 4281,
+      "audioSamples": 160000,
+      "processPssKiB": 393123,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1200490,
+      "batchMs": 4267,
+      "audioSamples": 160000,
+      "processPssKiB": 401703,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1211955,
+      "batchMs": 4282,
+      "audioSamples": 160000,
+      "processPssKiB": 410359,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1223363,
+      "batchMs": 4254,
+      "audioSamples": 160000,
+      "processPssKiB": 391651,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1234842,
+      "batchMs": 4277,
+      "audioSamples": 160000,
+      "processPssKiB": 400167,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1246339,
+      "batchMs": 4309,
+      "audioSamples": 160000,
+      "processPssKiB": 388827,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1257787,
+      "batchMs": 4288,
+      "audioSamples": 160000,
+      "processPssKiB": 397371,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1269270,
+      "batchMs": 4307,
+      "audioSamples": 160000,
+      "processPssKiB": 392243,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1280696,
+      "batchMs": 4275,
+      "audioSamples": 160000,
+      "processPssKiB": 400839,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1292171,
+      "batchMs": 4299,
+      "audioSamples": 160000,
+      "processPssKiB": 409579,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1303623,
+      "batchMs": 4294,
+      "audioSamples": 160000,
+      "processPssKiB": 395323,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1315096,
+      "batchMs": 4291,
+      "audioSamples": 160000,
+      "processPssKiB": 388887,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1326498,
+      "batchMs": 4254,
+      "audioSamples": 160000,
+      "processPssKiB": 397271,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1338038,
+      "batchMs": 4337,
+      "audioSamples": 160000,
+      "processPssKiB": 392383,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1349470,
+      "batchMs": 4274,
+      "audioSamples": 160000,
+      "processPssKiB": 400915,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1360967,
+      "batchMs": 4300,
+      "audioSamples": 160000,
+      "processPssKiB": 389543,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1372419,
+      "batchMs": 4281,
+      "audioSamples": 160000,
+      "processPssKiB": 398087,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1383898,
+      "batchMs": 4289,
+      "audioSamples": 160000,
+      "processPssKiB": 392147,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1395276,
+      "batchMs": 4232,
+      "audioSamples": 160000,
+      "processPssKiB": 400727,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1406733,
+      "batchMs": 4266,
+      "audioSamples": 160000,
+      "processPssKiB": 388995,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1418189,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 397575,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1429575,
+      "batchMs": 4239,
+      "audioSamples": 160000,
+      "processPssKiB": 391543,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1441171,
+      "batchMs": 4285,
+      "audioSamples": 160000,
+      "processPssKiB": 400211,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1452645,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 391607,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1464123,
+      "batchMs": 4305,
+      "audioSamples": 160000,
+      "processPssKiB": 400179,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1475564,
+      "batchMs": 4279,
+      "audioSamples": 160000,
+      "processPssKiB": 387839,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1487018,
+      "batchMs": 4279,
+      "audioSamples": 160000,
+      "processPssKiB": 396423,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1498471,
+      "batchMs": 4259,
+      "audioSamples": 160000,
+      "processPssKiB": 390919,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1509917,
+      "batchMs": 4247,
+      "audioSamples": 160000,
+      "processPssKiB": 399463,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1521403,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 392867,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1532870,
+      "batchMs": 4294,
+      "audioSamples": 160000,
+      "processPssKiB": 401487,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1544334,
+      "batchMs": 4286,
+      "audioSamples": 160000,
+      "processPssKiB": 387951,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1555822,
+      "batchMs": 4311,
+      "audioSamples": 160000,
+      "processPssKiB": 396411,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1567221,
+      "batchMs": 4281,
+      "audioSamples": 160000,
+      "processPssKiB": 391759,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1578662,
+      "batchMs": 4285,
+      "audioSamples": 160000,
+      "processPssKiB": 400347,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1590091,
+      "batchMs": 4274,
+      "audioSamples": 160000,
+      "processPssKiB": 391923,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1601571,
+      "batchMs": 4300,
+      "audioSamples": 160000,
+      "processPssKiB": 400515,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1612964,
+      "batchMs": 4275,
+      "audioSamples": 160000,
+      "processPssKiB": 392151,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1624387,
+      "batchMs": 4301,
+      "audioSamples": 160000,
+      "processPssKiB": 400739,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1635819,
+      "batchMs": 4285,
+      "audioSamples": 160000,
+      "processPssKiB": 391735,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1647296,
+      "batchMs": 4303,
+      "audioSamples": 160000,
+      "processPssKiB": 400335,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1658679,
+      "batchMs": 4249,
+      "audioSamples": 160000,
+      "processPssKiB": 388027,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1670170,
+      "batchMs": 4259,
+      "audioSamples": 160000,
+      "processPssKiB": 396607,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1681641,
+      "batchMs": 4274,
+      "audioSamples": 160000,
+      "processPssKiB": 391463,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1693086,
+      "batchMs": 4281,
+      "audioSamples": 160000,
+      "processPssKiB": 399991,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1704526,
+      "batchMs": 4247,
+      "audioSamples": 160000,
+      "processPssKiB": 408583,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1716020,
+      "batchMs": 4292,
+      "audioSamples": 160000,
+      "processPssKiB": 392171,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1727426,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 400699,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1738887,
+      "batchMs": 4280,
+      "audioSamples": 160000,
+      "processPssKiB": 409051,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1750342,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 393823,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1761786,
+      "batchMs": 4294,
+      "audioSamples": 160000,
+      "processPssKiB": 402335,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1773264,
+      "batchMs": 4289,
+      "audioSamples": 160000,
+      "processPssKiB": 389203,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1784723,
+      "batchMs": 4291,
+      "audioSamples": 160000,
+      "processPssKiB": 397787,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1796139,
+      "batchMs": 4268,
+      "audioSamples": 160000,
+      "processPssKiB": 392059,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1807621,
+      "batchMs": 4310,
+      "audioSamples": 160000,
+      "processPssKiB": 389575,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1819084,
+      "batchMs": 4301,
+      "audioSamples": 160000,
+      "processPssKiB": 398211,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1830555,
+      "batchMs": 4307,
+      "audioSamples": 160000,
+      "processPssKiB": 392379,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1841959,
+      "batchMs": 4254,
+      "audioSamples": 160000,
+      "processPssKiB": 400939,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1853396,
+      "batchMs": 4260,
+      "audioSamples": 160000,
+      "processPssKiB": 409627,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1864901,
+      "batchMs": 4297,
+      "audioSamples": 160000,
+      "processPssKiB": 395523,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1876351,
+      "batchMs": 4277,
+      "audioSamples": 160000,
+      "processPssKiB": 389227,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1887773,
+      "batchMs": 4250,
+      "audioSamples": 160000,
+      "processPssKiB": 397619,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1899207,
+      "batchMs": 4234,
+      "audioSamples": 160000,
+      "processPssKiB": 391511,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1910766,
+      "batchMs": 4277,
+      "audioSamples": 160000,
+      "processPssKiB": 400223,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1922208,
+      "batchMs": 4244,
+      "audioSamples": 160000,
+      "processPssKiB": 392667,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1933654,
+      "batchMs": 4285,
+      "audioSamples": 160000,
+      "processPssKiB": 401227,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1945110,
+      "batchMs": 4279,
+      "audioSamples": 160000,
+      "processPssKiB": 392867,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1956534,
+      "batchMs": 4230,
+      "audioSamples": 160000,
+      "processPssKiB": 401287,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1968094,
+      "batchMs": 4270,
+      "audioSamples": 160000,
+      "processPssKiB": 389375,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1979537,
+      "batchMs": 4277,
+      "audioSamples": 160000,
+      "processPssKiB": 397967,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 1990960,
+      "batchMs": 4245,
+      "audioSamples": 160000,
+      "processPssKiB": 392691,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2002457,
+      "batchMs": 4281,
+      "audioSamples": 160000,
+      "processPssKiB": 401275,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2013930,
+      "batchMs": 4280,
+      "audioSamples": 160000,
+      "processPssKiB": 389419,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2025389,
+      "batchMs": 4277,
+      "audioSamples": 160000,
+      "processPssKiB": 388015,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2036855,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 396455,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2048278,
+      "batchMs": 4306,
+      "audioSamples": 160000,
+      "processPssKiB": 392735,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2059692,
+      "batchMs": 4236,
+      "audioSamples": 160000,
+      "processPssKiB": 401331,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2071157,
+      "batchMs": 4257,
+      "audioSamples": 160000,
+      "processPssKiB": 389211,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2082651,
+      "batchMs": 4302,
+      "audioSamples": 160000,
+      "processPssKiB": 397795,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2094094,
+      "batchMs": 4302,
+      "audioSamples": 160000,
+      "processPssKiB": 391723,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2105533,
+      "batchMs": 4255,
+      "audioSamples": 160000,
+      "processPssKiB": 400263,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2117036,
+      "batchMs": 4292,
+      "audioSamples": 160000,
+      "processPssKiB": 408875,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2128409,
+      "batchMs": 4240,
+      "audioSamples": 160000,
+      "processPssKiB": 393395,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2139855,
+      "batchMs": 4267,
+      "audioSamples": 160000,
+      "processPssKiB": 401943,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2151271,
+      "batchMs": 4255,
+      "audioSamples": 160000,
+      "processPssKiB": 392015,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2162718,
+      "batchMs": 4247,
+      "audioSamples": 160000,
+      "processPssKiB": 400555,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 258,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2174238,
+      "batchMs": 4305,
+      "audioSamples": 160000,
+      "processPssKiB": 392603,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2185682,
+      "batchMs": 4278,
+      "audioSamples": 160000,
+      "processPssKiB": 401247,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2197132,
+      "batchMs": 4264,
+      "audioSamples": 160000,
+      "processPssKiB": 389791,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2208587,
+      "batchMs": 4252,
+      "audioSamples": 160000,
+      "processPssKiB": 398395,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2220076,
+      "batchMs": 4244,
+      "audioSamples": 160000,
+      "processPssKiB": 393327,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2231651,
+      "batchMs": 4274,
+      "audioSamples": 160000,
+      "processPssKiB": 390995,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2243078,
+      "batchMs": 4246,
+      "audioSamples": 160000,
+      "processPssKiB": 399603,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2254577,
+      "batchMs": 4271,
+      "audioSamples": 160000,
+      "processPssKiB": 392163,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2266014,
+      "batchMs": 4262,
+      "audioSamples": 160000,
+      "processPssKiB": 400735,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2277438,
+      "batchMs": 4277,
+      "audioSamples": 160000,
+      "processPssKiB": 409479,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2288905,
+      "batchMs": 4299,
+      "audioSamples": 160000,
+      "processPssKiB": 392003,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2300364,
+      "batchMs": 4309,
+      "audioSamples": 160000,
+      "processPssKiB": 400547,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2311801,
+      "batchMs": 4260,
+      "audioSamples": 160000,
+      "processPssKiB": 363032,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2323287,
+      "batchMs": 4291,
+      "audioSamples": 160000,
+      "processPssKiB": 388091,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2334689,
+      "batchMs": 4252,
+      "audioSamples": 160000,
+      "processPssKiB": 396719,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2346180,
+      "batchMs": 4303,
+      "audioSamples": 160000,
+      "processPssKiB": 392939,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2357611,
+      "batchMs": 4284,
+      "audioSamples": 160000,
+      "processPssKiB": 401555,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2369060,
+      "batchMs": 4260,
+      "audioSamples": 160000,
+      "processPssKiB": 393279,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2380522,
+      "batchMs": 4282,
+      "audioSamples": 160000,
+      "processPssKiB": 401859,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2391957,
+      "batchMs": 4271,
+      "audioSamples": 160000,
+      "processPssKiB": 393307,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2403436,
+      "batchMs": 4285,
+      "audioSamples": 160000,
+      "processPssKiB": 401883,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2414892,
+      "batchMs": 4282,
+      "audioSamples": 160000,
+      "processPssKiB": 389431,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2426334,
+      "batchMs": 4262,
+      "audioSamples": 160000,
+      "processPssKiB": 398035,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2437797,
+      "batchMs": 4274,
+      "audioSamples": 160000,
+      "processPssKiB": 391919,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2449242,
+      "batchMs": 4266,
+      "audioSamples": 160000,
+      "processPssKiB": 400539,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2460680,
+      "batchMs": 4275,
+      "audioSamples": 160000,
+      "processPssKiB": 409131,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2472130,
+      "batchMs": 4298,
+      "audioSamples": 160000,
+      "processPssKiB": 391647,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2483587,
+      "batchMs": 4282,
+      "audioSamples": 160000,
+      "processPssKiB": 400179,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2495040,
+      "batchMs": 4262,
+      "audioSamples": 160000,
+      "processPssKiB": 408747,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2506511,
+      "batchMs": 4292,
+      "audioSamples": 160000,
+      "processPssKiB": 390943,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2517931,
+      "batchMs": 4244,
+      "audioSamples": 160000,
+      "processPssKiB": 399471,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2529430,
+      "batchMs": 4303,
+      "audioSamples": 160000,
+      "processPssKiB": 391567,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2540797,
+      "batchMs": 4277,
+      "audioSamples": 160000,
+      "processPssKiB": 400123,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2552254,
+      "batchMs": 4276,
+      "audioSamples": 160000,
+      "processPssKiB": 393831,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2563741,
+      "batchMs": 4285,
+      "audioSamples": 160000,
+      "processPssKiB": 313023,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2575205,
+      "batchMs": 4298,
+      "audioSamples": 160000,
+      "processPssKiB": 387983,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2586658,
+      "batchMs": 4284,
+      "audioSamples": 160000,
+      "processPssKiB": 396527,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2598138,
+      "batchMs": 4298,
+      "audioSamples": 160000,
+      "processPssKiB": 392527,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2609585,
+      "batchMs": 4276,
+      "audioSamples": 160000,
+      "processPssKiB": 401051,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2621015,
+      "batchMs": 4247,
+      "audioSamples": 160000,
+      "processPssKiB": 390291,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2632509,
+      "batchMs": 4285,
+      "audioSamples": 160000,
+      "processPssKiB": 398971,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2643975,
+      "batchMs": 4278,
+      "audioSamples": 160000,
+      "processPssKiB": 393023,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2655435,
+      "batchMs": 4291,
+      "audioSamples": 160000,
+      "processPssKiB": 401595,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2666879,
+      "batchMs": 4273,
+      "audioSamples": 160000,
+      "processPssKiB": 410203,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2678376,
+      "batchMs": 4311,
+      "audioSamples": 160000,
+      "processPssKiB": 393023,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2689842,
+      "batchMs": 4294,
+      "audioSamples": 160000,
+      "processPssKiB": 401583,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2701268,
+      "batchMs": 4257,
+      "audioSamples": 160000,
+      "processPssKiB": 392307,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2712602,
+      "batchMs": 4285,
+      "audioSamples": 160000,
+      "processPssKiB": 400735,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2724083,
+      "batchMs": 4297,
+      "audioSamples": 160000,
+      "processPssKiB": 392011,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2735521,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 400577,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2747014,
+      "batchMs": 4313,
+      "audioSamples": 160000,
+      "processPssKiB": 389217,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2758415,
+      "batchMs": 4269,
+      "audioSamples": 160000,
+      "processPssKiB": 397813,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2769899,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 392781,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2781343,
+      "batchMs": 4266,
+      "audioSamples": 160000,
+      "processPssKiB": 401268,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2792801,
+      "batchMs": 4261,
+      "audioSamples": 160000,
+      "processPssKiB": 389011,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2804295,
+      "batchMs": 4291,
+      "audioSamples": 160000,
+      "processPssKiB": 397539,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2815787,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 392515,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2827247,
+      "batchMs": 4273,
+      "audioSamples": 160000,
+      "processPssKiB": 401003,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2838691,
+      "batchMs": 4280,
+      "audioSamples": 160000,
+      "processPssKiB": 389051,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2850136,
+      "batchMs": 4298,
+      "audioSamples": 160000,
+      "processPssKiB": 397631,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2861561,
+      "batchMs": 4267,
+      "audioSamples": 160000,
+      "processPssKiB": 392999,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2872986,
+      "batchMs": 4235,
+      "audioSamples": 160000,
+      "processPssKiB": 401563,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2884486,
+      "batchMs": 4291,
+      "audioSamples": 160000,
+      "processPssKiB": 395083,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2895908,
+      "batchMs": 4239,
+      "audioSamples": 160000,
+      "processPssKiB": 391311,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2907367,
+      "batchMs": 4304,
+      "audioSamples": 160000,
+      "processPssKiB": 399955,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2918811,
+      "batchMs": 4276,
+      "audioSamples": 160000,
+      "processPssKiB": 408559,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2930211,
+      "batchMs": 4240,
+      "audioSamples": 160000,
+      "processPssKiB": 392827,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2941798,
+      "batchMs": 4299,
+      "audioSamples": 160000,
+      "processPssKiB": 401571,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2953215,
+      "batchMs": 4245,
+      "audioSamples": 160000,
+      "processPssKiB": 410151,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2964666,
+      "batchMs": 4231,
+      "audioSamples": 160000,
+      "processPssKiB": 392663,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2976251,
+      "batchMs": 4270,
+      "audioSamples": 160000,
+      "processPssKiB": 401399,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2987728,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 388883,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 2999211,
+      "batchMs": 4299,
+      "audioSamples": 160000,
+      "processPssKiB": 397375,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3010644,
+      "batchMs": 4271,
+      "audioSamples": 160000,
+      "processPssKiB": 392739,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3022116,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 401275,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3033559,
+      "batchMs": 4254,
+      "audioSamples": 160000,
+      "processPssKiB": 388911,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3045018,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 397535,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3056398,
+      "batchMs": 4239,
+      "audioSamples": 160000,
+      "processPssKiB": 392011,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3067858,
+      "batchMs": 4283,
+      "audioSamples": 160000,
+      "processPssKiB": 400559,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3079330,
+      "batchMs": 4294,
+      "audioSamples": 160000,
+      "processPssKiB": 391615,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3090777,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 400171,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3102200,
+      "batchMs": 4265,
+      "audioSamples": 160000,
+      "processPssKiB": 387671,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3113665,
+      "batchMs": 4269,
+      "audioSamples": 160000,
+      "processPssKiB": 396139,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3125146,
+      "batchMs": 4289,
+      "audioSamples": 160000,
+      "processPssKiB": 392043,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3136526,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 400651,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3147962,
+      "batchMs": 4257,
+      "audioSamples": 160000,
+      "processPssKiB": 409295,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3159418,
+      "batchMs": 4297,
+      "audioSamples": 160000,
+      "processPssKiB": 393647,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3170814,
+      "batchMs": 4270,
+      "audioSamples": 160000,
+      "processPssKiB": 402195,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3182285,
+      "batchMs": 4273,
+      "audioSamples": 160000,
+      "processPssKiB": 389419,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3193765,
+      "batchMs": 4284,
+      "audioSamples": 160000,
+      "processPssKiB": 397991,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3205190,
+      "batchMs": 4270,
+      "audioSamples": 160000,
+      "processPssKiB": 390707,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3216647,
+      "batchMs": 4292,
+      "audioSamples": 160000,
+      "processPssKiB": 399327,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3228060,
+      "batchMs": 4240,
+      "audioSamples": 160000,
+      "processPssKiB": 392871,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3239520,
+      "batchMs": 4259,
+      "audioSamples": 160000,
+      "processPssKiB": 401455,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3250949,
+      "batchMs": 4275,
+      "audioSamples": 160000,
+      "processPssKiB": 387887,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3262404,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 396391,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3274065,
+      "batchMs": 4470,
+      "audioSamples": 160000,
+      "processPssKiB": 392055,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3285368,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 400607,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3296803,
+      "batchMs": 4269,
+      "audioSamples": 160000,
+      "processPssKiB": 389027,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3308317,
+      "batchMs": 4303,
+      "audioSamples": 160000,
+      "processPssKiB": 397599,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3319729,
+      "batchMs": 4292,
+      "audioSamples": 160000,
+      "processPssKiB": 392983,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3331171,
+      "batchMs": 4276,
+      "audioSamples": 160000,
+      "processPssKiB": 401611,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3342647,
+      "batchMs": 4288,
+      "audioSamples": 160000,
+      "processPssKiB": 410227,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3354088,
+      "batchMs": 4279,
+      "audioSamples": 160000,
+      "processPssKiB": 393635,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3365478,
+      "batchMs": 4238,
+      "audioSamples": 160000,
+      "processPssKiB": 402175,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3376985,
+      "batchMs": 4277,
+      "audioSamples": 160000,
+      "processPssKiB": 390183,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3388449,
+      "batchMs": 4277,
+      "audioSamples": 160000,
+      "processPssKiB": 398747,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3399919,
+      "batchMs": 4272,
+      "audioSamples": 160000,
+      "processPssKiB": 393167,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3411337,
+      "batchMs": 4233,
+      "audioSamples": 160000,
+      "processPssKiB": 401667,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3422834,
+      "batchMs": 4288,
+      "audioSamples": 160000,
+      "processPssKiB": 357844,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3434299,
+      "batchMs": 4278,
+      "audioSamples": 160000,
+      "processPssKiB": 386599,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3445763,
+      "batchMs": 4283,
+      "audioSamples": 160000,
+      "processPssKiB": 395339,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3457225,
+      "batchMs": 4274,
+      "audioSamples": 160000,
+      "processPssKiB": 390051,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3468685,
+      "batchMs": 4280,
+      "audioSamples": 160000,
+      "processPssKiB": 391139,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3480138,
+      "batchMs": 4275,
+      "audioSamples": 160000,
+      "processPssKiB": 399767,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3491623,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 389139,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3503072,
+      "batchMs": 4279,
+      "audioSamples": 160000,
+      "processPssKiB": 397743,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3514529,
+      "batchMs": 4276,
+      "audioSamples": 160000,
+      "processPssKiB": 393507,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3525976,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 402095,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3537448,
+      "batchMs": 4294,
+      "audioSamples": 160000,
+      "processPssKiB": 388919,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3548927,
+      "batchMs": 4301,
+      "audioSamples": 160000,
+      "processPssKiB": 397371,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3560396,
+      "batchMs": 4300,
+      "audioSamples": 160000,
+      "processPssKiB": 392135,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3571809,
+      "batchMs": 4260,
+      "audioSamples": 160000,
+      "processPssKiB": 400723,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3583295,
+      "batchMs": 4308,
+      "audioSamples": 160000,
+      "processPssKiB": 389347,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3594756,
+      "batchMs": 4289,
+      "audioSamples": 160000,
+      "processPssKiB": 391203,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3606200,
+      "batchMs": 4280,
+      "audioSamples": 160000,
+      "processPssKiB": 399863,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3617671,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 392935,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3629101,
+      "batchMs": 4249,
+      "audioSamples": 160000,
+      "processPssKiB": 401539,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3640540,
+      "batchMs": 4254,
+      "audioSamples": 160000,
+      "processPssKiB": 391599,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3651984,
+      "batchMs": 4286,
+      "audioSamples": 160000,
+      "processPssKiB": 400171,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3663464,
+      "batchMs": 4297,
+      "audioSamples": 160000,
+      "processPssKiB": 408767,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3674923,
+      "batchMs": 4283,
+      "audioSamples": 160000,
+      "processPssKiB": 392035,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3686403,
+      "batchMs": 4294,
+      "audioSamples": 160000,
+      "processPssKiB": 400539,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3697844,
+      "batchMs": 4276,
+      "audioSamples": 160000,
+      "processPssKiB": 409135,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3709305,
+      "batchMs": 4238,
+      "audioSamples": 160000,
+      "processPssKiB": 391339,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3720800,
+      "batchMs": 4295,
+      "audioSamples": 160000,
+      "processPssKiB": 399851,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3732151,
+      "batchMs": 4278,
+      "audioSamples": 160000,
+      "processPssKiB": 408611,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3743599,
+      "batchMs": 4260,
+      "audioSamples": 160000,
+      "processPssKiB": 395383,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3755029,
+      "batchMs": 4259,
+      "audioSamples": 160000,
+      "processPssKiB": 390963,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3766482,
+      "batchMs": 4273,
+      "audioSamples": 160000,
+      "processPssKiB": 389063,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3777909,
+      "batchMs": 4238,
+      "audioSamples": 160000,
+      "processPssKiB": 397491,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3789395,
+      "batchMs": 4278,
+      "audioSamples": 160000,
+      "processPssKiB": 393655,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3800829,
+      "batchMs": 4249,
+      "audioSamples": 160000,
+      "processPssKiB": 402227,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3812297,
+      "batchMs": 4283,
+      "audioSamples": 160000,
+      "processPssKiB": 346062,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3823716,
+      "batchMs": 4247,
+      "audioSamples": 160000,
+      "processPssKiB": 387671,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3835217,
+      "batchMs": 4307,
+      "audioSamples": 160000,
+      "processPssKiB": 396315,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3846601,
+      "batchMs": 4251,
+      "audioSamples": 160000,
+      "processPssKiB": 392215,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3858058,
+      "batchMs": 4255,
+      "audioSamples": 160000,
+      "processPssKiB": 400803,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3869529,
+      "batchMs": 4275,
+      "audioSamples": 160000,
+      "processPssKiB": 390235,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3881031,
+      "batchMs": 4315,
+      "audioSamples": 160000,
+      "processPssKiB": 398739,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3892464,
+      "batchMs": 4284,
+      "audioSamples": 160000,
+      "processPssKiB": 392355,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3903921,
+      "batchMs": 4277,
+      "audioSamples": 160000,
+      "processPssKiB": 400883,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3915366,
+      "batchMs": 4279,
+      "audioSamples": 160000,
+      "processPssKiB": 389831,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3926838,
+      "batchMs": 4287,
+      "audioSamples": 160000,
+      "processPssKiB": 398399,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3938307,
+      "batchMs": 4278,
+      "audioSamples": 160000,
+      "processPssKiB": 393051,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3949755,
+      "batchMs": 4283,
+      "audioSamples": 160000,
+      "processPssKiB": 401647,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3961181,
+      "batchMs": 4252,
+      "audioSamples": 160000,
+      "processPssKiB": 390067,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3972652,
+      "batchMs": 4276,
+      "audioSamples": 160000,
+      "processPssKiB": 398647,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3984114,
+      "batchMs": 4248,
+      "audioSamples": 160000,
+      "processPssKiB": 393771,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 3995571,
+      "batchMs": 4294,
+      "audioSamples": 160000,
+      "processPssKiB": 402279,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 4007002,
+      "batchMs": 4288,
+      "audioSamples": 160000,
+      "processPssKiB": 390183,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 4018467,
+      "batchMs": 4298,
+      "audioSamples": 160000,
+      "processPssKiB": 398743,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 4029868,
+      "batchMs": 4256,
+      "audioSamples": 160000,
+      "processPssKiB": 392911,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 4041304,
+      "batchMs": 4246,
+      "audioSamples": 160000,
+      "processPssKiB": 389199,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 4052847,
+      "batchMs": 4236,
+      "audioSamples": 160000,
+      "processPssKiB": 387891,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 4064294,
+      "batchMs": 4231,
+      "audioSamples": 160000,
+      "processPssKiB": 396383,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 4075741,
+      "batchMs": 4238,
+      "audioSamples": 160000,
+      "processPssKiB": 391879,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 4087197,
+      "batchMs": 4257,
+      "audioSamples": 160000,
+      "processPssKiB": 400467,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 4098650,
+      "batchMs": 4265,
+      "audioSamples": 160000,
+      "processPssKiB": 409087,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 4110096,
+      "batchMs": 4266,
+      "audioSamples": 160000,
+      "processPssKiB": 393547,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 4121539,
+      "batchMs": 4240,
+      "audioSamples": 160000,
+      "processPssKiB": 402075,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    },
+    {
+      "elapsedMs": 4124307,
+      "batchMs": 1548,
+      "audioSamples": 73984,
+      "processPssKiB": 403375,
+      "thermalStatus": 0,
+      "batteryTemperatureTenthsC": 264,
+      "plugged": 1
+    }
+  ]
+}

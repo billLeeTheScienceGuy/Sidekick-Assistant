@@ -1,55 +1,129 @@
 package com.sidekick.core
 
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.sqrt
 
 /**
- * Where a conversation happens decides whose words SideKick may keep. Product rules from public secondary
- * sources, not legal advice (see the "SideKick: Consent, Law, Performance & Test Plan" document).
+ * Where a conversation happens decides whose words SideKick may keep and whether other people's voices may be
+ * grouped. Two independent product rules from public secondary sources (see docs/PRIVACY_POLICY.md), not legal advice:
+ *  - recording: one-party or all-party consent to record a conversation;
+ *  - biometric: none, notice (Texas CUBI, Washington RCW 19.375) or strict (Illinois BIPA).
  *
- * Every uncertainty resolves to the stricter rule: no fix, a stale fix, a fix whose accuracy circle touches an
- * all-party state, or a place outside the bundled US borders all count as ALL_PARTY.
+ * Every uncertainty resolves to the strictest rule. The containing state and every state whose border lies within the
+ * buffer radius are collected, and the strictest recording and biometric rules are taken independently across them.
+ * No fix, a stale fix, a place outside the bundled borders or a lookup error give ALL_PARTY + STRICT.
  */
 object RecordingJurisdiction {
     enum class Rule { ONE_PARTY, ALL_PARTY }
-    data class Place(val code: String?, val name: String, val rule: Rule, val reason: String) {
-        /** Illinois BIPA: never group other people's voices there. */
-        val groupsOtherVoices: Boolean get() = code != "IL"
+    enum class BiometricRule { NONE, NOTICE, STRICT }
+
+    data class Place(
+        val code: String?,
+        val name: String,
+        val recording: Rule,
+        val biometric: BiometricRule,
+        val reason: String,
+        /** State codes near the position that made either rule stricter than the containing state's. */
+        val forcedBy: List<String> = emptyList(),
+    ) {
+        /** Illinois BIPA (and anywhere near it, or anywhere unknown): never group other people's voices. */
+        val groupsOtherVoices: Boolean get() = biometric != BiometricRule.STRICT
+        /** True if either rule is stricter here than at [other]. */
+        fun stricterThan(other: Place): Boolean = recording > other.recording || biometric > other.biometric
     }
 
     const val MAX_FIX_AGE_MS = 30 * 60_000L
-    private const val MARGIN_METERS = 500.0 // the 1:20M borders are generalised; never trust them to the metre
+    /** Smallest buffer with precise (fine) location. */
+    const val PRECISE_FLOOR_METERS = 1_000.0
+    /** Smallest buffer with approximate (coarse) location or unknown accuracy. */
+    const val COARSE_FLOOR_METERS = 3_000.0
+    /** Android's approximate location is snapped to a ~2 km grid that the reported accuracy may not include. */
+    const val COARSE_ASSUMED_ACCURACY_METERS = 2_000.0
+    /** The bundled Census 1:500k borders are simplified to ~100 m; never trust them to the metre. */
+    const val BORDER_MARGIN_METERS = 500.0
 
-    private class State(val code: String, val name: String, val strict: Boolean, val rings: List<DoubleArray>) {
+    /**
+     * Buffer radius around a fix. Precise: max(accuracy, 1 km) + margin (~1.5–2 km typical).
+     * Coarse or unknown accuracy: the 3 km floor is added on top of the reported (or assumed 2 km) accuracy, because the
+     * approximate-location offset is not part of the reported accuracy; ~5.5 km typical. This is stricter than
+     * max(accuracy, floor) and keeps "coarse 2 km accuracy, 4 km from Illinois" strict.
+     */
+    fun bufferMeters(accuracyMeters: Double?, precise: Boolean): Double {
+        val accuracy = accuracyMeters?.takeIf { it.isFinite() && it >= 0 }
+        return if (precise && accuracy != null) max(accuracy, PRECISE_FLOOR_METERS) + BORDER_MARGIN_METERS
+        else (accuracy ?: COARSE_ASSUMED_ACCURACY_METERS) + COARSE_FLOOR_METERS + BORDER_MARGIN_METERS
+    }
+
+    private class State(val code: String, val name: String, val recording: Rule, val biometric: BiometricRule, val rings: List<DoubleArray>) {
         val minLon = rings.minOf { r -> (r.indices step 2).minOf { r[it] } }
         val maxLon = rings.maxOf { r -> (r.indices step 2).maxOf { r[it] } }
         val minLat = rings.minOf { r -> (1 until r.size step 2).minOf { r[it] } }
         val maxLat = rings.maxOf { r -> (1 until r.size step 2).maxOf { r[it] } }
     }
 
+    /** Unknown values in the data resolve to the strictest rule. */
+    fun parseRecording(value: String): Rule = if (value == "one") Rule.ONE_PARTY else Rule.ALL_PARTY
+    fun parseBiometric(value: String): BiometricRule = when (value) {
+        "none" -> BiometricRule.NONE
+        "notice" -> BiometricRule.NOTICE
+        else -> BiometricRule.STRICT
+    }
+
     private val states: List<State> by lazy {
         val text = RecordingJurisdiction::class.java.getResourceAsStream("/us-state-borders.txt")
             ?.bufferedReader()?.use { it.readText() } ?: error("us-state-borders.txt missing from the core resources")
         text.lineSequence().filter { it.isNotBlank() && !it.startsWith("#") }.map { line ->
-            val (code, name, rule, rings) = line.split('|', limit = 4)
-            State(code, name, rule != "one", rings.split(';').map { ring -> ring.split(',').map(String::toDouble).toDoubleArray() })
+            val (code, name, recording, biometric, rings) = line.split('|', limit = 5)
+            State(code, name, parseRecording(recording), parseBiometric(biometric),
+                rings.split(';').map { ring -> ring.split(',').map(String::toDouble).toDoubleArray() })
         }.toList()
     }
 
-    fun unknown(reason: String) = Place(null, "Unknown location", Rule.ALL_PARTY, reason)
+    /** Rules for a state code from the bundled data (null if unknown). */
+    fun rulesFor(code: String): Pair<Rule, BiometricRule>? = states.firstOrNull { it.code == code }?.let { it.recording to it.biometric }
 
-    fun locate(lat: Double?, lon: Double?, accuracyMeters: Double?, fixAgeMs: Long?): Place {
+    fun unknown(reason: String) = Place(null, "Unknown location", Rule.ALL_PARTY, BiometricRule.STRICT, reason)
+    /** The "Treat every place as the strictest state" setting: no location is requested at all. */
+    fun strictestEverywhere() = Place(null, "Strictest rules", Rule.ALL_PARTY, BiometricRule.STRICT, "Strictest rules everywhere (setting)")
+    /** A phone call can reach someone in any state. */
+    fun duringCall() = Place(null, "Phone call", Rule.ALL_PARTY, BiometricRule.STRICT, "Call detected: strictest rule")
+
+    fun locate(lat: Double?, lon: Double?, accuracyMeters: Double?, fixAgeMs: Long?, precise: Boolean = false): Place = try {
+        locateOrThrow(lat, lon, accuracyMeters, fixAgeMs, precise)
+    } catch (e: Exception) {
+        unknown("Location lookup failed")
+    }
+
+    private fun locateOrThrow(lat: Double?, lon: Double?, accuracyMeters: Double?, fixAgeMs: Long?, precise: Boolean): Place {
         if (lat == null || lon == null || !lat.isFinite() || !lon.isFinite()) return unknown("No location fix")
         if (fixAgeMs == null || fixAgeMs !in 0..MAX_FIX_AGE_MS) return unknown("Location older than 30 minutes")
-        val radius = max(accuracyMeters?.takeIf { it.isFinite() && it >= 0 } ?: 5_000.0, 0.0) + MARGIN_METERS
+        val radius = bufferMeters(accuracyMeters, precise)
         val inside = states.firstOrNull { contains(it, lat, lon) }
-            ?: return Place(null, "Outside the US", Rule.ALL_PARTY, "Outside the bundled US borders: strictest rule")
-        if (inside.strict) return Place(inside.code, inside.name, Rule.ALL_PARTY, "${inside.name} requires every party's consent")
-        val near = states.filter { it.strict && it !== inside }.firstOrNull { distanceMeters(it, lat, lon, radius) <= radius }
-        if (near != null) return Place(inside.code, inside.name, Rule.ALL_PARTY, "Within ${radius.toInt()} m of ${near.name}: stricter rule")
-        return Place(inside.code, inside.name, Rule.ONE_PARTY, "${inside.name} allows one party's consent")
+            ?: return Place(null, "Outside the US", Rule.ALL_PARTY, BiometricRule.STRICT, "Outside the bundled US borders: strictest rule")
+        val near = states.filter { it !== inside }.mapNotNull { s -> distanceMeters(s, lat, lon, radius).takeIf { it <= radius }?.let { s to it } }
+        val recording = (near.map { it.first.recording } + inside.recording).max()
+        val biometric = (near.map { it.first.biometric } + inside.biometric).max()
+        val forcing = near.filter { (s, _) -> (s.recording > inside.recording && s.recording == recording) || (s.biometric > inside.biometric && s.biometric == biometric) }
+            .sortedBy { it.second }
+        val reason = if (forcing.isEmpty()) "${inside.name}: " + effects(recording, biometric)
+        else {
+            val km = max(1, ceil(forcing.first().second / 1000.0).toInt())
+            val names = forcing.joinToString(" and ") { it.first.name }
+            val raised = listOfNotNull(
+                if (recording > inside.recording) "all-party rule" else null,
+                when { biometric <= inside.biometric -> null; biometric == BiometricRule.STRICT -> "no voice grouping"; else -> "voice notice needed" },
+            )
+            "Within $km km of $names: " + raised.joinToString(", ")
+        }
+        return Place(inside.code, inside.name, recording, biometric, reason, forcing.map { it.first.code })
     }
+
+    private fun effects(recording: Rule, biometric: BiometricRule): String = listOfNotNull(
+        if (recording == Rule.ALL_PARTY) "all-party rule" else "one-party rule",
+        when (biometric) { BiometricRule.NONE -> null; BiometricRule.NOTICE -> "voice notice needed"; BiometricRule.STRICT -> "no voice grouping" },
+    ).joinToString(", ")
 
     private fun contains(s: State, lat: Double, lon: Double): Boolean {
         if (lon < s.minLon || lon > s.maxLon || lat < s.minLat || lat > s.maxLat) return false
@@ -90,30 +164,113 @@ object RecordingJurisdiction {
     }
 }
 
+/** The spoken notice. Bump [VERSION] whenever either line changes; the notice record stores it. */
+object ConsentNotice {
+    const val VERSION = 2
+    const val BASE = "Just so you know, SideKick is taking notes on this conversation."
+    const val VOICE = "It briefly analyzes voices to tell speakers apart. Nothing about anyone's voice is saved."
+    fun text(includeVoice: Boolean) = if (includeVoice) "$BASE $VOICE" else BASE
+}
+
+enum class NoticeMethod { SPOKEN, ATTESTED }
+
+/** What a notice covered, kept per session (no audio, no voice data). Washington treats a recorded announcement as consent. */
+data class NoticeRecord(
+    val atEpochMs: Long,
+    val stateCodes: List<String>,
+    val recording: RecordingJurisdiction.Rule,
+    val biometric: RecordingJurisdiction.BiometricRule,
+    val textVersion: Int,
+    val includesVoice: Boolean,
+    val method: NoticeMethod,
+)
+
 /**
  * One listening session's consent state. The owner's own words are always kept. Other people's words are kept
  * in a one-party place only while the owner is taking part (spoke within [ownerWindowMs]), and in an all-party
  * place only after the spoken notice. Everything else is dropped on arrival.
+ *
+ * Voice grouping (anonymous "Voice N" labels and session names) is allowed with biometric NONE, or with NOTICE after a
+ * notice that included the voice line; never with STRICT. [voiceNoticeEverywhere] (setting) requires the voice line
+ * before grouping in every state.
  */
-class ConsentGate(place: RecordingJurisdiction.Place, private val ownerWindowMs: Long = 120_000L) {
-    var place: RecordingJurisdiction.Place = place
+class ConsentGate(
+    place: RecordingJurisdiction.Place,
+    private val ownerWindowMs: Long = 120_000L,
+    @Volatile var voiceNoticeEverywhere: Boolean = false,
+) {
+    @Volatile var place: RecordingJurisdiction.Place = place
         private set
-    private var ownerLastMs: Long? = null
-    var noticeAtMs: Long? = null
+    @Volatile private var ownerLastMs: Long? = null
+    @Volatile var noticeAtMs: Long? = null
         private set
-    fun moveTo(next: RecordingJurisdiction.Place) { place = next }
+    /** Where the current notice was given; a move to a stricter place clears it. */
+    @Volatile var noticePlace: RecordingJurisdiction.Place? = null
+        private set
+    @Volatile var noticeIncludedVoice: Boolean = false
+        private set
+
+    /** Returns true if the move cleared the notice (the new place is stricter in either rule than where it was given). */
+    @Synchronized fun moveTo(next: RecordingJurisdiction.Place): Boolean {
+        place = next
+        val given = noticePlace ?: return false
+        if (!next.stricterThan(given)) return false
+        noticeAtMs = null; noticePlace = null; noticeIncludedVoice = false
+        return true
+    }
     fun ownerSpoke(nowMs: Long) { ownerLastMs = nowMs }
-    fun noticeGiven(nowMs: Long) { noticeAtMs = nowMs }
-    fun keepOthers(nowMs: Long): Boolean = when (place.rule) {
+    /** [includesVoice]: the notice included the voice-analysis line (spoken, or attested "incl. voice analysis"). */
+    @Synchronized fun noticeGiven(nowMs: Long, includesVoice: Boolean = voiceLineRequired()) {
+        noticeAtMs = nowMs; noticePlace = place; noticeIncludedVoice = includesVoice
+    }
+
+    /** The voice-analysis line belongs in the spoken notice here. */
+    fun voiceLineRequired(): Boolean = place.biometric != RecordingJurisdiction.BiometricRule.NONE || voiceNoticeEverywhere
+    fun noticeText(): String = ConsentNotice.text(voiceLineRequired())
+    private fun voiceNoticeGiven() = noticeAtMs != null && noticeIncludedVoice
+
+    fun groupingAllowed(): Boolean = when (place.biometric) {
+        RecordingJurisdiction.BiometricRule.STRICT -> false
+        RecordingJurisdiction.BiometricRule.NOTICE -> voiceNoticeGiven()
+        RecordingJurisdiction.BiometricRule.NONE -> !voiceNoticeEverywhere || voiceNoticeGiven()
+    }
+
+    fun keepOthers(nowMs: Long): Boolean = when (place.recording) {
         RecordingJurisdiction.Rule.ONE_PARTY -> ownerLastMs?.let { nowMs - it in 0..ownerWindowMs } == true || noticeAtMs != null
         RecordingJurisdiction.Rule.ALL_PARTY -> noticeAtMs != null
     }
     fun keep(speaker: Speaker, nowMs: Long): Boolean = speaker == Speaker.USER || keepOthers(nowMs)
+    /** Naming a voice for this session: grouping allowed and others' words may be kept. */
+    fun namingAllowed(nowMs: Long): Boolean = groupingAllowed() && keepOthers(nowMs)
+    /** Before notice in an all-party place, owner matching uses the stricter thresholds and no short phrases. */
+    fun strictOwnerMatch(): Boolean = place.recording == RecordingJurisdiction.Rule.ALL_PARTY && noticeAtMs == null
+
+    /** Show Announce / "I told everyone": recording notice missing, or the voice line is required and missing. */
+    fun noticeNeeded(): Boolean =
+        (place.recording == RecordingJurisdiction.Rule.ALL_PARTY && noticeAtMs == null) ||
+            (place.biometric == RecordingJurisdiction.BiometricRule.NOTICE && !voiceNoticeGiven()) ||
+            (voiceNoticeEverywhere && place.biometric == RecordingJurisdiction.BiometricRule.NONE && !voiceNoticeGiven())
+
+    /** Button label for the owner's attestation. */
+    fun attestLabel(): String = if (voiceLineRequired() && place.biometric != RecordingJurisdiction.BiometricRule.STRICT)
+        "I told everyone (incl. voice analysis)" else "I told everyone"
+
+    fun record(nowEpochMs: Long, method: NoticeMethod): NoticeRecord = NoticeRecord(nowEpochMs,
+        listOfNotNull(place.code) + place.forcedBy, place.recording, place.biometric, ConsentNotice.VERSION, noticeIncludedVoice, method)
+
     /** Short status for the listening screen. */
-    fun status(nowMs: Long): String = when {
-        place.rule == RecordingJurisdiction.Rule.ALL_PARTY && noticeAtMs == null -> "${place.name}: only your words are kept until you announce note-taking"
-        place.rule == RecordingJurisdiction.Rule.ALL_PARTY -> "${place.name}: notice given, conversation kept"
-        keepOthers(nowMs) -> "${place.name}: you're in the conversation, others' words kept as information"
-        else -> "${place.name}: only your words are kept until you speak"
+    fun status(nowMs: Long): String {
+        val voice = when {
+            place.biometric == RecordingJurisdiction.BiometricRule.STRICT -> " · no voice grouping"
+            !groupingAllowed() -> " · voice grouping after notice"
+            else -> ""
+        }
+        val words = when {
+            place.recording == RecordingJurisdiction.Rule.ALL_PARTY && noticeAtMs == null -> "only your words are kept until you announce note-taking"
+            place.recording == RecordingJurisdiction.Rule.ALL_PARTY -> "notice given, conversation kept"
+            keepOthers(nowMs) -> "you're in the conversation, others' words kept as information"
+            else -> "only your words are kept until you speak"
+        }
+        return "${place.name}: $words$voice"
     }
 }

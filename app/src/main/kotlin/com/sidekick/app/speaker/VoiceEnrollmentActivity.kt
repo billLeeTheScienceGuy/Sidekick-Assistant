@@ -15,12 +15,75 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.sidekick.app.audio.ListeningService
 import com.sidekick.app.SidekickApplication
 
-/** User-initiated microphone setup; raw speech never leaves bounded service buffers. */
+/**
+ * Written consent for the owner's own voice signature, shown before any recording (all states). The record (name, time,
+ * notice version, method) is kept with the profile and deleted with it. Then user-initiated microphone setup; raw speech
+ * never leaves bounded service buffers.
+ */
+@Composable
+internal fun VoiceConsentNotice(onAgree: (com.sidekick.core.VoiceprintConsent) -> Unit, agreeLabel: String) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var ticked by rememberSaveable { mutableStateOf(false) }
+    var under18 by rememberSaveable { mutableStateOf(false) }
+    var guardian by rememberSaveable { mutableStateOf(false) }
+    val strokes = remember { mutableStateListOf<List<androidx.compose.ui.geometry.Offset>>() }
+    var current by remember { mutableStateOf<List<androidx.compose.ui.geometry.Offset>>(emptyList()) }
+    Card(Modifier.fillMaxWidth().testTag("voice-consent")) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Your voice signature", style = MaterialTheme.typography.titleMedium)
+            Text("What is saved: " + com.sidekick.core.VoiceprintPolicy.NOTICE_SAVED)
+            Text("Why: " + com.sidekick.core.VoiceprintPolicy.NOTICE_PURPOSE)
+            Text("Where: " + com.sidekick.core.VoiceprintPolicy.NOTICE_WHERE)
+            Text("How long: " + com.sidekick.core.VoiceprintPolicy.NOTICE_RETENTION)
+            Text("Delete: " + com.sidekick.core.VoiceprintPolicy.NOTICE_DELETE)
+            Text("Privacy policy: docs/PRIVACY_POLICY.md in the SideKick project.", style = MaterialTheme.typography.bodySmall)
+            OutlinedTextField(name, { name = it.take(80) }, label = { Text("Your full name") }, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("consent-name"))
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Checkbox(ticked, { ticked = it }, modifier = Modifier.testTag("consent-checkbox"))
+                Text("I consent and sign")
+            }
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Checkbox(under18, { under18 = it; if (!it) guardian = false }, modifier = Modifier.testTag("consent-under18"))
+                Text("I'm under 18")
+            }
+            if (under18) Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Checkbox(guardian, { guardian = it }, modifier = Modifier.testTag("consent-guardian"))
+                Text("My parent or guardian agrees")
+            }
+            Text("Signature (optional)", style = MaterialTheme.typography.bodySmall)
+            val ink = MaterialTheme.colorScheme.onSurface
+            androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(96.dp).clipToBounds()
+                .border(1.dp, MaterialTheme.colorScheme.outline)
+                .pointerInput(Unit) {
+                    detectDragGestures(onDragStart = { current = listOf(it) }, onDragEnd = { strokes += current; current = emptyList() }) { change, _ ->
+                        current = current + change.position
+                    }
+                }) {
+                (strokes + listOf(current)).forEach { stroke ->
+                    stroke.zipWithNext { a, b -> drawLine(ink, a, b, strokeWidth = 4f) }
+                }
+            }
+            if (strokes.isNotEmpty()) TextButton(onClick = { strokes.clear() }) { Text("Clear signature") }
+            Button(enabled = com.sidekick.core.VoiceprintPolicy.canAgree(name, ticked, under18, guardian), onClick = {
+                onAgree(com.sidekick.core.VoiceprintConsent(name.trim(), System.currentTimeMillis(), com.sidekick.core.VoiceprintPolicy.NOTICE_VERSION,
+                    if (strokes.isNotEmpty()) "checkbox+signature" else "checkbox", guardian = under18 && guardian))
+                strokes.clear() // the drawing itself is not kept
+            }, modifier = Modifier.testTag("consent-agree")) { Text(agreeLabel) }
+        }
+    }
+}
+
 class VoiceEnrollmentActivity : ComponentActivity() {
+    companion object { const val CONSENT_ONLY = "com.sidekick.VOICE_CONSENT_ONLY" }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -29,6 +92,8 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                 val selectedModel by (application as com.sidekick.app.SidekickApplication).voiceProfile.model.collectAsState()
                 val language by (application as com.sidekick.app.SidekickApplication).guidance.speechLanguage.collectAsState()
                 val enrolled by (application as SidekickApplication).voiceProfile.enrolled.collectAsState()
+                val consentRecord by (application as SidekickApplication).voiceProfile.consent.collectAsState()
+                val consentOnly = intent.getBooleanExtra(CONSENT_ONLY, false)
                 var error by remember { mutableStateOf<String?>(null) }
                 val auto = language == com.sidekick.core.SpeechLanguage.AUTO
                 // Auto-detect has no single language; the user picks which language profile to record.
@@ -43,6 +108,18 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                 }
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.padding(WindowInsets.safeDrawing.asPaddingValues()).verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        if (consentOnly) {
+                            Text("Voice consent", style = MaterialTheme.typography.headlineMedium)
+                            if (consentRecord?.valid == true) {
+                                Text("Thanks. Voice matching is on.")
+                                Button(onClick = { finish() }) { Text("Back to SideKick") }
+                            } else {
+                                Text("Your saved voice setup needs your written consent. Until then, voice matching is off.")
+                                VoiceConsentNotice({ (application as SidekickApplication).voiceProfile.recordConsent(it) }, "Agree")
+                                TextButton(onClick = { finish() }) { Text("Not now") }
+                            }
+                            return@Column
+                        }
                         Text("Set up my voice", style = MaterialTheme.typography.headlineMedium)
                         Text("Speaker model: ${selectedModel.label}")
                         val dates = java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM)
@@ -73,10 +150,18 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                         Text(if (active && state.enrolling) "${state.voiceSamples}/3 voice samples · ${state.seconds}s" else state.note)
                         if (active && state.enrolling) Text(state.note)
                         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                        Button(enabled = !active, onClick = {
+                        fun startSetup() {
                             error = null
                             permission.launch(if (Build.VERSION.SDK_INT >= 33) arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS) else arrayOf(Manifest.permission.RECORD_AUDIO))
-                        }) { Text("Start voice setup") }
+                        }
+                        val record = consentRecord
+                        if (record?.valid != true) {
+                            // Nothing is recorded before this consent (Illinois BIPA written release; applied in every state).
+                            if (!active) VoiceConsentNotice({ (application as SidekickApplication).voiceProfile.recordConsent(it); startSetup() }, "Agree & record")
+                        } else {
+                            Text("You agreed as ${record.name} on ${dates.format(java.util.Date(record.atEpochMs))}.", style = MaterialTheme.typography.bodySmall)
+                            Button(enabled = !active, onClick = { startSetup() }) { Text("Start voice setup") }
+                        }
                         if (active && state.enrolling) TextButton(onClick = {
                             startService(Intent(this@VoiceEnrollmentActivity, ListeningService::class.java).setAction(ListeningService.CANCEL))
                         }) { Text("Cancel setup") }

@@ -41,7 +41,42 @@ class VoiceProfile(context: Context, initialLanguage: SpeechLanguage = SpeechLan
     val enrolled = enrolledValue.asStateFlow()
     private val enabledValue = MutableStateFlow(preferences.getBoolean("enabled", true))
     val enabled = enabledValue.asStateFlow()
-    init { refresh() }
+    private val consentValue = MutableStateFlow(readConsent())
+    /** The owner's written consent for their voice signature; deleted with the profile. */
+    val consent = consentValue.asStateFlow()
+    private val consentNeededValue = MutableStateFlow(false)
+    /** A profile saved before consent records existed: matching stays off until the owner accepts the notice. */
+    val consentNeeded = consentNeededValue.asStateFlow()
+    init {
+        refresh()
+        if (enrolledValue.value.isNotEmpty() && consentValue.value?.valid != true && !preferences.getBoolean("consent_checked", false))
+            preferences.edit().putBoolean("legacy_needs_consent", true).apply()
+        preferences.edit().putBoolean("consent_checked", true).apply()
+        consentNeededValue.value = preferences.getBoolean("legacy_needs_consent", false) && consentValue.value?.valid != true
+    }
+    private fun readConsent(): com.sidekick.core.VoiceprintConsent? = preferences.getString("consent_name", null)?.let {
+        com.sidekick.core.VoiceprintConsent(it, preferences.getLong("consent_at", 0), preferences.getInt("consent_version", 0),
+            preferences.getString("consent_method", "checkbox").orEmpty(), preferences.getBoolean("consent_guardian", false))
+    }
+    @Synchronized fun recordConsent(record: com.sidekick.core.VoiceprintConsent) {
+        require(record.valid) { "Consent record is incomplete." }
+        preferences.edit().putString("consent_name", record.name.take(80)).putLong("consent_at", record.atEpochMs)
+            .putInt("consent_version", record.noticeVersion).putString("consent_method", record.method)
+            .putBoolean("consent_guardian", record.guardian).putBoolean("legacy_needs_consent", false).apply()
+        consentValue.value = record; consentNeededValue.value = false
+    }
+    private fun matchingAllowed() = enabledValue.value && !consentNeededValue.value
+    /** Called when a listening session starts with a usable profile; at most one write per day. */
+    fun markUsed(nowMs: Long = System.currentTimeMillis()) {
+        if (nowMs - preferences.getLong("last_used", 0) > 86_400_000L) preferences.edit().putLong("last_used", nowMs).apply()
+    }
+    /** Retention: delete every profile and the consent record if unused for 12 months. Returns true if deleted. */
+    @Synchronized fun purgeIfExpired(nowMs: Long = System.currentTimeMillis()): Boolean {
+        val saved = enrolledValue.value.values.maxOrNull() ?: return false
+        val lastUsed = preferences.getLong("last_used", 0).takeIf { it > 0 }
+        if (!com.sidekick.core.VoiceprintPolicy.expired(saved, lastUsed, nowMs)) return false
+        delete(); return true
+    }
     private fun load(selected: SpeechLanguage = languageValue.value): FloatArray? = runCatching {
         val data = JSONObject(file(modelValue.value, selected).openRead().bufferedReader().use { it.readText() })
         require(data.getString("model") == modelValue.value.hash)
@@ -68,10 +103,10 @@ class VoiceProfile(context: Context, initialLanguage: SpeechLanguage = SpeechLan
         embedding?.fill(0f); languageValue.value = language
         embedding = load(); refresh()
     }
-    @Synchronized fun snapshot(): FloatArray? = if (enabledValue.value) embedding?.copyOf() else null
+    @Synchronized fun snapshot(): FloatArray? = if (matchingAllowed()) embedding?.copyOf() else null
     /** Auto-detect uses only explicitly enrolled profiles for this same speaker model. */
     @Synchronized fun matchingSnapshots(): List<FloatArray> {
-        if (!enabledValue.value) return emptyList()
+        if (!matchingAllowed()) return emptyList()
         if (languageValue.value != SpeechLanguage.AUTO) return listOfNotNull(embedding?.copyOf())
         val references = autoReferences ?: slots().mapNotNull { load(it) }.also { autoReferences = it }
         return references.map { it.copyOf() }
@@ -93,6 +128,12 @@ class VoiceProfile(context: Context, initialLanguage: SpeechLanguage = SpeechLan
         refresh()
         setEnabled(true)
     }
-    @Synchronized fun delete() { SpeakerModel.entries.forEach { model -> SpeechLanguage.entries.forEach { file(model, it).delete() } }; embedding?.fill(0f); embedding = null; refresh() }
+    /** Deletes every profile and the consent record ("Delete my voice setup"). */
+    @Synchronized fun delete() {
+        SpeakerModel.entries.forEach { model -> SpeechLanguage.entries.forEach { file(model, it).delete() } }; embedding?.fill(0f); embedding = null; refresh()
+        preferences.edit().remove("consent_name").remove("consent_at").remove("consent_version").remove("consent_method")
+            .remove("consent_guardian").remove("legacy_needs_consent").remove("last_used").apply()
+        consentValue.value = null; consentNeededValue.value = false
+    }
     fun setEnabled(value: Boolean) { preferences.edit().putBoolean("enabled", value).apply(); enabledValue.value = value }
 }

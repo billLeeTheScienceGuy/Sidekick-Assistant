@@ -9,7 +9,9 @@ import java.io.File
 import java.security.MessageDigest
 
 /** Called only on the single speech worker, before Whisper wipes each PCM chunk. */
-class SpeakerEngine(private val context: Context, private val profile: VoiceProfile) {
+class SpeakerEngine(private val context: Context, private val profile: VoiceProfile,
+    /** Owner-match thresholds; stricter before notice in all-party places (ConsentGate.strictOwnerMatch). */
+    private val thresholds: () -> VoiceMatch.Thresholds = { VoiceMatch.Thresholds.STANDARD }) {
     var lastDiagnostic: String = "No speech analyzed"
         private set
     private var extractor: SpeakerEmbeddingExtractor? = null
@@ -103,9 +105,12 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
         val references = profile.matchingSnapshots()
         if (references.isEmpty()) {
             clearRecent()
-            lastDiagnostic = if (profile.enabled.value) "${seconds}s: no enrolled profile" else "${seconds}s: voice matching is off"
+            lastDiagnostic = if (profile.consentNeeded.value) "${seconds}s: voice consent needed; matching off"
+                else if (profile.enabled.value) "${seconds}s: no enrolled profile" else "${seconds}s: voice matching is off"
             return Speaker.UNKNOWN
         }
+        val t = thresholds()
+        val mode = if (t == VoiceMatch.Thresholds.STANDARD) "standard" else "before-notice"
         try {
             if (samples.size < 48_000) {
                 val age = anchors.ageMs(nowMs)
@@ -122,9 +127,9 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
                         val score = references.maxOf { VoiceMatch.similarity(it, vector) }
                         val support = anchors.support(vector, nowMs) ?: return Speaker.UNKNOWN
                         val recentScore = support.score
-                        val result = VoiceMatch.classifyShortScores(score, recentScore, samples.size * 1000L / 16000L, support.ageMs, profile.model.value.shortThreshold)
-                        lastDiagnostic = String.format(java.util.Locale.US, "%ss: %s; short profile %.2f; recent mean %.2f; two-window support %.2f; anchor age %ds",
-                            seconds, result.name, score, support.meanScore, support.windowScore, support.ageMs / 1000)
+                        val result = VoiceMatch.classifyShortScores(score, recentScore, samples.size * 1000L / 16000L, support.ageMs, profile.model.value.shortThreshold, t)
+                        lastDiagnostic = String.format(java.util.Locale.US, "%ss: %s; short profile %.2f; recent mean %.2f; two-window support %.2f; anchor age %ds; thresholds %s",
+                            seconds, result.name, score, support.meanScore, support.windowScore, support.ageMs / 1000, mode)
                         if (result != Speaker.USER && (score < profile.model.value.shortThreshold || recentScore < profile.model.value.shortThreshold - .15f)) clearRecent()
                         // Borderline evidence stays unassigned but does not erase a trusted turn.
                         // Short phrases never add embeddings or extend the anchor's lifetime.
@@ -146,14 +151,14 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
                     // Re-trimming each window can shrink a long turn below 1.5 seconds at a pause.
                     try { vectors += computeEmbedding(window) } finally { window.fill(0f) }
                 }
-                val result = VoiceMatch.identifyProfiles(references, vectors)
-                val reference = references.firstOrNull { VoiceMatch.identifyTurn(it, vectors) == Speaker.USER }
+                val result = VoiceMatch.identifyProfiles(references, vectors, t)
+                val reference = references.firstOrNull { VoiceMatch.identifyTurn(it, vectors, t) == Speaker.USER }
                     ?: references.maxBy { candidate -> vectors.sumOf { VoiceMatch.similarity(candidate, it).toDouble() } }
                 if (result == Speaker.USER) anchors.remember(vectors, nowMs) else clearRecent()
                 val scores = vectors.joinToString(" / ") { String.format(java.util.Locale.US, "%.2f", VoiceMatch.similarity(reference, it)) }
                 val consistency = vectors.zipWithNext { a, b -> VoiceMatch.similarity(a, b) }.minOrNull() ?: 0f
-                lastDiagnostic = String.format(java.util.Locale.US, "%ss: %s; %d speaker windows; profile %s; minimum consistency %.2f; %d enrolled profiles",
-                    seconds, result.name, vectors.size, scores, consistency, references.size)
+                lastDiagnostic = String.format(java.util.Locale.US, "%ss: %s; %d speaker windows; profile %s; minimum consistency %.2f; %d enrolled profiles; thresholds %s",
+                    seconds, result.name, vectors.size, scores, consistency, references.size, mode)
                 result
             }
                 catch (e: IllegalArgumentException) { clearRecent(); lastDiagnostic = "${seconds}s: ${e.message}"; Speaker.UNKNOWN }

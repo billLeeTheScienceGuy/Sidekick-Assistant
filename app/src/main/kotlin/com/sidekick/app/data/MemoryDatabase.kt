@@ -27,6 +27,35 @@ data class CommitmentEntity(
 @Entity(tableName = "automatic_changes")
 data class AutomaticChange(@PrimaryKey val targetId: String, val token: String, val before: String?, val after: String, val changedAt: Long)
 
+/**
+ * What a consent notice covered in one listening session (Washington treats a recorded announcement as consent and
+ * SideKick keeps no audio). No audio, no voice data, no position: only the state codes the rules came from.
+ */
+@Entity(tableName = "notice_records")
+data class NoticeRecordEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val sessionId: String,
+    val noticeAt: Long,
+    /** Comma-separated state codes (containing state first, then nearby states that made it stricter). */
+    val stateCodes: String,
+    val recordingRule: String,
+    val biometricRule: String,
+    val textVersion: Int,
+    val includesVoice: Boolean,
+    /** SPOKEN or ATTESTED. */
+    val method: String,
+)
+
+@Dao
+interface NoticeRecordDao {
+    @Insert suspend fun put(record: NoticeRecordEntity)
+    @Query("SELECT * FROM notice_records ORDER BY noticeAt DESC LIMIT 20") fun observeRecent(): Flow<List<NoticeRecordEntity>>
+    @Query("SELECT * FROM notice_records") suspend fun all(): List<NoticeRecordEntity>
+    @Query("DELETE FROM notice_records WHERE sessionId = :session") suspend fun deleteSession(session: String)
+    @Query("DELETE FROM notice_records WHERE noticeAt < :before") suspend fun deleteBefore(before: Long)
+    @Query("DELETE FROM notice_records") suspend fun deleteAll()
+}
+
 /** Recovery metadata only: never duplicates event titles, source excerpts or transcripts. */
 @Entity(tableName = "calendar_links")
 data class CalendarLink(@PrimaryKey val memoryId: String, val calendarId: Long, val eventId: Long?,
@@ -72,11 +101,17 @@ interface CommitmentDao {
     @Transaction suspend fun deleteAll() { deleteRows(); clearChanges() }
 }
 
-@Database(entities = [CommitmentEntity::class, AutomaticChange::class, CalendarLink::class], version = 6, exportSchema = true)
+@Database(entities = [CommitmentEntity::class, AutomaticChange::class, CalendarLink::class, NoticeRecordEntity::class], version = 7, exportSchema = true)
 abstract class MemoryDatabase : RoomDatabase() {
     abstract fun commitments(): CommitmentDao
     abstract fun calendarLinks(): CalendarLinkDao
+    abstract fun noticeRecords(): NoticeRecordDao
     companion object {
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS notice_records (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, sessionId TEXT NOT NULL, noticeAt INTEGER NOT NULL, stateCodes TEXT NOT NULL, recordingRule TEXT NOT NULL, biometricRule TEXT NOT NULL, textVersion INTEGER NOT NULL, includesVoice INTEGER NOT NULL, method TEXT NOT NULL)")
+            }
+        }
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS calendar_links (memoryId TEXT NOT NULL PRIMARY KEY, calendarId INTEGER NOT NULL, eventId INTEGER, appliedHash TEXT, pendingHash TEXT, state TEXT NOT NULL)")

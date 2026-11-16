@@ -42,6 +42,14 @@ data class ListeningState(
     val noticeNeeded: Boolean = false,
     /** Phrases from other voices discarded on arrival this session. */
     val droppedChunks: Int = 0,
+    /** Label of the owner's attestation button (TX/WA: "I told everyone (incl. voice analysis)"). */
+    val attestLabel: String = "I told everyone",
+    /** A grouped voice may be named for this session right now (ConsentGate.namingAllowed). */
+    val namingAllowed: Boolean = false,
+    /** A phone call is active: strictest rule for the call. */
+    val callActive: Boolean = false,
+    /** Identifies this listening session's notice records (no audio, no voice data). */
+    val sessionId: String? = null,
 )
 
 /** Explicitly enabled continuous listening. Only bounded RAM buffers hold audio. */
@@ -53,31 +61,61 @@ class ListeningService : Service() {
     private var enrollment = false
     private var enrollmentTarget: com.sidekick.core.SpeechLanguage? = null
     @Volatile private var gate: com.sidekick.core.ConsentGate? = null
+    @Volatile private var turnEngine: com.sidekick.app.speaker.SpeakerTurnEngine? = null
+    @Volatile private var sessionId: String? = null
     private var noticeVoice: android.speech.tts.TextToSpeech? = null
     private val app get() = application as SidekickApplication
 
     private fun refreshConsent() {
         val g = gate ?: return
         val now = SystemClock.elapsedRealtime()
-        mutableState.update { it.copy(consent = g.status(now) + " · " + g.place.reason,
-            noticeNeeded = g.place.rule == com.sidekick.core.RecordingJurisdiction.Rule.ALL_PARTY && g.noticeAtMs == null) }
+        // Voice grouping is never allowed here (STRICT, or NOTICE before notice): forget every other voice at once.
+        if (!g.groupingAllowed()) forgetOthers()
+        mutableState.update { it.copy(consent = g.status(now) + " · " + g.place.reason, noticeNeeded = g.noticeNeeded(),
+            attestLabel = g.attestLabel(), namingAllowed = g.namingAllowed(now)) }
     }
 
-    /** The legal-minimum notice for all-party places: an audible line, then others' words are kept. */
+    /** SessionVoices, session names, naming context and recent anchors: memory only, cleared together. */
+    private fun forgetOthers() {
+        val engine = turnEngine ?: return
+        if (engine.groupedVoices > 0 || app.temporary.nameSuggestion.value != null || app.temporary.speakerTurns.value.any { it.voiceKey != null }) {
+            engine.forgetOthers(); app.temporary.forgetVoiceNames()
+        }
+    }
+
+    /** Persist what a notice covered for this session: rules, state codes, text version, method. No audio or voice data. */
+    private fun recordNotice(g: com.sidekick.core.ConsentGate, method: com.sidekick.core.NoticeMethod) {
+        val session = sessionId ?: return
+        val record = g.record(System.currentTimeMillis(), method)
+        scope.launch {
+            runCatching {
+                app.database.noticeRecords().put(com.sidekick.app.data.NoticeRecordEntity(sessionId = session, noticeAt = record.atEpochMs,
+                    stateCodes = record.stateCodes.joinToString(","), recordingRule = record.recording.name, biometricRule = record.biometric.name,
+                    textVersion = record.textVersion, includesVoice = record.includesVoice, method = record.method.name))
+            }
+        }
+    }
+
+    /** Spoken notice: the base line, plus the voice-analysis line where required (TX, WA, IL, unknown, or the setting). */
     private fun announce() {
         val g = gate ?: return
+        val includesVoice = g.voiceLineRequired()
+        val text = com.sidekick.core.ConsentNotice.text(includesVoice)
         noticeVoice?.shutdown()
         noticeVoice = android.speech.tts.TextToSpeech(this) { status ->
             val tts = noticeVoice
             if (status == android.speech.tts.TextToSpeech.SUCCESS && tts != null) {
                 tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
                     override fun onStart(id: String?) {}
-                    override fun onDone(id: String?) { g.noticeGiven(SystemClock.elapsedRealtime()); refreshConsent() }
+                    override fun onDone(id: String?) {
+                        g.noticeGiven(SystemClock.elapsedRealtime(), includesVoice)
+                        recordNotice(g, com.sidekick.core.NoticeMethod.SPOKEN); refreshConsent()
+                    }
                     @Deprecated("Deprecated in Java") override fun onError(id: String?) {
                         mutableState.update { it.copy(note = "Couldn't play the notice. Tell everyone you're taking notes, then tap \"I told everyone\".") }
                     }
                 })
-                tts.speak(NOTICE, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "sidekick-notice")
+                tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "sidekick-notice")
             } else mutableState.update { it.copy(note = "No text-to-speech voice. Tell everyone you're taking notes, then tap \"I told everyone\".") }
         }
     }
@@ -88,7 +126,19 @@ class ListeningService : Service() {
             FINISH -> { app.assistant.disarm(); finish = true; if (capture == null) stopSelf(); return START_NOT_STICKY }
             CANCEL -> { app.assistant.disarm(); discard = true; capture?.cancel(); if (capture == null) stopSelf(); return START_NOT_STICKY }
             ANNOUNCE -> { announce(); return START_NOT_STICKY }
-            NOTICE_GIVEN -> { gate?.noticeGiven(SystemClock.elapsedRealtime()); refreshConsent(); return START_NOT_STICKY }
+            NOTICE_GIVEN -> {
+                // "I told everyone": in TX/WA the button reads "(incl. voice analysis)" and covers both notices.
+                gate?.let { g -> g.noticeGiven(SystemClock.elapsedRealtime()); recordNotice(g, com.sidekick.core.NoticeMethod.ATTESTED) }
+                refreshConsent(); return START_NOT_STICKY
+            }
+            NAME_VOICE -> {
+                val g = gate; val engine = turnEngine
+                val key = intent.getStringExtra(VOICE_KEY); val name = intent.getStringExtra(VOICE_NAME)
+                if (g != null && engine != null && key != null && g.namingAllowed(SystemClock.elapsedRealtime()) && engine.nameVoice(key, name)) {
+                    app.temporary.voiceNamed(key, name?.let(com.sidekick.core.SessionVoices::cleanName), "Voice")
+                } else mutableState.update { it.copy(note = "Voices can't be named right now.") }
+                return START_NOT_STICKY
+            }
         }
         val recovering = intent == null || intent.action == RESUME
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -144,11 +194,21 @@ class ListeningService : Service() {
         val setupModel = app.voiceProfile.model.value
         // Auto-detect has no single language, so setup records the profile the user picked (English by default).
         val profileTarget = if (setupLanguage == com.sidekick.core.SpeechLanguage.AUTO) enrollmentTarget ?: com.sidekick.core.SpeechLanguage.ENGLISH else setupLanguage
-        val speaker = SpeakerEngine(this, app.voiceProfile)
         // Until the location lookup answers, the strictest rule applies.
-        val consent = com.sidekick.core.ConsentGate(com.sidekick.core.RecordingJurisdiction.unknown("Checking location…"))
-        if (!enrollment) gate = consent
-        val turns = com.sidekick.app.speaker.SpeakerTurnEngine(this, app.voiceProfile, speaker, { app.guidance.diarization.value }) { consent.place.groupsOtherVoices }
+        val strictest = app.guidance.strictestEverywhere.value
+        val consent = com.sidekick.core.ConsentGate(
+            if (strictest) com.sidekick.core.RecordingJurisdiction.strictestEverywhere() else com.sidekick.core.RecordingJurisdiction.unknown("Checking location…"),
+            voiceNoticeEverywhere = app.guidance.voiceLineEverywhere.value)
+        val speaker = SpeakerEngine(this, app.voiceProfile) {
+            if (consent.strictOwnerMatch()) com.sidekick.core.VoiceMatch.Thresholds.BEFORE_NOTICE else com.sidekick.core.VoiceMatch.Thresholds.STANDARD
+        }
+        val turns = com.sidekick.app.speaker.SpeakerTurnEngine(this, app.voiceProfile, speaker, { app.guidance.diarization.value }) { consent.groupingAllowed() }
+        if (!enrollment) {
+            gate = consent; turnEngine = turns
+            sessionId = java.util.UUID.randomUUID().toString()
+            mutableState.update { it.copy(sessionId = sessionId) }
+            if (app.voiceProfile.ready.value) app.voiceProfile.markUsed()
+        }
         val enrollmentSamples = mutableListOf<FloatArray>()
         val wake = getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SideKick:LiveNotes")
         wake.setReferenceCounted(false)
@@ -168,17 +228,51 @@ class ListeningService : Service() {
             val startedClock = SystemClock.elapsedRealtime()
             if (!enrollment) app.temporary.beginSession()
             coroutineScope {
-                if (!enrollment) launch {
+                // The latest located place; a phone call overrides it with the strictest rule until the call ends.
+                var located = consent.place
+                var inCall = false
+                // Location, settings and call watchers end with the session (they would otherwise keep this scope open).
+                val watchers = mutableListOf<Job>()
+                var follower: Job? = null
+                fun applyPlace(place: com.sidekick.core.RecordingJurisdiction.Place) {
+                    located = place
+                    if (!inCall) consent.moveTo(place)
                     refreshConsent()
-                    while (isActive) { // offline satellite fix + bundled borders; re-checked every 10 minutes
-                        consent.moveTo(JurisdictionLocator.locate(this@ListeningService))
-                        refreshConsent()
-                        delay(10 * 60_000L)
+                }
+                if (!enrollment) {
+                    refreshConsent()
+                    // "Strictest rules everywhere": no location requests at all.
+                    if (!strictest) follower = launch {
+                        try { JurisdictionLocator.follow(this@ListeningService) { place -> applyPlace(place) } }
+                        catch (e: CancellationException) { throw e }
+                        catch (_: Exception) { applyPlace(com.sidekick.core.RecordingJurisdiction.unknown("Location lookup failed")) }
+                    }
+                    follower?.let(watchers::add)
+                    watchers += launch { app.guidance.voiceLineEverywhere.collect { consent.voiceNoticeEverywhere = it; refreshConsent() } }
+                    watchers += launch { app.guidance.strictestEverywhere.collect { on ->
+                        // Turned on mid-session: stop all location requests and apply the strictest rule.
+                        if (on) { follower?.cancel(); applyPlace(com.sidekick.core.RecordingJurisdiction.strictestEverywhere()) }
+                    } }
+                    watchers += launch {
+                        // Phone calls: the other person may be in another state.
+                        val manager = getSystemService(AudioManager::class.java)
+                        while (isActive) {
+                            val calling = manager.mode == AudioManager.MODE_IN_CALL || manager.mode == AudioManager.MODE_IN_COMMUNICATION
+                            if (calling != inCall) {
+                                inCall = calling
+                                consent.moveTo(if (calling) com.sidekick.core.RecordingJurisdiction.duringCall() else located)
+                                mutableState.update { it.copy(callActive = calling) }
+                                refreshConsent()
+                            }
+                            delay(1_000)
+                        }
                     }
                 }
                 var identified = Speaker.UNKNOWN
                 var voiceTrack = "spk_session_unassigned0"
                 var voiceLabel = "Unassigned voice"
+                var voiceName: String? = null
+                var voiceGrouped = false
                 var continuation = false
                 var changedVoice = true
                 val pipeline = LiveSpeechProcessor(app.speech, onBoundary = { continuation = it && !changedVoice }, contextKey = { if (identified == Speaker.USER) voiceTrack else null }, voiceKey = { voiceTrack },
@@ -191,7 +285,8 @@ class ListeningService : Service() {
                         if (!enrollment) {
                             val attributed = turns.classify(samples, part)
                             changedVoice = voiceTrack != attributed.key || identified != attributed.speaker
-                            identified = attributed.speaker; voiceTrack = attributed.key; voiceLabel = attributed.label
+                            identified = attributed.speaker; voiceTrack = attributed.key; voiceLabel = attributed.display
+                            voiceName = attributed.name; voiceGrouped = attributed.grouped
                             if (identified == Speaker.USER) { consent.ownerSpoke(SystemClock.elapsedRealtime()); refreshConsent() }
                             mutableState.update { it.copy(userVoiceChunks = it.userVoiceChunks + if (identified == Speaker.USER) 1 else 0,
                                 voiceDiagnostics = (it.voiceDiagnostics + attributed.diagnostic).takeLast(20),
@@ -204,8 +299,10 @@ class ListeningService : Service() {
                                 }) }
                             // Speech the consent rule does not allow is dropped before recognition: never transcribed.
                             val kept = consent.keep(identified, SystemClock.elapsedRealtime())
-                            // For phone tests (scripts/phone-tests): voice scores and the consent decision only; never words or location.
-                            android.util.Log.i("SidekickVoice", "speaker=$identified kept=$kept rule=${consent.place.rule} notice=${consent.noticeAtMs != null} · ${attributed.diagnostic}")
+                            // For phone tests and scripts/phone-tests/voice_tuning_report.py: voice scores and the consent decision only;
+                            // never words, location, voice labels or names.
+                            android.util.Log.i("SidekickVoice", "speaker=$identified kept=$kept rule=${consent.place.recording} biometric=${consent.place.biometric} " +
+                                "notice=${consent.noticeAtMs != null} grouping=${consent.groupingAllowed()} call=${mutableState.value.callActive} · ${attributed.scores}")
                             if (!kept) {
                                 mutableState.update { it.copy(droppedChunks = it.droppedChunks + 1) }
                                 return@LiveSpeechProcessor false
@@ -233,7 +330,8 @@ class ListeningService : Service() {
                     ensureActive()
                     if (!discard) {
                         app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text)
-                        app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified, continuation, voiceTrack, voiceLabel, recognitionReliable = !app.speech.lastUncertain, timeChoices = app.speech.lastTimeChoices)
+                        app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified, continuation, voiceTrack, voiceLabel, recognitionReliable = !app.speech.lastUncertain, timeChoices = app.speech.lastTimeChoices,
+                            speakerName = voiceName, grouped = voiceGrouped && consent.groupingAllowed())
                         app.automation.process()
                     }
                     mutableState.update { it.copy(chunks = it.chunks + 1, lastLatencyMs = latency,
@@ -287,9 +385,11 @@ class ListeningService : Service() {
                 else getSystemService(NotificationManager::class.java).notify(1, notification(false))
                 pipeline.finish()
                 worker.join()
+                watchers.forEach { it.cancel() }
             }
             currentCoroutineContext().ensureActive()
             if (enrollment && !discard && enrollmentSamples.size == 3) {
+                check(app.voiceProfile.consent.value?.valid == true) { "Voice setup needs your consent first. Nothing was saved." }
                 check(app.voiceProfile.language.value == setupLanguage && app.voiceProfile.model.value == setupModel) { "Voice settings changed. Repeat setup in the selected language." }
                 app.voiceProfile.save(enrollmentSamples, profileTarget)
             }
@@ -313,7 +413,12 @@ class ListeningService : Service() {
             processor?.close(); raw.fill(0); turns.close(); speaker.close(); enrollmentSamples.forEach { it.fill(0f) }
             NativeVad.close()
             if (wake.isHeld) wake.release()
-            if (discard && !enrollment) app.temporary.discardSession()
+            if (!enrollment) { app.temporary.forgetVoiceNames(); turnEngine = null }
+            if (discard && !enrollment) {
+                app.temporary.discardSession()
+                // The session's notice records go with the session's data.
+                sessionId?.let { id -> runCatching { kotlinx.coroutines.runBlocking { app.database.noticeRecords().deleteSession(id) } } }
+            }
             stopSelf()
         }
     }
@@ -328,7 +433,10 @@ class ListeningService : Service() {
         const val ENROLL_LANGUAGE = "com.sidekick.ENROLL_LANGUAGE"
         const val ANNOUNCE = "com.sidekick.ANNOUNCE"
         const val NOTICE_GIVEN = "com.sidekick.NOTICE_GIVEN"
-        const val NOTICE = "Just so you know, SideKick is taking notes on this conversation."
+        const val NOTICE = com.sidekick.core.ConsentNotice.BASE
+        const val NAME_VOICE = "com.sidekick.NAME_VOICE"
+        const val VOICE_KEY = "com.sidekick.VOICE_KEY"
+        const val VOICE_NAME = "com.sidekick.VOICE_NAME"
         const val RESUME = "com.sidekick.RESUME_ASSISTANT"
         private val mutableState = MutableStateFlow(ListeningState())
         val state = mutableState.asStateFlow()

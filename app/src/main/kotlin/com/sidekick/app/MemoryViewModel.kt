@@ -173,7 +173,7 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     fun dismiss(id: String) = mutate { container.temporary.dismiss(id); container.reminders.mark(id, "DISMISSED") }
     fun done(id: String) = mutate { container.reminders.mark(id, "DONE"); container.temporary.retire(id) }
     fun delete(id: String) = mutate { container.temporary.dismiss(id); container.reminders.delete(id); container.temporary.retire(id) }
-    fun deleteAll() = mutate { container.messageInbox.clear(); container.temporary.discard(); container.reminders.deleteAll() }
+    fun deleteAll() = mutate { container.messageInbox.clear(); container.temporary.discard(); container.reminders.deleteAll(); container.database.noticeRecords().deleteAll() }
     fun reopen() { editError.value = null }
     fun notificationPermissionChanged() { viewModelScope.launch { runCatching { container.reminders.restore() } } }
     private fun mutate(action: suspend () -> Unit) {

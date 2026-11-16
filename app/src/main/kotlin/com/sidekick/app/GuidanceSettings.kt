@@ -74,6 +74,17 @@ class GuidanceSettings(context: Context) {
     private val diarizationValue = MutableStateFlow(preferences.getBoolean("diarization", true))
     val diarization = diarizationValue.asStateFlow()
     fun setDiarization(value: Boolean) { preferences.edit().putBoolean("diarization", value).apply(); diarizationValue.value = value }
+    /** "Treat every place as the strictest state": no location requests; all-party + no voice grouping everywhere. */
+    private val strictestValue = MutableStateFlow(preferences.getBoolean("strictest_everywhere", false))
+    val strictestEverywhere = strictestValue.asStateFlow()
+    fun setStrictestEverywhere(value: Boolean) { preferences.edit().putBoolean("strictest_everywhere", value).apply(); strictestValue.value = value }
+    /** "Include the voice-analysis line in every state": notice required before voice grouping everywhere. */
+    private val voiceLineValue = MutableStateFlow(preferences.getBoolean("voice_line_everywhere", false))
+    val voiceLineEverywhere = voiceLineValue.asStateFlow()
+    fun setVoiceLineEverywhere(value: Boolean) { preferences.edit().putBoolean("voice_line_everywhere", value).apply(); voiceLineValue.value = value }
+    /** The precise-location request is shown once. */
+    val preciseLocationAsked: Boolean get() = preferences.getBoolean("precise_location_asked", false)
+    fun markPreciseLocationAsked() { preferences.edit().putBoolean("precise_location_asked", true).apply() }
     private val retentionValue = MutableStateFlow(preferences.getInt("retention_days", 0).takeIf { it in com.sidekick.core.MemoryRetention.choices } ?: 0)
     val retentionDays = retentionValue.asStateFlow()
     private val riskValue = MutableStateFlow(preferences.getBoolean("risk_advisories", true))

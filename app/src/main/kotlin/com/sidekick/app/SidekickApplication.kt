@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 
 class SidekickApplication : Application() {
-    val database by lazy { Room.databaseBuilder(this, MemoryDatabase::class.java, "sidekick.db").addMigrations(MemoryDatabase.MIGRATION_1_2, MemoryDatabase.MIGRATION_2_3, MemoryDatabase.MIGRATION_3_4, MemoryDatabase.MIGRATION_4_5, MemoryDatabase.MIGRATION_5_6).build() }
+    val database by lazy { Room.databaseBuilder(this, MemoryDatabase::class.java, "sidekick.db").addMigrations(MemoryDatabase.MIGRATION_1_2, MemoryDatabase.MIGRATION_2_3, MemoryDatabase.MIGRATION_3_4, MemoryDatabase.MIGRATION_4_5, MemoryDatabase.MIGRATION_5_6, MemoryDatabase.MIGRATION_6_7).build() }
     val pipeline by lazy { CommitmentPipeline(RuleIntentExtractor()) }
     val speech by lazy { SpeechEngine(this, { guidance.speechLanguage.value }, { guidance.speechQuality.value }, { guidance.spokenNames.value }) }
     val voiceProfile by lazy { com.sidekick.app.speaker.VoiceProfile(this, guidance.speechLanguage.value) }
@@ -34,11 +34,13 @@ class SidekickApplication : Application() {
         background.launch { runCatching { reminders.restore(); automation.restoreNotifications() } }
         background.launch { guidance.handsOffMode.collect { if (it) automation.process() } }
         background.launch { guidance.speechLanguage.collect { voiceProfile.selectLanguage(it) } }
+        // Owner voiceprint retention: delete the profile and its consent record after 12 months unused.
+        background.launch { runCatching { voiceProfile.purgeIfExpired() } }
         background.launch { guidance.riskAdvisories.collect { if (!it) risk.clear() } }
         background.launch { guidance.messageNotifications.collect { if (it) MessageNotificationListener.requestConnection(this@SidekickApplication) } }
         background.launch { guidance.retentionDays.collectLatest { days ->
             if (days != 0) while (isActive) {
-                try { reminders.prune(days) }
+                try { reminders.prune(days); database.noticeRecords().deleteBefore(System.currentTimeMillis() - days * 86_400_000L) }
                 catch (e: CancellationException) { throw e }
                 catch (_: Exception) { /* Retry on the next daily check or process start. */ }
                 delay(86_400_000)
