@@ -76,7 +76,7 @@ ex01	en	challenge	USER	I need to submit the project report tomorrow at 4pm.	repo
 ex02	en	challenge	USER	I'll pick up the prescription tomorrow at 9am.	prescription@2026-11-09T09:00@-@P@-@yes
 ex03	en	challenge	USER	I'll take the train to Milwaukee on Monday at 7am.	milwaukee@2026-11-09T07:00@-@P@-@yes
 ex04	en	challenge	USER	Remind me to pay rent on November 15th at noon.	rent@2026-11-15T12:00@-@P@-@yes
-ex05	en	challenge	USER	I'll buy groceries tomorrow.	groceries@-@-@P@-@no
+ex05	en	challenge	USER	I'll buy groceries tomorrow.	groceries@2026-11-09T00:00@2026-11-10T00:00@P@-@yes
 ex06	en	challenge	USER	Can we meet tomorrow at 6pm?	-
 ex07	en	challenge	USER	I used to attend class at 7am.	-
 ex08	ko	challenge	USER	내일 오후 3시에 회의가 있어요.	회의@2026-11-09T15:00@-@I@-@no
@@ -91,3 +91,15 @@ ex16	ru	challenge	USER	Завтра встреча в 15:00.	встреч@2026-1
 ex17	ru	challenge	USER	У меня завтра приём в 14:00.	приём@2026-11-09T14:00@-@P@-@yes
 ex18	ar	challenge	USER	هناك اجتماع غدا الساعة الثالثة مساء.	اجتماع@2026-11-09T15:00@-@I@-@no
 ex19	ar	challenge	USER	عندي موعد غدا الساعة الثالثة مساء.	موعد@2026-11-09T15:00@-@P@-@yes
+ho01	en	challenge	USER	I have a dentist appointment on Friday.	dentist@2026-11-13T00:00@2026-11-14T00:00@P@-@yes
+ho02	en	challenge	USER	Mom lands at 5.	lands@2026-11-08T17:00@-@I@-@no
+ho03	en	challenge	USER	My flight UA 123 to Denver leaves Tuesday at 6:40am and lands at 9:15am.	ua 123@2026-11-10T06:40@2026-11-10T09:15@P@-@yes
+ho04	en	challenge	USER	Maybe dinner with Alex on Friday at 7.	-
+ho05	en	challenge	USER	The plumber is coming between 9 and 11 on Tuesday.	plumber@2026-11-10T09:00@2026-11-10T11:00@P@-@yes
+ho06	en	challenge	OTHER	I have a dentist appointment on Friday.	dentist@2026-11-13T00:00@2026-11-14T00:00@I@-@no
+ho07	en	challenge	USER	I don't have a dentist appointment on Friday.	-
+ho08	en	challenge	USER	Emma's birthday is on December 3rd.	birthday@2026-12-03T00:00@2026-12-04T00:00@P@-@yes
+ho09	en	challenge	USER	We have a table for 4 at Luigi's on Friday at 7:30pm.	table for 4@2026-11-13T19:30@-@P@Luigi's@yes
+ho10	de	challenge	USER	Ich habe morgen einen Termin.	termin@2026-11-09T00:00@2026-11-10T00:00@P@-@yes
+ho11	en	challenge	USER	Pick up the kids at 3:15 tomorrow.	kids@2026-11-09T15:15@-@P@-@yes
+ho12	en	challenge	USER	I have a meeting tomorrow at 2pm.	meeting@2026-11-09T14:00@-@P@-@yes
