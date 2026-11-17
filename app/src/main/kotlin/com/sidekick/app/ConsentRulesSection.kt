@@ -33,7 +33,7 @@ internal fun ConsentRulesSection(settings: GuidanceSettings) {
         settings::setAutoAnnounce, "auto-announce")
     QuietLabel("The notice plays at least at half volume. If the phone is muted or the notice is barely heard, it doesn't count.")
     QuietLabel("A notice covers one conversation: it ends after 30 minutes without other voices, or after 2 hours.")
-    if (listening.recording) QuietLabel("Changes apply now; turning off \"strictest\" applies from the next session.")
+    if (listening.recording) QuietLabel("Changes apply now; turning off \"strictest\" applies the next time you start listening.")
     TextButton(onClick = {
         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     }, modifier = Modifier.testTag("privacy-policy")) { Text("Privacy policy") }
