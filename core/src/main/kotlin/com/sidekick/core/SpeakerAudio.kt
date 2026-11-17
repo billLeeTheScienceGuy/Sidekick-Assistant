@@ -46,4 +46,24 @@ object SpeakerAudio {
         val end = minOf(samples.size, (runs.last() + 3) * frame + 640)
         return start until end
     }
+
+    /** How clean a chunk is: seconds of trimmed speech and a rough signal-to-noise ratio in dB. */
+    data class Quality(val seconds: Float, val snrDb: Float)
+
+    /**
+     * Speech loudness (90th percentile of 10 ms frame energy) against the noise floor (10th percentile), on the trimmed
+     * speech. Used to pick a stricter owner bar for short or noisy chunks (VoiceMatch.QualityBars). Null without speech.
+     */
+    fun quality(samples: FloatArray): Quality? {
+        val span = speechSpan(samples) ?: return null
+        val frame = 160
+        val energy = (span.first..span.last step frame).map { start ->
+            val end = minOf(start + frame, span.last + 1)
+            val mean = (start until end).sumOf { samples[it].toDouble() } / (end - start)
+            sqrt((start until end).sumOf { val value = samples[it] - mean; value * value } / (end - start))
+        }.sorted()
+        if (energy.size < 10) return null
+        val loud = energy[((energy.size - 1) * .9).toInt()]; val floor = maxOf(energy[((energy.size - 1) * .1).toInt()], 1e-5)
+        return Quality((span.last + 1 - span.first) / 16000f, (20 * kotlin.math.log10(loud / floor)).toFloat())
+    }
 }

@@ -20,6 +20,9 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
     /** True when the last [identify] accepted the owner from a long turn against the saved profile (not a short phrase). */
     var lastLongOwner: Boolean = false
         private set
+    /** The last long turn matched the quiet-room profile very confidently (learning across sessions may use it). */
+    var lastVeryConfident: Boolean = false
+        private set
     private val cohorts = mutableMapOf<SpeakerModel, com.sidekick.core.StrangerCohort?>()
     private fun cohort(model: SpeakerModel): com.sidekick.core.StrangerCohort? = cohorts.getOrPut(model) {
         runCatching { context.assets.open(model.cohortAsset).use { com.sidekick.core.StrangerCohort.read(it.readBytes()) } }
@@ -107,7 +110,7 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
     }
     /** [session]: this session's confirmed owner turns, for the session-adapted profile (idea 2). */
     fun identify(samples: FloatArray, nowMs: Long = android.os.SystemClock.elapsedRealtime(), session: com.sidekick.core.OwnerSession? = null): Speaker {
-        lastLongOwner = false
+        lastLongOwner = false; lastVeryConfident = false
         val span = com.sidekick.core.SpeakerAudio.speechSpan(samples)
         if (span == null) {
             clearRecent(); lastDiagnostic = "No clear speech after excluding quiet edges"; return Speaker.UNKNOWN
@@ -175,6 +178,11 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
                 }
                 var result = VoiceMatch.identifyProfiles(references, vectors, t, cohort, quiet)
                 lastLongOwner = result == Speaker.USER
+                if (result == Speaker.USER && thresholds() != VoiceMatch.Thresholds.BEFORE_NOTICE) {
+                    val c = com.sidekick.core.VoiceprintPolicy.LEARN_CONFIDENT
+                    val confident = t.copy(both = c, balancedMin = c, balancedMean = c, quietOffset = 0f)
+                    lastVeryConfident = labelled.any { (setting, reference) -> setting == VoiceSetting.QUIET && VoiceMatch.identifyTurn(reference, vectors, confident) == Speaker.USER }
+                }
                 // Idea 2: the quiet profile nudged toward how the owner sounded earlier in this session. Never confirms
                 // a turn for the session itself and never overrides "someone else".
                 var adapted = false

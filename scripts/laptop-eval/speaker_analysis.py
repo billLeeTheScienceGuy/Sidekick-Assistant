@@ -36,7 +36,7 @@ while argv and argv[0].startswith("--"):
 pairs = [(Path(argv[k]), Path(argv[k + 1])) for k in range(0, len(argv), 2)]
 
 name, speaker, group = [], [], []
-full, short, windows = {}, {}, defaultdict(list)
+full, short, windows, quality = {}, {}, defaultdict(list), {}
 for corpus, binary in pairs:
     base = len(name)
     for line in open(corpus / "manifest.tsv", encoding="utf-8"):
@@ -50,12 +50,13 @@ for corpus, binary in pairs:
         at += dim * 4
         if kind == 0: full[clip] = vec
         elif kind == 1: windows[clip].append(vec)
+        elif kind == 3: quality[clip] = vec
         else: short[clip] = vec
 N = len(name)
 
 
 def room(g):
-    for key in ("replay", "babble", "noisy", "echo", "far"):
+    for key in ("replay2", "replay", "babble", "noisy", "echo", "far"):
         if key in g: return key
     return "clean"
 
@@ -153,7 +154,7 @@ def masks(person):
 
 T_GRID = [round(float(x), 2) for x in np.arange(.40, .901, .01)]
 Z_GRID = [None, 1.0, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
-CONDS = ("clean", "noisy", "babble", "far", "echo", "replay")
+CONDS = ("clean", "noisy", "babble", "far", "echo", "replay", "replay2")
 results = {}
 for mode in ("single", "multi"):
     rows = []  # per person: (gen mask, str mask, profile indices)

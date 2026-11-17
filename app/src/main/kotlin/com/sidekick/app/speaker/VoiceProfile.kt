@@ -70,7 +70,8 @@ class VoiceProfile(context: Context, initialLanguage: SpeechLanguage = SpeechLan
         if (enrolledValue.value.isNotEmpty() && consentValue.value?.valid != true && !preferences.getBoolean("consent_checked", false))
             preferences.edit().putBoolean("legacy_needs_consent", true).apply()
         preferences.edit().putBoolean("consent_checked", true).apply()
-        consentNeededValue.value = preferences.getBoolean("legacy_needs_consent", false) && consentValue.value?.valid != true
+        // A profile saved before consent records existed, or a consent given to an older notice text: ask again.
+        consentNeededValue.value = (preferences.getBoolean("legacy_needs_consent", false) || consentValue.value != null) && consentValue.value?.valid != true
     }
     private fun readConsent(): com.sidekick.core.VoiceprintConsent? = preferences.getString("consent_name", null)?.let {
         com.sidekick.core.VoiceprintConsent(it, preferences.getLong("consent_at", 0), preferences.getInt("consent_version", 0),
@@ -161,6 +162,30 @@ class VoiceProfile(context: Context, initialLanguage: SpeechLanguage = SpeechLan
         if (slot(target) == slot(languageValue.value)) { embeddings.forEach { it.fill(0f) }; embeddings = loadAll() }
         refresh()
         setEnabled(true)
+    }
+    /**
+     * Learning across sessions: moves the quiet-room signature of [target] a little toward [turns] (very confident owner
+     * turns from one session), keeping the original setup signature to bound drift. Returns true when it changed.
+     */
+    @Synchronized fun learn(turns: List<FloatArray>, target: SpeechLanguage = languageValue.value): Boolean {
+        if (!matchingAllowed() || consentValue.value?.valid != true) return false
+        val destination = file(modelValue.value, target, VoiceSetting.QUIET)
+        val data = runCatching { JSONObject(destination.openRead().bufferedReader().use { it.readText() }) }.getOrNull() ?: return false
+        if (data.optString("model") != modelValue.value.hash) return false
+        fun read(key: String) = data.optJSONArray(key)?.let { a -> FloatArray(a.length()) { a.getDouble(it).toFloat() } }
+        val current = read("embedding") ?: return false
+        val setup = read("setup") ?: current.copyOf()
+        val next = com.sidekick.core.VoiceprintPolicy.learned(VoiceMatch.normalized(current), VoiceMatch.normalized(setup), turns)
+        try {
+            if (next == null) return false
+            val bytes = JSONObject().put("model", modelValue.value.hash).put("embedding", JSONArray(next.toList()))
+                .put("setup", JSONArray(setup.toList())).put("learned", data.optInt("learned", 0) + 1).toString().toByteArray()
+            val stream = destination.startWrite()
+            try { stream.write(bytes); destination.finishWrite(stream) } catch (e: Exception) { destination.failWrite(stream); throw e }
+            if (slot(target) == slot(languageValue.value)) { embeddings.forEach { it.fill(0f) }; embeddings = loadAll() }
+            autoReferences?.forEach { it.fill(0f) }; autoReferences = null
+            return true
+        } finally { current.fill(0f); setup.fill(0f); next?.fill(0f) }
     }
     /** Deletes every profile and the consent record ("Delete my voice setup"). */
     @Synchronized fun delete() {

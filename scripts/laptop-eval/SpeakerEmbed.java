@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   kind 0  whole trimmed chunk (session voice groups, enrollment samples)
  *   kind 1  long-turn speaker windows (3 s, 2 s step, as identifySpeech), only when the chunk has 3 s of speech
  *   kind 2  a 2.5 s short phrase cut from the start of the speech
+ *   kind 3  chunk quality from SpeakerAudio.quality: {speech seconds, SNR dB} (not normalized)
  * Output: little-endian records {int clip, byte kind, short dim, float[dim] normalized}.
  *
  * java -cp core.jar;kotlin-stdlib.jar;sherpa-onnx.jar;sherpa-native.jar SpeakerEmbed.java <corpus dir> <model.onnx> <out.bin> <workers>
@@ -93,6 +94,8 @@ public class SpeakerEmbed {
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 try {
                     float[] audio = denoise(denoisers.get(), wav(corpus.resolve(files.get(clip))));
+                    SpeakerAudio.Quality q = SpeakerAudio.INSTANCE.quality(audio);
+                    if (q != null) write(bytes, clip, 3, new float[] { q.getSeconds(), q.getSnrDb() });
                     IntRange span = SpeakerAudio.INSTANCE.speechSpan(audio);
                     if (span != null) {
                         int from = span.getFirst(), until = Math.min(span.getLast() + 1, from + 160_000);
@@ -128,6 +131,7 @@ public class SpeakerEmbed {
 
     /** A window the app would refuse is written with dim 0, so the turn counts as unassigned, as on the phone. */
     static void write(ByteArrayOutputStream bytes, int clip, int kind, float[] v) {
+        if (kind == 3) { ByteBuffer b = ByteBuffer.allocate(7 + 8).order(ByteOrder.LITTLE_ENDIAN); b.putInt(clip).put((byte) 3).putShort((short) 2).putFloat(v[0]).putFloat(v[1]); bytes.writeBytes(b.array()); return; }
         int dim = v == null ? 0 : v.length;
         ByteBuffer b = ByteBuffer.allocate(4 + 1 + 2 + dim * 4).order(ByteOrder.LITTLE_ENDIAN);
         b.putInt(clip).put((byte) kind).putShort((short) dim);

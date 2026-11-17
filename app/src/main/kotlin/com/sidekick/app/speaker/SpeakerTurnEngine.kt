@@ -23,6 +23,8 @@ class SpeakerTurnEngine(context: Context, profile: VoiceProfile, private val spe
     private val voices = SessionVoices()
     /** The owner's voice as confirmed against the saved profile earlier in this session (memory only). */
     private val owner = OwnerSession()
+    /** Very confident owner turns of this session (whole-speech signatures, memory only, at most 20). */
+    private val learnable = ArrayDeque<FloatArray>()
     /** Idea 4: holds one unassigned chunk after an owner chunk until the next chunk is decided. */
     private val neighbors = NeighborChunks()
     private val session = java.util.UUID.randomUUID().toString().replace("-", "")
@@ -67,7 +69,10 @@ class SpeakerTurnEngine(context: Context, profile: VoiceProfile, private val spe
             if (changed || part.ambiguous) speaker.newTurn()
             var identified = if (part.ambiguous) Speaker.UNKNOWN else speaker.identify(samples, now, owner)
             var scores = lastError ?: if (part.ambiguous) "attribution withheld" else speaker.lastDiagnostic
-            if (vector != null && identified == Speaker.USER && speaker.lastLongOwner) owner.confirm(vector, now)
+            if (vector != null && identified == Speaker.USER && speaker.lastLongOwner) {
+                owner.confirm(vector, now)
+                if (speaker.lastVeryConfident) { learnable.addLast(VoiceMatch.normalized(vector)); while (learnable.size > 20) learnable.removeFirst().fill(0f) }
+            }
             else if (vector != null && identified == Speaker.UNKNOWN && owner.size > 0) {
                 // Never overrules "someone else"; only fills in a chunk the profile left unassigned.
                 val carry = speaker.carry(owner, vector, now)
@@ -90,5 +95,7 @@ class SpeakerTurnEngine(context: Context, profile: VoiceProfile, private val spe
      * biometric STRICT, or NOTICE before notice, and at session end.
      */
     fun forgetOthers() { synchronized(voices) { voices.clear() }; anchorsStale = true }
-    fun close() { diarizer.close(); synchronized(voices) { voices.clear() }; speaker.newTurn(); previous = null; owner.clear(); neighbors.clear() }
+    /** At session end: hands the very confident owner turns to the saved profile (learning across sessions), then wipes them. */
+    fun learnInto(profile: VoiceProfile): Boolean = try { profile.learn(learnable.toList()) } finally { learnable.forEach { it.fill(0f) }; learnable.clear() }
+    fun close() { diarizer.close(); synchronized(voices) { voices.clear() }; speaker.newTurn(); previous = null; owner.clear(); neighbors.clear(); learnable.forEach { it.fill(0f) }; learnable.clear() }
 }

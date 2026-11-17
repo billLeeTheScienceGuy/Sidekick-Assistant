@@ -108,6 +108,19 @@ class OwnerSessionTest {
         assertNull(session.mean(OwnerSession.KEEP_MS + 1))
     }
 
+    @Test fun `learning across sessions moves slowly and never far from the setup`() {
+        val setup = unit(1); val today = near(setup, .8f, 2)
+        assertNull("needs at least two turns", VoiceprintPolicy.learned(setup, setup, listOf(today)))
+        var current = setup
+        repeat(30) { current = VoiceprintPolicy.learned(current, setup, listOf(today, today)) ?: current }
+        assertTrue(VoiceMatch.similarity(current, today) > VoiceMatch.similarity(setup, today))
+        assertTrue("bounded drift", VoiceMatch.similarity(current, setup) >= VoiceprintPolicy.LEARN_KEEP - 1e-4f)
+        val stranger = unit(50)
+        val moved = VoiceprintPolicy.learned(setup, setup, List(5) { stranger })
+        assertTrue("a far-off voice never moves it past the guard", moved == null || VoiceMatch.similarity(moved, setup) >= VoiceprintPolicy.LEARN_KEEP)
+        assertEquals(2, VoiceprintPolicy.NOTICE_VERSION)
+    }
+
     @Test fun `cohort file round trip`() {
         val vectors = List(50) { unit(2000 + it, 256) }
         val buffer = java.nio.ByteBuffer.allocate(8 + 50 * 256 * 4).order(java.nio.ByteOrder.LITTLE_ENDIAN)

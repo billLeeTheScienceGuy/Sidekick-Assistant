@@ -549,6 +549,8 @@ class ListeningService : Service() {
                 note = e.message ?: "Listening failed. Review the text captured so far, then try again.") }
         } finally {
             runCatching { recorder?.stop() }; recorder?.release()
+            // Learning across sessions: only after a normal session (not voice setup, not discarded).
+            if (!enrollment && !discard) runCatching { turns.learnInto(app.voiceProfile) }
             processor?.close(); raw.fill(0); turns.close(); speaker.close(); enrollmentSamples.forEach { it.fill(0f) }
             NativeVad.close()
             if (wake.isHeld) wake.release()
