@@ -4,6 +4,8 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 
 ## Unreleased (privacy, consent and location work package)
 
+- Korean: a lone hesitation sound the recognizer writes as its own word ("회의가 어 있어요") is dropped between Korean
+  words; "어" at the start of a sentence ("yeah") is kept. Fixes the last failing phone test (124 of 124).
 - Voice matching: the quiet-room bar now depends on how long and how clean the speech is (.58-.65): owner turns
   62% -> 69% at the base rule, still 0 of 409,213 stranger turns (454 voices). Your saved voice also slowly adapts
   across sessions from moments SideKick is very sure it is you, never far from your setup; the voice consent notice

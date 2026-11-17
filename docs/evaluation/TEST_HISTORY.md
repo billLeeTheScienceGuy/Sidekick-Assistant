@@ -535,3 +535,6 @@ settings fold closed when a bigger text size was chosen inside it; it now stays 
 `KoreanRecognitionTest`: the Korean recognizer reads one synthetic clip as "회의가어있어요" (an extra syllable). No
 speech-recognition code changed in this work, and the November 16 Whisper comparison showed this clip unchanged, so it
 is tracked as a separate recognizer issue.
+
+**Follow-up.** The Korean failure came from SenseVoice writing a hesitation sound ("어") as a separate word. `KoreanFillers`
+drops a lone filler between Korean words (unit-tested, including cases that must stay); the 3 Korean phone tests now pass.

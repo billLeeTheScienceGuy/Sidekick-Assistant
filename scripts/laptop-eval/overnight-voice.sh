@@ -15,7 +15,7 @@ STDLIB=$(w "$(find "$HOME/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotli
 CP="$(w "$ROOT/core/build/libs/core.jar");$STDLIB;$(w "$D/sherpa-win")\\sherpa-onnx-v1.13.3.jar;$(w "$D/sherpa-win")\\sherpa-onnx-native-lib-win-x64-v1.13.3.jar"
 CAM=$(w "$ROOT/app/src/main/assets/models/campplus-advanced.onnx")
 embed() { [ -s "$E/$1.bin" ] || "$JAVA" -Xmx1500m -cp "$CP" "$(w "$ROOT/scripts/laptop-eval/SpeakerEmbed.java")" "$(w "$S/$2")" "$CAM" "$(w "$E/$1.bin")" 14 > "$E/$1.log" 2>&1; log "embedded $1: $(tail -1 "$E/$1.log")"; }
-log "overnight voice queue started"
+log "overnight voice queue started (run 2: + train-clean-100)"
 
 # 1. downloads (resumes partial files)
 cd "$S/data" || exit 1
@@ -27,15 +27,24 @@ done
 cd "$ROOT"
 [ -f "$S/corpus4/manifest.tsv" ] || "$PY" -I scripts/laptop-eval/speaker_corpus_more.py "$(w "$D")" "$(w "$S/corpus4")" >> "$R" 2>&1
 
+# 1b. LibriSpeech train-clean-100 from the Hugging Face mirror (fast), as corpus6
+HF="$S/data/hf-train-clean-100"; mkdir -p "$HF"
+for n in $(seq -w 0 13); do
+  f="$HF/00$n.parquet"; [ -s "$f" ] && continue
+  curl -sSL -C - -o "$f" "https://huggingface.co/datasets/openslr/librispeech_asr/resolve/main/clean/train.100/00$n.parquet" || log "download failed: 00$n"
+done
+[ -f "$S/corpus6/manifest.tsv" ] || "$PY" -I scripts/laptop-eval/speaker_corpus_hf.py "$(w "$D")" "$(w "$HF")" "$(w "$S/corpus6")" >> "$R" 2>&1
+
 # 2. signatures with chunk quality
 embed campq-corpus corpus; embed campq-corpus2 corpus2; embed campq-corpus3 corpus3; embed campq-replay2-corpus replay2/corpus
 embed campq-corpus4 corpus4
+embed campq-corpus6 corpus6
 VOX=""
 if ls "$S/data/voxceleb/"*.zip >/dev/null 2>&1; then
   [ -f "$S/corpus5/manifest.tsv" ] || "$PY" -I scripts/laptop-eval/speaker_corpus_voxceleb.py "$(w "$D")" "$(w "$S/corpus5")" >> "$R" 2>&1
   embed campq-corpus5 corpus5 && VOX="$(w "$S/corpus5") $(w "$E/campq-corpus5.bin")"
 fi
-ALL="$(w "$S/corpus") $(w "$E/campq-corpus.bin") $(w "$S/corpus2") $(w "$E/campq-corpus2.bin") $(w "$S/corpus3") $(w "$E/campq-corpus3.bin") $(w "$S/corpus4") $(w "$E/campq-corpus4.bin") $VOX"
+ALL="$(w "$S/corpus") $(w "$E/campq-corpus.bin") $(w "$S/corpus2") $(w "$E/campq-corpus2.bin") $(w "$S/corpus3") $(w "$E/campq-corpus3.bin") $(w "$S/corpus4") $(w "$E/campq-corpus4.bin") $(w "$S/corpus6") $(w "$E/campq-corpus6.bin") $VOX"
 
 # 3. analyses
 log "== closest strangers with all voices (sets the safe bars)"
