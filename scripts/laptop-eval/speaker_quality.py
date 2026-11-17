@@ -13,8 +13,8 @@ from pathlib import Path
 
 GLOBAL = float(sys.argv[1])
 MARGIN, FLOOR, MIN_STRANGERS = .08, .55, 20_000
-LENGTHS = [(0, 5.0, "under 5 s"), (5.0, 8.0, "5-8 s"), (8.0, 99, "8 s or more")]
-SNRS = [(-99, 15.0, "noisy (<15 dB)"), (15.0, 25.0, "some noise (15-25 dB)"), (25.0, 99, "clean (25+ dB)")]
+LENGTHS = [(0, 5.0, "under 5 s"), (5.0, 8.0, "5-8 s"), (8.0, float("inf"), "8 s or more")]
+SNRS = [(-float("inf"), 15.0, "noisy (<15 dB)"), (15.0, 25.0, "some noise (15-25 dB)"), (25.0, float("inf"), "clean (25+ dB)")]
 here = Path(__file__).resolve().parent
 src = (here / "speaker_analysis.py").read_text(encoding="utf-8").split("T_GRID =")[0]
 sys.argv = ["x", "NUL"] + sys.argv[2:]

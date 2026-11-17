@@ -15,7 +15,9 @@ STDLIB=$(w "$(find "$HOME/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotli
 CP="$(w "$ROOT/core/build/libs/core.jar");$STDLIB;$(w "$D/sherpa-win")\\sherpa-onnx-v1.13.3.jar;$(w "$D/sherpa-win")\\sherpa-onnx-native-lib-win-x64-v1.13.3.jar"
 CAM=$(w "$ROOT/app/src/main/assets/models/campplus-advanced.onnx")
 embed() { [ -s "$E/$1.bin" ] || "$JAVA" -Xmx1500m -cp "$CP" "$(w "$ROOT/scripts/laptop-eval/SpeakerEmbed.java")" "$(w "$S/$2")" "$CAM" "$(w "$E/$1.bin")" 14 > "$E/$1.log" 2>&1; log "embedded $1: $(tail -1 "$E/$1.log")"; }
-log "overnight voice queue started (run 2: + train-clean-100)"
+log "overnight voice queue started (run 3: Common Voice relabelled by id, pair listing)"
+# keep the laptop from idle-sleeping until this queue logs "queue DONE" (no power settings changed)
+powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "$(w "$ROOT/scripts/laptop-eval/keep-awake.ps1")" -Report "$(w "$R")" &
 
 # 1. downloads (resumes partial files)
 cd "$S/data" || exit 1
@@ -30,7 +32,7 @@ cd "$ROOT"
 # 1b. LibriSpeech train-clean-100 from the Hugging Face mirror (fast), as corpus6
 HF="$S/data/hf-train-clean-100"; mkdir -p "$HF"
 for n in $(seq -w 0 13); do
-  f="$HF/00$n.parquet"; [ -s "$f" ] && continue
+  f="$HF/00$n.parquet"; [ -s "$f" ] && [ "$(tail -c 4 "$f")" = PAR1 ] && continue; rm -f "$f"  # re-fetch cut-off files
   curl -sSL -C - -o "$f" "https://huggingface.co/datasets/openslr/librispeech_asr/resolve/main/clean/train.100/00$n.parquet" || log "download failed: 00$n"
 done
 [ -f "$S/corpus6/manifest.tsv" ] || "$PY" -I scripts/laptop-eval/speaker_corpus_hf.py "$(w "$D")" "$(w "$HF")" "$(w "$S/corpus6")" >> "$R" 2>&1
@@ -60,6 +62,8 @@ log "== learning across sessions"
 "$PY" -I scripts/laptop-eval/speaker_crosssession.py 0.64 $ALL >> "$R" 2>&1
 log "== all ideas together (bars .64/.71/.74)"
 "$PY" -I scripts/laptop-eval/speaker_ideas.py 0.64 0.71 0.74 --a $ALL >> "$R" 2>&1
+log "== which strangers got through (pairs of people)"
+"$PY" -I scripts/laptop-eval/speaker_accepted_pairs.py 0.70 0.75 -- $ALL >> "$R" 2>&1
 log "== phone-microphone replay with setup on the phone"
 "$PY" -I scripts/laptop-eval/replay_enroll_analysis.py "$(w "$S/replay2")" "$(w "$E/campq-replay2-corpus.bin")" >> "$R" 2>&1
 log "overnight voice queue DONE"

@@ -1,6 +1,7 @@
 """Seventh corpus: Mozilla Common Voice (CC0) in the app's languages, real volunteers on their own phones and laptops.
-Reads every archive in .deps/speaker-public/data/commonvoice/ (.tar.gz / .tgz / .tar / .zip), finds its clip list
-(.tsv with client_id and path columns), and takes up to 8 clips from each speaker (anonymous client id). Output:
+Reads every archive or extracted folder in .deps/speaker-public/data/commonvoice/ (.tar.gz / .tgz / .tar / .zip / dir),
+finds its clip lists (.tsv with client_id and path or audio_file columns), and takes up to 6 clips from each of up to
+300 speakers per language (anonymous client id; speakers with at least 2 clips, so each can also be an owner). Output:
 16 kHz mono PCM16 WAV + manifest.tsv, group "cv-<language>" so results can be reported per language.
 
 Usage: python -I speaker_corpus_commonvoice.py <deps dir> <out dir>
@@ -31,6 +32,14 @@ def decode(data: bytes) -> np.ndarray:
     return np.concatenate(chunks).astype(np.float32) if chunks else np.zeros(0, np.float32)
 
 
+class Folder:
+    def __init__(self, path: Path):
+        self.root = path
+        self.names = [f.relative_to(path).as_posix() for f in path.rglob("*") if f.is_file()]
+    def read(self, name: str) -> bytes:
+        return (self.root / name).read_bytes()
+
+
 class Archive:
     def __init__(self, path: Path):
         self.zip = zipfile.ZipFile(path) if path.suffix == ".zip" else None
@@ -52,17 +61,18 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     rows = []
     for path in sorted((deps / "speaker-public/data/commonvoice").iterdir()):
-        if not path.is_file() or not re.search(r"\.(tar\.gz|tgz|tar|zip)$", path.name): continue
-        archive = Archive(path)
+        if path.is_dir(): archive = Folder(path)
+        elif re.search(r"\.(tar\.gz|tgz|tar|zip)$", path.name): archive = Archive(path)
+        else: continue
         lang = language(path, archive.names) or "xx"
-        tsvs = [n for n in archive.names if n.endswith(".tsv") and re.search(r"(validated|train|test|dev|other|ss-corpus)", n.split("/")[-1])]
+        tsvs = [n for n in archive.names if n.endswith(".tsv") and re.fullmatch(r"(validated|train|test|dev|other|ss-corpus-[a-zA-Z-]+)\.tsv", n.split("/")[-1])]
         by_name = {n.split("/")[-1]: n for n in archive.names if n.lower().endswith((".mp3", ".wav"))}
         per = defaultdict(list)
         for t in tsvs:
             for r in csv.DictReader(io.StringIO(archive.read(t).decode("utf-8", "replace")), delimiter="\t"):
                 cid = r.get("client_id"); clip = (r.get("path") or r.get("audio_file") or "").split("/")[-1]
-                if cid and clip in by_name and len(per[cid]) < 8 and clip not in per[cid]: per[cid].append(clip)
-        people = {cid: clips for cid, clips in per.items() if len(clips) >= 1}
+                if cid and clip in by_name and len(per[cid]) < 6 and clip not in per[cid]: per[cid].append(clip)
+        people = dict(sorted((cid, clips) for cid, clips in per.items() if len(clips) >= 2)[:300])
         for cid, clips in people.items():
             for clip in clips:
                 target = f"cv-{lang}-{cid[:16]}-{Path(clip).stem}.wav"
@@ -74,7 +84,7 @@ def main():
                     if len(audio) < 16000: continue
                     audio *= min(1.0, .9 / (np.max(np.abs(audio)) + 1e-9))
                     sf.write(str(out / target), audio, 16000, subtype="PCM_16")
-                rows.append((target, f"cv-{lang}-{cid[:16]}", f"cv-{lang}"))
+                rows.append((target, f"cv-{cid[:16]}", f"cv-{lang}"))  # one person across languages
         print(f"{path.name}: language {lang}, {len(people)} people")
     with open(out / "manifest.tsv", "w", encoding="utf-8") as f:
         for r in rows: f.write("\t".join(r) + "\n")
