@@ -133,8 +133,8 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
     private fun offerTimeChoice(heard: String, choices: List<String>, at: Instant, zone: ZoneId, speaker: Speaker) {
         val likely = choices.firstOrNull() ?: return
         val input = Transcript(likely, at, zone, speaker, true)
-        val proposals = if (speaker == Speaker.USER) ActivityTiming.merge(input, pipeline.process(input))
-            else ActivityTiming.extract(input.copy(speaker = Speaker.OTHER), informationalOnly = true)
+        val proposals = if (speaker == Speaker.USER) HandsOffPlans.complete(input, ActivityTiming.merge(input, pipeline.process(input)))
+            else AnalysisContext.others(input)
         val heardClock = KoreanClockRepair.clockOf(heard) ?: return
         val options = choices.mapNotNull { KoreanClockRepair.clockOf(it) }
         addProposals(proposals.map { it.copy(sourceKey = "confirm:${heard.lowercase().hashCode()}",
@@ -187,8 +187,8 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         lastVoiceAt = capturedAt
         voiceContext = LiveText.append(voiceContext, fresh.text, !continuation).takeLast(if (speakerTrack == null) 6000 else 1500)
         val input = Transcript(voiceContext, voiceAt, zone, speaker, true)
-        val proposals = if (speaker == Speaker.USER) ActivityTiming.merge(input, pipeline.process(input))
-            else ActivityTiming.extract(input.copy(speaker = Speaker.OTHER), informationalOnly = true)
+        val proposals = if (speaker == Speaker.USER) HandsOffPlans.complete(input, ActivityTiming.merge(input, pipeline.process(input)))
+            else AnalysisContext.others(input)
         var attributed = proposals.map { it.copy(sourceKey = sourceKey(),
             needsReview = (if (speaker == Speaker.USER) "Likely your voice; verify attribution. " else if (speaker == Speaker.OTHER) "Another voice; attendance unconfirmed. " else "Speaker unassigned; attendance unconfirmed. ") + it.needsReview) }
         val extra = mutableListOf<ProposedCommitment>()
@@ -249,14 +249,19 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
 
     @Synchronized fun propose(input: Transcript, source: String? = null): Int {
         val prepared = prepareChanges(input, source ?: "typed")
-        return addProposals(ActivityTiming.merge(prepared, pipeline.process(prepared)).map { it.copy(sourceKey = source) }, input.capturedAt)
+        return addProposals(HandsOffPlans.complete(prepared, ActivityTiming.merge(prepared, pipeline.process(prepared))).map { it.copy(sourceKey = source) }, input.capturedAt)
     }
 
     @Synchronized fun addProposals(proposals: List<ProposedCommitment>, observedAt: Instant? = null): Int {
-        val incoming = proposals.filter { !it.informational || includeInformational() }.map {
+        val incoming = proposals.filter { !it.informational || includeInformational() }.map(HandsOffPlans::withDefaults).map {
+            // A conflict (hedge, two times) waits in Review; "review:" keeps it out of hands-off saving.
+            val conflict = it.conflict
+            val note = if (conflict != null) "$conflict ${it.needsReview}".trim()
+                else listOf(it.needsReview.trim(), PlanNotes.describe(it.assumptions, it.notes)).filter(String::isNotBlank).joinToString(" ")
             CommitmentEntity(UUID.randomUUID().toString(), it.title, it.evidence, it.capturedAt.toEpochMilli(),
-                it.zoneId.id, it.needsReview, activityStartAt = it.activityStartAt?.toEpochMilli(), activityEndAt = it.activityEndAt?.toEpochMilli(),
-                informational = it.informational, placeName = it.placeName, placeAddress = it.placeAddress, sourceKey = it.sourceKey)
+                it.zoneId.id, note, dueAt = it.reminderAt?.toEpochMilli(), activityStartAt = it.activityStartAt?.toEpochMilli(), activityEndAt = it.activityEndAt?.toEpochMilli(),
+                informational = it.informational, placeName = it.placeName, placeAddress = it.placeAddress,
+                sourceKey = if (conflict != null) "review:conflict:" + (it.sourceKey ?: "typed") else it.sourceKey)
         }.distinctBy(::key)
         val drafts = mutableDrafts.value.toMutableList()
         var added = 0
@@ -375,6 +380,28 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         updateTargets.filterValues { it == id }.keys.toList().forEach(::remove)
     }
     private fun trimReviewed() { while (reviewed.size > 400) reviewed.remove(reviewed.keys.first()) }
+    /** Review items whose plan has already ended clear themselves; manual drafts stay until edited. */
+    @Synchronized fun pruneStale(now: Long): Int {
+        val stale = mutableDrafts.value.filter { it.evidence != "Manually added" && (HandsOffPlans.stale(it.activityStartAt, it.activityEndAt, it.dueAt, now) ||
+            // Undated conflicts ("maybe dinner Friday") cannot pass a date of their own: they expire after a week.
+            (it.sourceKey?.startsWith("review:conflict:") == true && it.activityStartAt == null && now - it.capturedAt > 7 * 86_400_000L)) }
+        stale.forEach { dismiss(it.id) }
+        return stale.size
+    }
+    /**
+     * Another voice (or a message) said a saved plan is cancelled. The plan stays as it is; a Review item asks the
+     * owner, and accepting it cancels the plan (with Undo). One pending item per plan.
+     */
+    @Synchronized fun addCancelReview(target: CommitmentEntity, heard: String, at: Instant): Boolean {
+        val source = "review:cancel:${target.id}"
+        if (mutableDrafts.value.any { it.sourceKey == source } || mutableDrafts.value.size >= 200) return false
+        val item = target.copy(id = UUID.randomUUID().toString(), state = "PROPOSED", title = "Cancel: ${target.title}".take(500),
+            evidence = heard.trim().take(500), capturedAt = at.toEpochMilli(), dueAt = null, deliveredAt = null, sourceKey = source,
+            reviewNote = "Another voice said this is cancelled: “${heard.trim().take(120)}”. Your saved plan is unchanged. Accept to cancel it (Undo available), or Dismiss to keep it.")
+        mutableDrafts.value = mutableDrafts.value + item
+        updateTargets[item.id] = target.id
+        return true
+    }
     @Synchronized fun clearText() { naming.clear(); mutableNameSuggestion.value = null; mutableText.value = ""; mutableSpeakerTurns.value = emptyList(); voiceContext = ""; voiceTrack = null; voiceContexts.clear(); voiceCommandTarget = null; correctionContext = null; changes.clear(); seenChanges.clear(); liveChanges.clear(); observations.clear() }
     @Synchronized fun beginSession() { clearText(); voiceContext = ""; voiceTurn = 0; reviewed.clear(); sessionBaseline = mutableDrafts.value.map { it.id }.toSet() }
     @Synchronized fun discardSession() {
