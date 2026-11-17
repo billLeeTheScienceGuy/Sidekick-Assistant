@@ -11,6 +11,35 @@ until you select a calendar and confirm. Optional region guidance is under
 Listening privacy & region guidance; it never authorizes listening.
 Earlier version-specific notes below are historical.
 
+## Simple home (default)
+
+SideKick opens on the simple layout, made for people who are new to smartphones.
+The bottom bar has three buttons: **Today**, **Plans** and **More**.
+
+- **Today** shows one large **Start listening** button (it turns red and reads
+  **Stop listening** while the microphone is on), a status line (**Listening** or
+  **Not listening**) and, under the button, the rules line ("Rules follow your
+  state …"). While listening, **Announce note-taking** and the "I told everyone"
+  button appear when a notice is needed (or always, if that setting is on), and
+  **Stop and clear what was heard** stops and forgets the recent words.
+- If something needs checking, a **1 plan to check** button appears; it opens Plans
+  on the plans waiting for you. Nothing appears when nothing needs checking.
+- **Your next plans** lists up to five upcoming plans as large cards: what, when
+  ("Tomorrow at 3:00 PM") and where. Each card has **Change** and either **Undo**
+  (for something SideKick saved by itself) or **Remove** (asks first; removed plans
+  can be brought back from Plans → Past).
+- **Plans** is the full list with search and the filters To check, With reminder,
+  No reminder, Past and All. Every action is a visible button; nothing needs a swipe.
+- **More** opens: Summary of your day; What was heard & notes (recent words, typing a
+  note, listening and voice details); Set up speech and your voice; Settings; and
+  **Use the detailed screen**.
+
+To go back to the earlier layout, choose **Detailed** under Screen at the top of
+Settings (or More → Use the detailed screen). Choose **Simple** to return. The text
+size choice is next to it; colors, light/dark, buttons & spacing and Type notes are
+under **More screen options**. The other settings are in four sections: Listening,
+Your voice, Reminders & calendar, and Privacy.
+
 ## Typed notes
 
 Stop listening, copy recent text into **Edit or type notes** (or type your own),

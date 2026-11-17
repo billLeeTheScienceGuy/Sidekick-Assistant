@@ -45,7 +45,7 @@ internal fun SummarySection(entries: List<CommitmentEntity>, liveText: String, c
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(fact.title, style = MaterialTheme.typography.titleSmall)
                         Text(if (fact.informational) "Information only · attendance unconfirmed" else "Personal plan")
-                        if (fact.state != "ACCEPTED") Text("Current status: ${fact.state.lowercase()}")
+                        if (fact.state != "ACCEPTED") Text("Current status: ${planStateLabel(fact.state).lowercase()}")
                         Text("Activity: ${time(fact.start)} – ${time(fact.end)}")
                         Text("Reminder: ${fact.reminder?.let { time(it) } ?: "Not set"}")
                         fact.place?.let { Text("Place: $it") }; fact.address?.let { Text(it) }
@@ -64,7 +64,7 @@ internal fun SummarySection(entries: List<CommitmentEntity>, liveText: String, c
                     }
                 }
             }
-            if (items.size > 10) Text("Showing 10 of ${items.size}. All items are available in Planner.")
+            if (items.size > 10) Text("Showing 10 of ${items.size}. All of them are in Plans.")
         }
         group("Your plans", digest.plans)
         group("Information-only events", digest.information)

@@ -18,7 +18,7 @@ internal fun ListeningStartDialog(settings: GuidanceSettings, handsOff: Boolean,
             Text("SideKick follows the recording rules of the state you're in. In all-party states like Illinois, or if your location is unknown, others' words are kept only after you announce note-taking.")
             Text("SideKick transcribes on this phone and discards the audio. Listening continues with the screen off.")
             QuietLabel(if (handsOff) "Plans save automatically. You can undo changes." else "Review plans before saving them.")
-            if (recovery) QuietLabel("This session can resume after a phone restart until you stop it.")
+            if (recovery) QuietLabel("Listening can resume after a phone restart until you stop it.")
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Checkbox(skip, { skip = it }, modifier = Modifier.testTag("skip-listening-intro").controlLabel("Don’t show this again"))
                 Text("Don’t show this again", Modifier.weight(1f))

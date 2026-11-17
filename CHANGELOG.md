@@ -20,6 +20,13 @@ Version notes for SideKick, newest first. Links point to the measurements and li
   adds a Review item, never removes a plan. The same plan said twice merges, a clash is saved and flagged ("May
   overlap with ..."), and Review items whose date has passed clear themselves. No database change. See
   `docs/guides/HANDS_OFF.md`.
+- Simple home is now the default, for older adults and people new to smartphones: Today (one large Start/Stop
+  listening button, a Listening/Not listening line, the rules line, and the next plans as large cards with Change and
+  Undo/Remove buttons), Plans, and a labelled More (summary, notes and listening details, setup, detailed view). A
+  "plans to check" button appears only when something needs checking. Settings now open with Simple/Detailed and text
+  size, then four sections: Listening, Your voice, Reminders & calendar, Privacy. Recommended choices are labelled and
+  jargon (session, model, profile, chunk, diarization, attribution) is replaced with plain words. The detailed view
+  stays available in Settings; consent and privacy texts are unchanged. See `docs/guides/TRY_IT.md`.
 - Removed the optional Qwen3-0.6B model ("smart analysis" for typed notes), its llama.cpp native build and import
   screen. On the phone over the 92-case corpus it found 19 of 83 events (rules: 82), took 14.4 s per sentence (rules:
   7 ms) and found nothing the rules missed. The app deletes a previously imported model file (484 MB) on start. Typed

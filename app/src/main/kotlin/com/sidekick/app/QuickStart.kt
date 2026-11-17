@@ -30,10 +30,10 @@ internal fun ModelPackSection(initiallyExpanded: Boolean = true) {
     val scope = rememberCoroutineScope()
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let {
         scope.launch {
-            working = true; message = "Verifying model pack…"
+            working = true; message = "Checking the speech file…"
             try { val id = ModelPacks.importPack(context, it); message = "Installed: ${ModelPacks.labels[id]}" }
             catch (e: CancellationException) { throw e }
-            catch (e: Exception) { message = e.message ?: "Could not install model pack." }
+            catch (e: Exception) { message = e.message ?: "Could not install the speech file." }
             finally { working = false }
         }
     } }
@@ -96,8 +96,8 @@ internal fun QuickStart(onClose: () -> Unit) {
                 } }
             }
             ModelPackSection(initiallyExpanded = false)
-            Text("2. Optional personal voice setup", style = MaterialTheme.typography.titleMedium)
-            Text(if (voiceReady) "Voice profile ready for this language" else "Without a matching voice profile, speech remains information-only.")
+            Text("2. Optional: set up your voice", style = MaterialTheme.typography.titleMedium)
+            Text(if (voiceReady) "Your voice is set up for this language" else "Until your voice is set up for this language, plans you say are kept as information only.")
             TextButton(enabled = editable, onClick = { context.startActivity(Intent(context, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java)) }) { Text("Set up my voice") }
             Text("3. Android permissions", style = MaterialTheme.typography.titleMedium)
             val mic = remember(refresh) { context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED }
@@ -109,7 +109,7 @@ internal fun QuickStart(onClose: () -> Unit) {
                 else context.startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName))
             }) { Text("Enable reminder alerts") }
             Text("4. Start listening", style = MaterialTheme.typography.titleMedium)
-            Text("Return home and tap Start listening when everyone agrees. Voice matching does not prove consent. Settings has options for recovery, messages and places.")
+            Text("Return home and tap Start listening when everyone agrees. Voice matching does not prove consent. Settings has more options for listening, messages and places.")
         }
     }, confirmButton = { TextButton(onClick = onClose) { Text("Done") } })
 }
