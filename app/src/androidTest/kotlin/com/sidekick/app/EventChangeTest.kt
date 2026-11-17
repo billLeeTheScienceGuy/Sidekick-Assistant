@@ -204,7 +204,9 @@ class EventChangeTest {
                 processor.finish(); withTimeout(30_000) { worker.join() }
             }
             val event = dao.all().single()
-            assertEquals(outputs.joinToString(" | "), "CANCELLED", event.state)
+            // An unassigned voice saying "cancel" never removes a plan: it waits in Review.
+            assertEquals(outputs.joinToString(" | "), "ACCEPTED", event.state)
+            assertTrue(memory.drafts.value.any { it.sourceKey == "review:cancel:${event.id}" })
             assertTrue(event.informational); assertNull(event.dueAt)
             assertEquals(21, Instant.ofEpochMilli(event.activityStartAt!!).atZone(zone).hour)
             assertTrue(outputs.any { it.contains("not cancel", true) })

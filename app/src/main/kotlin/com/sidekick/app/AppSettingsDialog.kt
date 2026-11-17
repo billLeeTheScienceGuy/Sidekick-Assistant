@@ -315,7 +315,8 @@ internal fun speechQualityName(quality: com.sidekick.core.SpeechQuality): String
 
 @Composable
 internal fun SettingsDetails(label: String, tag: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
+    // Survives the screen being rebuilt (for example after a bigger text or button size is chosen inside it).
+    var expanded by androidx.compose.runtime.saveable.rememberSaveable(label) { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }, modifier = Modifier.heightIn(min = 48.dp).let { if (tag != null) it.testTag(tag) else it }) { Text(if (expanded) "Hide details" else label) }
     if (expanded) Column(verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
 }

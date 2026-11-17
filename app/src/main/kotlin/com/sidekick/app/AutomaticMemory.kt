@@ -106,13 +106,16 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
         }
     }
     private fun ref(item: com.sidekick.app.data.CommitmentEntity) = com.sidekick.core.HandsOffPlans.PlanRef(item.title, item.evidence,
-        item.activityStartAt, item.activityEndAt, item.reviewNote, item.informational)
+        item.activityStartAt, item.activityEndAt, item.reviewNote, item.informational, item.placeName)
     /**
      * A later statement of a saved plan: the real time/day replaces an assumed one (the "assumed" marker goes), and
      * the same plan said again in other words merges instead of duplicating. True when the draft was handled.
      */
     private suspend fun refineOrMerge(candidate: com.sidekick.app.data.CommitmentEntity): Boolean {
         if (candidate.activityStartAt == null || temporary.updateTarget(candidate.id) != null) return false
+        // A change command ("move the meeting to 7") is handled as a change, never merged as a restatement: merging
+        // would point "the meeting just discussed" at an older plan with the new time.
+        if (com.sidekick.core.EventChange.looksLikeChange(candidate.evidence.substringBefore('\n'))) return false
         val zone = ZoneId.of(candidate.zoneId)
         fun opening(text: String) = text.substringBefore('\n').lowercase(java.util.Locale.ROOT).filter { it.isLetterOrDigit() }
         val saved = dao.all().filter { it.state == "ACCEPTED" && it.id != candidate.id && !com.sidekick.core.VoiceSource.distinctPeople(candidate.sourceKey, it.sourceKey) }
@@ -205,7 +208,9 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                 val stalePlace = baseline?.placeName?.let { it == candidate.placeName && it != old?.placeName && !candidate.evidence.contains('\n') } == true
                 val changedPlace = !stalePlace && candidate.placeName != null && old?.placeName != candidate.placeName
                 val source = if (linked && old != null) candidate.copy(id = target, title = if (attendance) candidate.title else old.title,
-                    informational = if (attendance) false else if (withdrawal) true else old.informational, activityStartAt = if (timingUpgrade) candidate.activityStartAt else old.activityStartAt, activityEndAt = if (staleEnd) old.activityEndAt else candidate.activityEndAt ?: old.activityEndAt,
+                    informational = if (attendance) false else if (withdrawal) true else old.informational, activityStartAt = if (timingUpgrade) candidate.activityStartAt else old.activityStartAt,
+                    // An assumed default length on a repeat never replaces the saved plan's own end.
+                    activityEndAt = if (staleEnd || (candidate.reviewNote.contains("(length assumed)") && !timingUpgrade)) old.activityEndAt else candidate.activityEndAt ?: old.activityEndAt,
                     placeName = if (stalePlace) old.placeName else candidate.placeName ?: old.placeName,
                     placeAddress = if (stalePlace) old.placeAddress else candidate.placeAddress ?: if (changedPlace) null else old.placeAddress) else candidate.copy(id = target)
                 if (linked && old != null) {

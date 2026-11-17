@@ -123,3 +123,25 @@ no session ideas), plus the cohort check.
   .08 margin is the main safeguard. Recordings of the owner's voice played back are not detectable.
 - The owner's own data is 8 short memos; 10–20 more clips in different places would turn the owner estimate into a
   measurement. The participant study above is still the final check.
+
+## Follow-up (November 17, 2026): more voices, quality-aware bars, learning across sessions
+
+- **More voices:** LibriSpeech dev-clean and dev-other added 73 people (454 stranger voices, 409,213 stranger turns
+  under the full rule). Strangers accepted: still 0; the closest stranger moved from .558 to .563. Owner recognition
+  with every idea: 81.9%. (train-clean-100 was skipped: the download ran at about 0.2 MB/s; VoxCeleb1 is prepared in
+  `scripts/laptop-eval/speaker_corpus_voxceleb.py` and is added by `overnight-voice.sh` when its zip files are present.)
+- **Quality-aware bars** (`VoiceMatch.QualityBars`, `SpeakerAudio.quality`): the quiet-room bar depends on the chunk's
+  speech length and signal-to-noise ratio; each group is .08 above its closest stranger, never below .58, and groups
+  with fewer than 20,000 stranger turns keep .64. Owner recognition at the base rule 62.2% -> 69.3%; strangers 0.
+
+| Speech | SNR < 15 dB | 15–25 dB | 25 dB + |
+| --- | --- | --- | --- |
+| under 5 s | .64 | .61 | .65 |
+| 5–8 s | .64 | .64 | .62 |
+| 8 s or more | .58 | .58 | .62 |
+
+- **Learning across sessions** (`VoiceprintPolicy.learned`): after a session the saved quiet-room signature moves 15%
+  toward that session's very confident turns (>= .78, at least 2), never below .90 similarity to the original setup.
+  Simulated: 72.0% -> 72.7%, strangers 0, the profile stayed .992 similar to the setup. It cannot bridge a large
+  setup/microphone mismatch (no turn is confident enough there); setting up through the phone does (15.5% -> 72.6%).
+  Consent notice version 2 mentions it, so earlier consent is asked again.

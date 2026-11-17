@@ -548,7 +548,8 @@ object HandsOffPlans {
     }
 
     /** A plan reference for matching against saved items (times in epoch milliseconds). */
-    data class PlanRef(val title: String, val evidence: String, val start: Long?, val end: Long?, val note: String, val informational: Boolean)
+    data class PlanRef(val title: String, val evidence: String, val start: Long?, val end: Long?, val note: String, val informational: Boolean,
+        val place: String? = null)
     private fun date(value: Long, zone: ZoneId) = Instant.ofEpochMilli(value).atZone(zone).toLocalDate()
 
     /** True when [candidate] states what [saved] only assumed (its time, day, am/pm or length): replace and drop the marker. */
@@ -574,6 +575,9 @@ object HandsOffPlans {
     fun samePlan(a: PlanRef, b: PlanRef, zone: ZoneId): Boolean {
         val id = identity(a.evidence) ?: identity(a.title) ?: return false
         if (id != (identity(b.evidence) ?: identity(b.title)) || a.informational != b.informational) return false
+        // Two different places named for the same kind of plan are two plans (workshop at Hall A, workshop at Hall B).
+        val pa = a.place?.trim()?.lowercase(Locale.ROOT)?.takeIf { it.isNotEmpty() }; val pb = b.place?.trim()?.lowercase(Locale.ROOT)?.takeIf { it.isNotEmpty() }
+        if (pa != null && pb != null && pa != pb) return false
         val first = a.start ?: return false; val second = b.start ?: return false
         return first == second || (PlanNotes.isAllDay(a.note) && PlanNotes.isAllDay(b.note) && date(first, zone) == date(second, zone))
     }

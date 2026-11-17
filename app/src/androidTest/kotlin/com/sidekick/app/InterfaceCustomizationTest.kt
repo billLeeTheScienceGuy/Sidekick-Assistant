@@ -41,6 +41,8 @@ class InterfaceCustomizationTest {
         assertEquals(InterfaceDesign.WARM, saved.interfaceDesign.value)
         assertEquals(NoteTextSize.LARGE, saved.noteTextSize.value)
         assertEquals(InterfaceSize.LARGE, saved.interfaceSize.value)
+        // A new size rebuilds the screen; reopen the screen options if they closed.
+        if (compose.onAllNodesWithTag("manual-notes").fetchSemanticsNodes().isEmpty()) compose.onNodeWithTag("screen-options").performScrollTo().performClick()
         compose.onNodeWithTag("manual-notes").performScrollTo().performClick()
         compose.onNodeWithTag("reset-appearance").performScrollTo().performClick()
         assertEquals(InterfaceDesign.CALM, app.guidance.interfaceDesign.value)

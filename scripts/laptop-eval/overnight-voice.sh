@@ -19,7 +19,7 @@ log "overnight voice queue started"
 
 # 1. downloads (resumes partial files)
 cd "$S/data" || exit 1
-for f in dev-clean dev-other train-clean-100; do
+for f in ${LIBRI_SETS:-dev-clean dev-other}; do
   [ -d "LibriSpeech/$f" ] && continue
   for attempt in 1 2 3 4 5; do curl -sSL -C - -o $f.tar.gz https://www.openslr.org/resources/12/$f.tar.gz && break; sleep 60; done
   tar xzf $f.tar.gz && log "unpacked $f" || log "FAILED to unpack $f"

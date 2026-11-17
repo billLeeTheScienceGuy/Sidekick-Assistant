@@ -30,8 +30,15 @@ object VoiceMatch {
          * matches both neighbours at least this much; null turns it off.
          */
         val neighbor: Float? = null,
+        /** Quiet-room profile bar chosen by the chunk's length and noise ([QualityBars]) instead of [quietOffset]. */
+        val qualityBars: Boolean = false,
     ) {
         init { require(quietOffset in 0f..0.10f) }
+        /** The rule for the quiet-room profile on a chunk of [quality] (quality-aware bars when enabled and known). */
+        fun quiet(quality: SpeakerAudio.Quality?): Thresholds {
+            val bar = if (qualityBars && quality != null) QualityBars.bar(quality) else return quiet()
+            return copy(both = bar, balancedMin = bar - .05f, balancedMean = bar + .02f, quietOffset = 0f, qualityBars = false)
+        }
         /** The rule for the quiet-room profile. */
         fun quiet(): Thresholds = if (quietOffset == 0f) this
             else copy(both = both - quietOffset, balancedMin = balancedMin - quietOffset, balancedMean = balancedMean - quietOffset, quietOffset = 0f)
@@ -47,16 +54,29 @@ object VoiceMatch {
         fun profile(quiet: FloatArray, confirmedMean: FloatArray): FloatArray =
             normalized(FloatArray(quiet.size) { (1 - weight) * quiet[it] + weight * confirmedMean[it] })
     }
+    /**
+     * Quality-aware bars for the quiet-room profile (CAM++), from the laptop evaluation over 454 stranger voices: each
+     * group's bar is .08 above the closest stranger in that group, never below .58; groups with too little evidence keep
+     * .64. Rows: speech under 5 s, 5-8 s, 8 s or more. Columns: SNR under 15 dB, 15-25 dB, 25 dB or more.
+     */
+    object QualityBars {
+        private val bars = arrayOf(floatArrayOf(.64f, .61f, .65f), floatArrayOf(.64f, .64f, .62f), floatArrayOf(.58f, .58f, .62f))
+        fun bar(q: SpeakerAudio.Quality): Float {
+            val row = if (q.seconds < 5f) 0 else if (q.seconds < 8f) 1 else 2
+            val column = if (q.snrDb < 15f) 0 else if (q.snrDb < 25f) 1 else 2
+            return bars[row][column]
+        }
+    }
     /** A chunk's whole-speech signature against this session's confirmed owner turns: every one, their mean, and the profile. */
     data class SessionCarry(val minimum: Float, val mean: Float, val profileFloor: Float) {
         init { require(listOf(minimum, mean, profileFloor).all { it.isFinite() && it in 0f..1f }) }
     }
     /** Each whole turn must match one profile; never combine windows from different enrollments. */
     fun identifyProfiles(profiles: List<FloatArray>, windows: List<FloatArray>, thresholds: Thresholds = Thresholds.STANDARD,
-        cohort: StrangerCohort? = null, quiet: List<Boolean> = emptyList()): Speaker {
+        cohort: StrangerCohort? = null, quiet: List<Boolean> = emptyList(), quality: SpeakerAudio.Quality? = null): Speaker {
         if (profiles.isEmpty()) return Speaker.UNKNOWN
         val results = profiles.mapIndexed { index, profile ->
-            val rule = if (quiet.getOrElse(index) { false }) thresholds.quiet() else thresholds
+            val rule = if (quiet.getOrElse(index) { false }) thresholds.quiet(quality) else thresholds
             identifyTurn(profile, windows, rule).let { if (it == Speaker.USER && !aboveStrangers(profile, windows, rule, cohort)) Speaker.UNKNOWN else it }
         }
         return when {

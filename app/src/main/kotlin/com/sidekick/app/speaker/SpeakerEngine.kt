@@ -176,7 +176,7 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
                     // Re-trimming each window can shrink a long turn below 1.5 seconds at a pause.
                     try { vectors += computeEmbedding(window) } finally { window.fill(0f) }
                 }
-                var result = VoiceMatch.identifyProfiles(references, vectors, t, cohort, quiet)
+                var result = VoiceMatch.identifyProfiles(references, vectors, t, cohort, quiet, com.sidekick.core.SpeakerAudio.quality(samples))
                 lastLongOwner = result == Speaker.USER
                 if (result == Speaker.USER && thresholds() != VoiceMatch.Thresholds.BEFORE_NOTICE) {
                     val c = com.sidekick.core.VoiceprintPolicy.LEARN_CONFIDENT

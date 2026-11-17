@@ -121,6 +121,18 @@ class OwnerSessionTest {
         assertEquals(2, VoiceprintPolicy.NOTICE_VERSION)
     }
 
+    @Test fun `quality-aware bars pick stricter bars for short clean chunks and lower ones for long chunks`() {
+        val t = VoiceMatch.Thresholds(both = .71f, balancedMin = .66f, balancedMean = .73f, consistency = .65f, quietOffset = .07f, qualityBars = true)
+        assertEquals(.65f, t.quiet(SpeakerAudio.Quality(3f, 30f)).both, 1e-6f)
+        assertEquals(.58f, t.quiet(SpeakerAudio.Quality(9f, 20f)).both, 1e-6f)
+        assertEquals(.64f, t.quiet(null).both, 1e-6f)
+        assertEquals(.64f, t.copy(qualityBars = false).quiet(SpeakerAudio.Quality(9f, 20f)).both, 1e-6f)
+        // Speech-like: 200 ms bursts with 100 ms pauses from 1 s to 5 s, over a faint noise floor.
+        val samples = FloatArray(16000 * 6) { i -> (if (i in 16000 until 80000 && (i - 16000) % 4800 < 3200) .3f * kotlin.math.sin(i * .05f) else 0f) + .001f * kotlin.math.sin(i * 1.3f) }
+        val q = SpeakerAudio.quality(samples)!!
+        assertTrue(q.seconds in 3.5f..4.5f); assertTrue(q.snrDb > 20f)
+    }
+
     @Test fun `cohort file round trip`() {
         val vectors = List(50) { unit(2000 + it, 256) }
         val buffer = java.nio.ByteBuffer.allocate(8 + 50 * 256 * 4).order(java.nio.ByteOrder.LITTLE_ENDIAN)

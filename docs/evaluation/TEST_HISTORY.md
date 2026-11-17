@@ -515,3 +515,23 @@ passed on the phone with the flag (13 of 13).
 - The participant voice study; owner recognition in the owner's real conversations (more owner clips would help).
 - Spoken notice played aloud, phone-call detection, crossing a state border, headphone and pocket checks, the live
   two-person naming check, battery and heat over a day.
+
+## 6. November 17, 2026
+
+| ID | Area | What was tested | Data | Key result | Decision |
+|---|---|---|---|---|---|
+| T70 | Speaker matching | More stranger voices; quality-aware bars; learning across sessions | 454 voices, 409,213 stranger turns | Full rule 81.9%, 0 strangers; quality bars 62.2% -> 69.3% at the base rule; learning +0.7 | Quality bars and learning shipped (consent v2) |
+| T71 | Plan extraction | Hands-off saving: event kinds, all-day plans, visible assumptions, cancellations | AccuracyEvaluationTest 104 cases (+12) | Recall 98.9%, precision 100%, 0 false reminders; core tests 268 -> 288 | Plans save automatically; only real conflicts go to Review (docs/guides/HANDS_OFF.md) |
+| T72 | Interface | Simple layout as the default | Device UI tests on the Pixel | See T73 | Today / Plans / More; four settings sections; plain wording |
+| T73 | Regression | Full device suite after merging T70–T72 | 124 test runs | First run 5 failures: 3 real bugs fixed (two venues merged; a change command merged into an older plan; an assumed length hid a repeat), 1 test missed by the new cancel rule, 1 Korean recognizer reading of a synthetic voice (separate, not caused by these changes) | Fixes merged; final result below |
+
+**What T73 found and fixed.** (1) Plans of the same kind at different places were merged; merging now requires the
+same place. (2) "Move the meeting to 7" also read as a new plan and was merged into an older 7 PM meeting, which then
+became "the meeting just discussed"; change commands are no longer merged. (3) A repeated plan with an assumed
+1-hour length looked edited and was skipped; an assumed length no longer replaces a saved plan's end. (4) The
+settings fold closed when a bigger text size was chosen inside it; it now stays open.
+
+**T73 final result.** Core tests 289 passed (1 skipped). Device suite: 123 of 124 passed. The remaining failure is
+`KoreanRecognitionTest`: the Korean recognizer reads one synthetic clip as "회의가어있어요" (an extra syllable). No
+speech-recognition code changed in this work, and the November 16 Whisper comparison showed this clip unchanged, so it
+is tracked as a separate recognizer issue.

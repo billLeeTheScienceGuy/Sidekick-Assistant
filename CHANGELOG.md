@@ -4,6 +4,10 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 
 ## Unreleased (privacy, consent and location work package)
 
+- Voice matching: the quiet-room bar now depends on how long and how clean the speech is (.58-.65): owner turns
+  62% -> 69% at the base rule, still 0 of 409,213 stranger turns (454 voices). Your saved voice also slowly adapts
+  across sessions from moments SideKick is very sure it is you, never far from your setup; the voice consent notice
+  says so (version 2), so it asks again once.
 - Hands-off saving needs Review far less. Your own plan with a clear day but no time ("I have a dentist appointment
   on Friday") now saves as an all-day plan instead of being missed. Every guess is written on the saved plan
   ("Assumed: all day (time assumed)", "Fri 27 Nov (assumed from 'next friday')", "1 hour (length assumed)"), and

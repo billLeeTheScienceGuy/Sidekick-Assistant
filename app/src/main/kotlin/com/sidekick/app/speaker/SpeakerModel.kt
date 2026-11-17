@@ -33,6 +33,8 @@ internal object Tuned {
     val CAMPPLUS_STANDARD = VoiceMatch.Thresholds(both = .71f, balancedMin = .66f, balancedMean = .73f, consistency = .65f,
         cohortZ = 2f, quietOffset = .07f, session = VoiceMatch.SessionCarry(minimum = .74f, mean = .74f, profileFloor = .40f),
         // Idea 2: closest stranger .58 against .67. Idea 4: closest stranger .64 against .72.
-        adapt = VoiceMatch.SessionAdapt(weight = .3f, both = .67f), neighbor = .72f)
+        adapt = VoiceMatch.SessionAdapt(weight = .3f, both = .67f), neighbor = .72f,
+        // Quality-aware quiet bars (.58-.65 by chunk length and noise): owner 62% -> 69% at the base rule, 0 strangers.
+        qualityBars = true)
     val CAMPPLUS_BEFORE_NOTICE = VoiceMatch.Thresholds.BEFORE_NOTICE.copy(cohortZ = 2f)
 }
