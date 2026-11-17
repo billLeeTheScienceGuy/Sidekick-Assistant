@@ -65,7 +65,7 @@ condition = [room(g) for g in group]
 # The first room build called the stress reverberation "far"; it is the echo room now.
 condition = ["echo" if group[i] == "librispeech-far" else condition[i] for i in range(N)]
 utterance = ["-".join(n[:-4].split("-")[-3:]) if n.removeprefix("replay-").startswith("ls-") else n.removeprefix("replay-") for n in name]
-language = [g.split("-")[1] if g.startswith("fleurs-") else ("en" if speaker[i].startswith("ls") else
+language = [g.split("-")[1] if g.startswith(("fleurs-", "cv-")) else ("en" if speaker[i].startswith("ls") else
             speaker[i].split("-")[1] if speaker[i].startswith("cs-") else "owner") for i, g in enumerate(group)]
 stranger_only = np.array([g.startswith("fleurs") for g in group])
 

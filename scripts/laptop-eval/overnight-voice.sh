@@ -39,12 +39,17 @@ done
 embed campq-corpus corpus; embed campq-corpus2 corpus2; embed campq-corpus3 corpus3; embed campq-replay2-corpus replay2/corpus
 embed campq-corpus4 corpus4
 embed campq-corpus6 corpus6
+CV=""
+if ls "$S/data/commonvoice/"* >/dev/null 2>&1; then
+  [ -f "$S/corpus7/manifest.tsv" ] || "$PY" -I scripts/laptop-eval/speaker_corpus_commonvoice.py "$(w "$D")" "$(w "$S/corpus7")" >> "$R" 2>&1
+  embed campq-corpus7 corpus7 && CV="$(w "$S/corpus7") $(w "$E/campq-corpus7.bin")"
+fi
 VOX=""
 if ls "$S/data/voxceleb/"*.zip >/dev/null 2>&1; then
   [ -f "$S/corpus5/manifest.tsv" ] || "$PY" -I scripts/laptop-eval/speaker_corpus_voxceleb.py "$(w "$D")" "$(w "$S/corpus5")" >> "$R" 2>&1
   embed campq-corpus5 corpus5 && VOX="$(w "$S/corpus5") $(w "$E/campq-corpus5.bin")"
 fi
-ALL="$(w "$S/corpus") $(w "$E/campq-corpus.bin") $(w "$S/corpus2") $(w "$E/campq-corpus2.bin") $(w "$S/corpus3") $(w "$E/campq-corpus3.bin") $(w "$S/corpus4") $(w "$E/campq-corpus4.bin") $(w "$S/corpus6") $(w "$E/campq-corpus6.bin") $VOX"
+ALL="$(w "$S/corpus") $(w "$E/campq-corpus.bin") $(w "$S/corpus2") $(w "$E/campq-corpus2.bin") $(w "$S/corpus3") $(w "$E/campq-corpus3.bin") $(w "$S/corpus4") $(w "$E/campq-corpus4.bin") $(w "$S/corpus6") $(w "$E/campq-corpus6.bin") $CV $VOX"
 
 # 3. analyses
 log "== closest strangers with all voices (sets the safe bars)"
