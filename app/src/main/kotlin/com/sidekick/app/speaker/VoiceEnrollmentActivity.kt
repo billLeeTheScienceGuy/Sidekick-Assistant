@@ -92,6 +92,9 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                 val selectedModel by (application as com.sidekick.app.SidekickApplication).voiceProfile.model.collectAsState()
                 val language by (application as com.sidekick.app.SidekickApplication).guidance.speechLanguage.collectAsState()
                 val enrolled by (application as SidekickApplication).voiceProfile.enrolled.collectAsState()
+                val savedSettings by (application as SidekickApplication).voiceProfile.settings.collectAsState()
+                var settingName by rememberSaveable { mutableStateOf(VoiceSetting.QUIET.name) }
+                val setting = VoiceSetting.valueOf(settingName)
                 val consentRecord by (application as SidekickApplication).voiceProfile.consent.collectAsState()
                 val consentOnly = intent.getBooleanExtra(CONSENT_ONLY, false)
                 var error by remember { mutableStateOf<String?>(null) }
@@ -102,7 +105,7 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                 val active = state.recording || state.processing
                 val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
                     if (grants[Manifest.permission.RECORD_AUDIO] == true && (Build.VERSION.SDK_INT < 33 || grants[Manifest.permission.POST_NOTIFICATIONS] == true)) {
-                        runCatching { startForegroundService(Intent(this@VoiceEnrollmentActivity, ListeningService::class.java).putExtra(ListeningService.ENROLL, true).putExtra(ListeningService.ENROLL_LANGUAGE, target.code)) }
+                        runCatching { startForegroundService(Intent(this@VoiceEnrollmentActivity, ListeningService::class.java).putExtra(ListeningService.ENROLL, true).putExtra(ListeningService.ENROLL_LANGUAGE, target.code).putExtra(ListeningService.ENROLL_SETTING, setting.name)) }
                             .onFailure { error = "Open SideKick and try voice setup again." }
                     } else error = "Microphone and notification permissions are needed for setup."
                 }
@@ -133,10 +136,20 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                                 }
                             }
                         } else Text("Voice setup language: ${language.label}")
-                        Text(enrolled[target]?.let { "This replaces your ${target.label} profile from ${dates.format(java.util.Date(it))}. Your other profiles are kept." }
-                            ?: "This creates your ${target.label} profile. Your other profiles are kept.")
+                        val haveSettings = savedSettings[target].orEmpty()
+                        Text("Where are you recording? Setting up in more than one place helps SideKick recognise you in real conversations. Each one is kept as its own profile.")
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            VoiceSetting.entries.forEach { option ->
+                                FilterChip(setting == option, { settingName = option.name }, enabled = !active,
+                                    label = { Text(option.label + if (option in haveSettings) " ✓" else "") },
+                                    modifier = Modifier.testTag("voice-setting-${option.name.lowercase()}"))
+                            }
+                        }
+                        Text(if (setting in haveSettings) "This replaces your ${target.label} “${setting.label.lowercase()}” profile. Your other profiles are kept."
+                            else "This adds a ${target.label} “${setting.label.lowercase()}” profile. Your other profiles are kept.")
                         Text("Speak ${target.label} for this setup. English and Auto-detect share the English profile.")
-                        Text("Do this alone in a quiet room. Keep the phone at your usual listening distance (about 30–50 cm). Read three different sentences, at least four seconds each, with a two-second pause between them. Each sample is checked for consistent matching. Setup stops after three samples or 45 seconds.")
+                        Text("${setting.hint} Only your voice should be heard: no one else talking. Read three different sentences, at least four seconds each, with a two-second pause between them. Each sample is checked for consistent matching. Setup stops after three samples or 45 seconds.")
                         Text("Only a local voice signature is saved. Audio is discarded; enrollment is never transcribed. Speaker matches can be wrong and do not establish consent.")
                         Text(when (target) {
                             com.sidekick.core.SpeechLanguage.ARABIC -> "اقرأ بصوت طبيعي حتى يكتمل الإعداد. غدا سألتقي بصديق لتناول الغداء، وسنتحدث عن خططنا لعطلة نهاية الأسبوع. أحب المشي في الهواء الطلق وزيارة أماكن جديدة. هذا الأسبوع لدي أشياء كثيرة أريد القيام بها، وفي المساء أحب أن أستريح وأستمع إلى الموسيقى. واصل الحديث بشكل طبيعي عن حياتك اليومية حتى ينتهي الإعداد."

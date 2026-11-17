@@ -4,6 +4,19 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 
 ## Unreleased (privacy, consent and location work package)
 
+- Owner voice matching retuned on 381 public stranger voices (about 160,000 stranger turns in quiet, noisy, far and
+  echo rooms; laptop evaluation in `scripts/laptop-eval/`, checked against the phone's own library). Owner turns
+  recognised: 77% (was 54%); strangers accepted: 0. Every bar sits at least .08 above the closest stranger seen.
+  Before notice in all-party places nothing is loosened. See `docs/evaluation/SPEAKER_TUNING.md`.
+- Your voice from earlier in the same session counts: once a long turn matches your saved profile, later chunks that
+  sound like those turns (.74) count as you; never overrides "someone else", off before notice in all-party places.
+- Voice setup can be recorded in a quiet room, with background noise, or with the phone on a table; each is its own
+  profile. The quiet-room profile uses a bar of .64, the others .71.
+- A stranger cohort (198 public LibriSpeech signatures, 150 KB, CC BY 4.0) adds a check that every matching window is
+  well above how strangers score. It never rejected an owner turn in the evaluation and guards against outliers.
+- The ResNet ("Standard") voice model is no longer offered: in the evaluation strangers scored as high as the owner.
+  A saved ResNet choice moves to CAM++ and needs voice setup again. TitaNet-small, ERes2Net and ERes2NetV2 were
+  compared and did not beat CAM++ at the same safety margin.
 - Two independent rules per state: recording (one-party / all-party) and voice (none / notice in TX and WA / strict in IL).
   SideKick takes the strictest of the containing state and every state within the location error margin; anything
   unknown (no fix, stale fix, abroad, lookup error, phone call) is all-party + strict. Borders updated to Census 1:500k.

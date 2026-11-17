@@ -253,7 +253,7 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                                     Text("Label different speakers", Modifier.padding(start = 8.dp, top = 12.dp))
                                 }
                                 QuietLabel("Labels speakers on this phone. Labels reset each session and don’t identify people or prove consent. Unclear or overlapping voices stay unknown. Turn off to reduce processing.")
-                                com.sidekick.app.speaker.SpeakerModel.entries.forEach { candidate ->
+                                com.sidekick.app.speaker.SpeakerModel.entries.filter { it.offered }.forEach { candidate ->
                                     Row {
                                         RadioButton(speakerModel == candidate, { voice.selectModel(candidate) }, enabled = !listening.recording && !listening.processing, modifier = Modifier.testTag("speaker-model-${candidate.name}").controlLabel("Voice model: ${candidate.label}"))
                                         Text(candidate.label, Modifier.padding(start = 8.dp, top = 12.dp))

@@ -11,21 +11,55 @@ object VoiceMatch {
     data class Thresholds(
         val both: Float, val balancedMin: Float, val balancedMean: Float, val consistency: Float,
         val other: Float = .35f, val shortPhrases: Boolean = true,
+        /** Session voice carry ([OwnerSession]); null turns it off. */
+        val session: SessionCarry? = null,
+        /**
+         * Every speaker window must also score at least this many stranger-cohort deviations above strangers
+         * ([StrangerCohort]); null skips the check (no cohort for the selected model).
+         */
+        val cohortZ: Float? = null,
+        /**
+         * The quiet-room setup profile may use a bar this much lower: in the evaluation, strangers came closer to
+         * profiles recorded with background noise (shared room sound) than to quiet-room profiles.
+         */
+        val quietOffset: Float = 0f,
     ) {
+        init { require(quietOffset in 0f..0.10f) }
+        /** The rule for the quiet-room profile. */
+        fun quiet(): Thresholds = if (quietOffset == 0f) this
+            else copy(both = both - quietOffset, balancedMin = balancedMin - quietOffset, balancedMean = balancedMean - quietOffset, quietOffset = 0f)
         companion object {
             val STANDARD = Thresholds(both = .70f, balancedMin = .65f, balancedMean = .72f, consistency = .65f)
             val BEFORE_NOTICE = Thresholds(both = .75f, balancedMin = .70f, balancedMean = .77f, consistency = .65f, shortPhrases = false)
         }
     }
+    /** A chunk's whole-speech signature against this session's confirmed owner turns: every one, their mean, and the profile. */
+    data class SessionCarry(val minimum: Float, val mean: Float, val profileFloor: Float) {
+        init { require(listOf(minimum, mean, profileFloor).all { it.isFinite() && it in 0f..1f }) }
+    }
     /** Each whole turn must match one profile; never combine windows from different enrollments. */
-    fun identifyProfiles(profiles: List<FloatArray>, windows: List<FloatArray>, thresholds: Thresholds = Thresholds.STANDARD): Speaker {
+    fun identifyProfiles(profiles: List<FloatArray>, windows: List<FloatArray>, thresholds: Thresholds = Thresholds.STANDARD,
+        cohort: StrangerCohort? = null, quiet: List<Boolean> = emptyList()): Speaker {
         if (profiles.isEmpty()) return Speaker.UNKNOWN
-        val results = profiles.map { identifyTurn(it, windows, thresholds) }
+        val results = profiles.mapIndexed { index, profile ->
+            val rule = if (quiet.getOrElse(index) { false }) thresholds.quiet() else thresholds
+            identifyTurn(profile, windows, rule).let { if (it == Speaker.USER && !aboveStrangers(profile, windows, rule, cohort)) Speaker.UNKNOWN else it }
+        }
         return when {
             results.any { it == Speaker.USER } -> Speaker.USER
             results.all { it == Speaker.OTHER } -> Speaker.OTHER
             else -> Speaker.UNKNOWN
         }
+    }
+    /**
+     * Score normalization: every window must sit [Thresholds.cohortZ] stranger deviations above how strangers score.
+     * Fails closed: a rule that asks for it without a matching cohort never accepts.
+     */
+    fun aboveStrangers(profile: FloatArray, windows: List<FloatArray>, thresholds: Thresholds, cohort: StrangerCohort?): Boolean {
+        val z = thresholds.cohortZ ?: return true
+        if (cohort == null || cohort.dimension != profile.size || windows.isEmpty()) return false
+        val profileStats = cohort.stats(profile)
+        return windows.all { window -> cohort.normalize(similarity(profile, window), profileStats, cohort.stats(window)) >= z }
     }
     fun identifyTurn(profile: FloatArray, windows: List<FloatArray>, thresholds: Thresholds = Thresholds.STANDARD): Speaker {
         if (windows.size < 2) return Speaker.UNKNOWN

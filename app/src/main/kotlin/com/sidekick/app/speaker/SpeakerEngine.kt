@@ -17,6 +17,24 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
     private var extractor: SpeakerEmbeddingExtractor? = null
     private var extractorModel: SpeakerModel? = null
     private val anchors = com.sidekick.core.VoiceAnchors()
+    /** True when the last [identify] accepted the owner from a long turn against the saved profile (not a short phrase). */
+    var lastLongOwner: Boolean = false
+        private set
+    private val cohorts = mutableMapOf<SpeakerModel, com.sidekick.core.StrangerCohort?>()
+    private fun cohort(model: SpeakerModel): com.sidekick.core.StrangerCohort? = cohorts.getOrPut(model) {
+        runCatching { context.assets.open(model.cohortAsset).use { com.sidekick.core.StrangerCohort.read(it.readBytes()) } }
+            .getOrNull()?.takeIf { it.dimension == model.dimension }
+    }
+    private fun strict(base: VoiceMatch.Thresholds) = base == VoiceMatch.Thresholds.BEFORE_NOTICE || !base.shortPhrases
+    /**
+     * The place picks standard or before-notice strictness; the selected model's tuned rule applies only when its
+     * stranger cohort loaded (the tuned rule relies on it). Otherwise the original fixed thresholds stay.
+     */
+    fun rules(): Pair<VoiceMatch.Thresholds, com.sidekick.core.StrangerCohort?> {
+        val base = thresholds(); val model = profile.model.value
+        val cohort = cohort(model) ?: return base to null
+        return (if (strict(base)) model.beforeNotice else model.standard) to cohort
+    }
     private var profileLanguage = profile.language.value
     private fun clearRecent() = anchors.clear()
     fun newTurn() { clearRecent() }
@@ -88,6 +106,7 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
         } finally { stream.release() }
     }
     fun identify(samples: FloatArray, nowMs: Long = android.os.SystemClock.elapsedRealtime()): Speaker {
+        lastLongOwner = false
         val span = com.sidekick.core.SpeakerAudio.speechSpan(samples)
         if (span == null) {
             clearRecent(); lastDiagnostic = "No clear speech after excluding quiet edges"; return Speaker.UNKNOWN
@@ -102,15 +121,17 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
     private fun identifySpeech(samples: FloatArray, nowMs: Long): Speaker {
         if (profileLanguage != profile.language.value) { clearRecent(); profileLanguage = profile.language.value }
         val seconds = "%.1f".format(java.util.Locale.US, samples.size / 16000.0)
-        val references = profile.matchingSnapshots()
+        val labelled = profile.matchingReferences()
+        val references = labelled.map { it.second }
+        val quiet = labelled.map { it.first == VoiceSetting.QUIET }
         if (references.isEmpty()) {
             clearRecent()
             lastDiagnostic = if (profile.consentNeeded.value) "${seconds}s: voice consent needed; matching off"
                 else if (profile.enabled.value) "${seconds}s: no enrolled profile" else "${seconds}s: voice matching is off"
             return Speaker.UNKNOWN
         }
-        val t = thresholds()
-        val mode = if (t == VoiceMatch.Thresholds.STANDARD) "standard" else "before-notice"
+        val (t, cohort) = rules()
+        val mode = (if (strict(thresholds())) "before-notice" else "standard") + if (cohort != null) " tuned" else ""
         try {
             if (samples.size < 48_000) {
                 val age = anchors.ageMs(nowMs)
@@ -151,7 +172,8 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
                     // Re-trimming each window can shrink a long turn below 1.5 seconds at a pause.
                     try { vectors += computeEmbedding(window) } finally { window.fill(0f) }
                 }
-                val result = VoiceMatch.identifyProfiles(references, vectors, t)
+                val result = VoiceMatch.identifyProfiles(references, vectors, t, cohort, quiet)
+                lastLongOwner = result == Speaker.USER
                 val reference = references.firstOrNull { VoiceMatch.identifyTurn(it, vectors, t) == Speaker.USER }
                     ?: references.maxBy { candidate -> vectors.sumOf { VoiceMatch.similarity(candidate, it).toDouble() } }
                 if (result == Speaker.USER) anchors.remember(vectors, nowMs) else clearRecent()
@@ -163,6 +185,18 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
             }
                 catch (e: IllegalArgumentException) { clearRecent(); lastDiagnostic = "${seconds}s: ${e.message}"; Speaker.UNKNOWN }
                 finally { vectors.forEach { it.fill(0f) } }
+        } finally { references.forEach { it.fill(0f) } }
+    }
+    /**
+     * Session voice carry for a chunk the profile left unassigned: [vector] is its whole-speech signature. Owner only
+     * when it matches this session's profile-confirmed owner turns and the profile is not far off ([OwnerSession]).
+     */
+    fun carry(session: com.sidekick.core.OwnerSession, vector: FloatArray, nowMs: Long): com.sidekick.core.OwnerSession.Carry {
+        val references = profile.matchingSnapshots()
+        return try {
+            if (references.isEmpty() || references.any { it.size != vector.size })
+                com.sidekick.core.OwnerSession.Carry(false, Float.NaN, Float.NaN, "no saved profile")
+            else session.carry(vector, references.maxOf { VoiceMatch.similarity(it, vector) }, nowMs, rules().first)
         } finally { references.forEach { it.fill(0f) } }
     }
     fun close() { clearRecent(); extractor?.release(); extractor = null; extractorModel = null }

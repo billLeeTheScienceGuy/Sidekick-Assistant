@@ -64,6 +64,7 @@ class ListeningService : Service() {
     @Volatile private var discard = false
     private var enrollment = false
     private var enrollmentTarget: com.sidekick.core.SpeechLanguage? = null
+    private var enrollmentSetting = com.sidekick.app.speaker.VoiceSetting.QUIET
     @Volatile private var gate: com.sidekick.core.ConsentGate? = null
     @Volatile private var turnEngine: com.sidekick.app.speaker.SpeakerTurnEngine? = null
     @Volatile private var sessionId: String? = null
@@ -254,6 +255,7 @@ class ListeningService : Service() {
         finish = false; discard = false
         enrollment = intent?.getBooleanExtra(ENROLL, false) == true
         enrollmentTarget = intent?.getStringExtra(ENROLL_LANGUAGE)?.let { code -> com.sidekick.core.SpeechLanguage.entries.firstOrNull { it.code == code && it != com.sidekick.core.SpeechLanguage.AUTO } }
+        enrollmentSetting = com.sidekick.app.speaker.VoiceSetting.entries.firstOrNull { it.name == intent?.getStringExtra(ENROLL_SETTING) } ?: com.sidekick.app.speaker.VoiceSetting.QUIET
         if (!enrollment && !recovering) app.assistant.rememberUserStart()
         try {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
@@ -509,11 +511,11 @@ class ListeningService : Service() {
             if (enrollment && !discard && enrollmentSamples.size == 3) {
                 check(app.voiceProfile.consent.value?.valid == true) { "Voice setup needs your consent first. Nothing was saved." }
                 check(app.voiceProfile.language.value == setupLanguage && app.voiceProfile.model.value == setupModel) { "Voice settings changed. Repeat setup in the selected language." }
-                app.voiceProfile.save(enrollmentSamples, profileTarget)
+                app.voiceProfile.save(enrollmentSamples, profileTarget, enrollmentSetting)
             }
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
                 note = if (enrollment) {
-                    if (enrollmentSamples.size == 3) "Voice setup complete. Your ${profileTarget.label} voice profile is saved."
+                    if (enrollmentSamples.size == 3) "Voice setup complete. Your ${profileTarget.label} profile (${enrollmentSetting.label.lowercase()}) is saved."
                     else "Voice setup incomplete. Speak in longer phrases and try again; any previous profile is unchanged."
                 } else if (it.chunks == 0) "No speech detected. Try speaking closer to the microphone." else if (app.guidance.handsOffMode.value) app.automation.status.value else "Session finished. Review and approve commitments below.") }
         } catch (e: CancellationException) {
@@ -549,6 +551,7 @@ class ListeningService : Service() {
         const val CANCEL = "com.sidekick.CANCEL"
         const val ENROLL = "com.sidekick.ENROLL"
         const val ENROLL_LANGUAGE = "com.sidekick.ENROLL_LANGUAGE"
+        const val ENROLL_SETTING = "com.sidekick.ENROLL_SETTING"
         const val ANNOUNCE = "com.sidekick.ANNOUNCE"
         const val NOTICE_GIVEN = "com.sidekick.NOTICE_GIVEN"
         const val NOTICE = com.sidekick.core.ConsentNotice.BASE
