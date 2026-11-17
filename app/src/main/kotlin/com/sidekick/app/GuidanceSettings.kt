@@ -34,7 +34,8 @@ class GuidanceSettings(context: Context) {
     private val spokenNamesValue = MutableStateFlow(preferences.getString("spoken_names", "").orEmpty())
     val spokenNames = spokenNamesValue.asStateFlow()
     fun setSpokenNames(value: String) { val v = value.take(2000); preferences.edit().putString("spoken_names", v).apply(); spokenNamesValue.value = v }
-    private val oneScreenValue = MutableStateFlow(preferences.getBoolean("one_screen_home", false))
+    /** Simple home (large Start/Stop button, next plans; Today / Plans / More) is the default. Detailed stays in Settings. */
+    private val oneScreenValue = MutableStateFlow(preferences.getBoolean("one_screen_home", true))
     val oneScreenHome = oneScreenValue.asStateFlow()
     fun setOneScreenHome(value: Boolean) { preferences.edit().putBoolean("one_screen_home", value).apply(); oneScreenValue.value = value }
     fun resetAppearance() {
