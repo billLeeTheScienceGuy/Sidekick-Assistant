@@ -6,9 +6,9 @@ The shared grammar handles month/day dates, explicit years, “day after tomorro
 reminder suggestions, rescheduling, venue trimming and event subject matching.
 
 “Next Friday” remains ambiguous in ordinary speech. Activity suggestions retain
-the following-week interpretation and flag it for review. Hands-off mode saves
-that suggestion without an automatic reminder; a date chosen in the editor can
-still have one. Automatic rescheduling does not choose between the interpretations.
+the following-week interpretation. Hands-off mode saves it with the reading shown
+on the plan ("Fri 27 Nov (assumed from 'next friday')") and a reminder; a date said later
+replaces the assumption (see HANDS_OFF.md). Rescheduling does not choose between the interpretations.
 
 “In 30 minutes” and “in an hour” use elapsed time from capture, including seconds.
 They work across DST changes without shortening the requested delay. Absolute

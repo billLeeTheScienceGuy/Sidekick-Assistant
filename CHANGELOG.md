@@ -4,6 +4,22 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 
 ## Unreleased (privacy, consent and location work package)
 
+- Hands-off saving needs Review far less. Your own plan with a clear day but no time ("I have a dentist appointment
+  on Friday") now saves as an all-day plan instead of being missed. Every guess is written on the saved plan
+  ("Assumed: all day (time assumed)", "Fri 27 Nov (assumed from 'next friday')", "1 hour (length assumed)"), and
+  when the real time or day is said later the plan is updated and the "assumed" note disappears. Common plans get
+  sensible defaults: birthdays and anniversaries (day-before reminder, yearly repeat noted), days off and vacations
+  (multi-day, no reminder), flights (number, cities, arrival; reminder 3 hours before), trains/buses/ferries (1 hour
+  before), doctor and dentist (1 hour long; reminders the day before and 1 hour before), meetings (1 hour) and calls
+  (30 minutes), deadlines and bills (morning reminder; bills 2 days before), pickups (15 minutes before), restaurant
+  tables (party size and place) and repair or delivery windows ("between 9 and 11"). Repeats ("every Tuesday",
+  "first Monday of the month") save the first date and say so. Other people's plans ("Mom lands at 5") are saved as
+  information only. Only real conflicts go to Review: "maybe"/"if" plans and two different times for the same plan.
+  Your own voice naming a plan ("the dentist appointment is cancelled") cancels it with Undo; a bare "that's
+  cancelled" with nothing to point at does nothing; another voice or a message saying something is cancelled only
+  adds a Review item, never removes a plan. The same plan said twice merges, a clash is saved and flagged ("May
+  overlap with ..."), and Review items whose date has passed clear themselves. No database change. See
+  `docs/guides/HANDS_OFF.md`.
 - Removed the optional Qwen3-0.6B model ("smart analysis" for typed notes), its llama.cpp native build and import
   screen. On the phone over the 92-case corpus it found 19 of 83 events (rules: 82), took 14.4 s per sentence (rules:
   7 ms) and found nothing the rules missed. The app deletes a previously imported model file (484 MB) on start. Typed

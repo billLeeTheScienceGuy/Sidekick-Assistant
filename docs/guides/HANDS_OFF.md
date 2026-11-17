@@ -1,3 +1,52 @@
+# Hands-off plans: what saves, what waits (unreleased)
+
+Hands-off mode should rarely need Review. The rules live in `core` (`HandsOffPlans.kt`, tested by
+`HandsOffPlansTest`); the app applies them in `TemporaryMemory`, `AutomaticMemory` and `ReminderCoordinator`.
+
+| Heard or typed | What happens |
+|---|---|
+| Your plan with a clear day and time | Saved, with the kind's default reminder |
+| Your plan with a clear day, no time ("dentist on Friday") | Saved as an all-day plan, marked "Assumed: all day (time assumed)" |
+| A clock but no day ("meeting at 3") | Saved for the next occurrence, marked "(day assumed)" |
+| "Next Friday", "the 1st", a bare "at 5" | Saved with the reading shown, e.g. "Fri 27 Nov (assumed from 'next friday')", "5 pm (am/pm assumed)" |
+| Someone else's plan ("Mom lands at 5", another voice, a message) | Saved as information only, no reminder |
+| "Maybe", "if", "might", "I think" + a plan | Review only ("Not saved automatically: it sounded uncertain") |
+| Two different times for the same plan ("5 or 6", or 3pm then 4pm for the dentist) | The later one waits in Review |
+| Negations, questions, quotes, reported speech, past plans | Nothing |
+| You: "the dentist appointment is cancelled" (one matching upcoming plan) | Marked CANCELLED, reminder removed, Undo in the notification |
+| You: "that's cancelled" with nothing just discussed | Nothing |
+| Another voice or a message: "X is cancelled" | Plan unchanged; a "Cancel: X" Review item. Accepting it cancels (with Undo) |
+| The same plan again in other words | Merged into the saved plan |
+| A plan overlapping another saved plan | Saved anyway, marked "May overlap with ‘X’ (saved anyway)" |
+| A Review item whose date has passed | Cleared automatically (undated conflicts after 7 days) |
+
+**Assumptions stay visible.** Every guess is written on the saved plan after "Assumed:". When the real time,
+day, am/pm or length is said later (same or a later conversation), the plan with that assumption is updated in
+place and the marker disappears. A plan you edited by hand has no marker and is never overwritten.
+
+**Plan kinds and defaults** (only these defaults are ever added; people, places and times come from what was said):
+
+| Kind | Default |
+|---|---|
+| Birthday, anniversary | All day; reminder the day before at 9:00; "Repeats yearly" noted |
+| Day off, holiday, vacation ("off Monday to Wednesday") | All day, multi-day; no reminder. Spans over 7 days block the first day and note the end |
+| Flight | Departure time, flight number ("UA 123"), from/to places, arrival as end; reminder 3 hours before ("leave for the airport") |
+| Train, bus, ferry | Reminder 1 hour before |
+| Doctor, dentist, clinic | 1 hour long; reminders the day before and 1 hour before (all day: the day before at 9:00) |
+| Meeting / call | 1 hour / 30 minutes long; reminder at the start |
+| Deadline ("report due Friday", "submit by the 3rd") | All day; reminder 9:00 that morning |
+| Bill, rent | Reminder 2 days before at 9:00; rent notes "Repeats monthly (assumed)" |
+| Pickup, drop-off | Reminder 15 minutes before |
+| Restaurant table | Title "Table for 4 at Luigi's"; reminder at the start |
+| Repair, delivery window ("between 9 and 11") | Window start and end; reminder at the start |
+| Other all-day plans | Reminder 9:00 that morning |
+| Repeats ("every Tuesday", "first Monday of the month") | First date saved; "Repeats ... only the first date is saved" noted |
+
+**Limits.** There is no recurrence in the database: repeats are noted, not scheduled. Each item has one reminder
+at a time; the second medical reminder is re-armed when the first is delivered (that re-arm ends Undo for the
+item). Kinds and all-day plans are English-first; other languages get all-day plans only through the existing
+event words and day words (Korean, Chinese, French, German, Russian). No database schema change.
+
 # 0.16.0 additions
 
 A clear same-source announcement and later personal attendance at the same time can
