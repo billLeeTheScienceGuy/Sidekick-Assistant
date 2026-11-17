@@ -3,6 +3,7 @@ package com.sidekick.app
 import android.os.Build
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.*
 import org.junit.Assert.*
@@ -32,7 +33,7 @@ class InterfaceCustomizationTest {
     }
     @Test fun designAndSizeChoicesPersistAndResetWithoutChangingFeatures() {
         compose.onNodeWithTag("settings").performClick()
-        compose.onNodeWithTag("settings-page-DISPLAY").performScrollTo().performClick()
+        compose.onNodeWithTag("screen-options").performScrollTo().performClick()
         compose.onNodeWithTag("design-WARM").performScrollTo().performClick()
         compose.onNodeWithTag("text-size-LARGE").performScrollTo().performClick()
         compose.onNodeWithTag("interface-size-LARGE").performScrollTo().performClick()
@@ -50,7 +51,7 @@ class InterfaceCustomizationTest {
     }
     @Test fun manualNotesCanBeHiddenWithoutDisablingListeningOrPlanner() {
         compose.onNodeWithTag("settings").performClick()
-        compose.onNodeWithTag("settings-page-DISPLAY").performScrollTo().performClick()
+        compose.onNodeWithTag("screen-options").performScrollTo().performClick()
         compose.onNodeWithTag("manual-notes").performScrollTo().performClick()
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("transcript").assertDoesNotExist()
@@ -60,7 +61,7 @@ class InterfaceCustomizationTest {
         compose.onNodeWithTag("planner-tab").performClick()
         compose.onNodeWithTag("manual-add").assertDoesNotExist()
         compose.onNodeWithTag("settings").performClick()
-        compose.onNodeWithTag("settings-page-DISPLAY").performScrollTo().performClick()
+        compose.onNodeWithTag("screen-options").performScrollTo().performClick()
         compose.onNodeWithTag("manual-notes").performScrollTo().performClick()
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("manual-add"))
@@ -90,19 +91,42 @@ class InterfaceCustomizationTest {
         compose.waitForIdle(); button()
         assertTrue(textPixels() > textBefore)
     }
-    @Test fun oneScreenHomeKeepsEssentialsVisibleAndDetailsAvailable() {
+    @Test fun simpleHomeKeepsEssentialsVisibleAndEverythingElseUnderMore() {
         compose.onNodeWithTag("settings").performClick()
-        compose.onNodeWithTag("settings-page-DISPLAY").performScrollTo().performClick()
         compose.onNodeWithTag("home-simple").performScrollTo().performClick()
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("one-screen-home").assertIsDisplayed()
-        compose.onNodeWithTag("compact-listen").assertIsDisplayed()
-        compose.onNodeWithTag("compact-details").assertIsDisplayed().performClick()
-        compose.onNodeWithTag("main-list").assertIsDisplayed()
-        compose.onNodeWithText("Back to simple home").performScrollTo().performClick()
+        // One large Start button, a plain status line and the rules line.
+        compose.onNodeWithTag("compact-listen").assertIsDisplayed().assertHeightIsAtLeast(64.dp).assertTextEquals("Start listening")
+        compose.onNodeWithTag("compact-status").assertTextEquals("Not listening")
+        compose.onNodeWithTag("compact-rules").performScrollTo().assertIsDisplayed()
+        // Two main destinations and a labelled More; the detailed tabs are gone.
+        compose.onNodeWithTag("today-tab").assertIsDisplayed()
+        compose.onNodeWithTag("planner-tab").assertIsDisplayed()
+        compose.onNodeWithTag("capture-tab").assertDoesNotExist()
+        compose.onNodeWithTag("summary-tab").assertDoesNotExist()
+        // Notes and listening details are under More, with a visible way back.
+        compose.onNodeWithTag("more-tab").performClick()
+        compose.onNodeWithTag("more-content").assertIsDisplayed()
+        compose.onNodeWithTag("more-conversation").performScrollTo().performClick()
+        compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("transcript"))
+        compose.onNodeWithTag("transcript").assertIsDisplayed()
+        compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("simple-back"))
+        compose.onNodeWithTag("simple-back").performClick()
+        compose.onNodeWithTag("more-summary").performScrollTo().performClick()
+        compose.onNodeWithTag("summary-content").assertExists()
         compose.onNodeWithTag("planner-tab").performClick()
-        compose.onNodeWithTag("main-list").assertIsDisplayed()
-        compose.onNodeWithTag("capture-tab").performClick()
+        compose.onNodeWithTag("planner-search").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("today-tab").performClick()
+        compose.onNodeWithTag("compact-listen").assertIsDisplayed()
+        // The detailed view stays one tap away and can be switched back in Settings.
+        compose.onNodeWithTag("more-tab").performClick()
+        compose.onNodeWithTag("more-detailed").performScrollTo().performClick()
+        assertFalse(GuidanceSettings(app).oneScreenHome.value)
+        compose.onNodeWithTag("capture-tab").assertIsDisplayed()
+        compose.onNodeWithTag("settings").performClick()
+        compose.onNodeWithTag("home-simple").performScrollTo().performClick()
+        compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("compact-listen").assertIsDisplayed()
         assertTrue(GuidanceSettings(app).oneScreenHome.value)
         assertFalse(ListeningService.state.value.recording)

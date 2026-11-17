@@ -23,7 +23,7 @@ class ListeningSettingsTest {
         try {
             app.guidance.setSpeechLanguage(SpeechLanguage.KOREAN)
             compose.onNodeWithTag("settings").performClick()
-            compose.onNodeWithText("Recognition quality").assertDoesNotExist()
+            compose.onNodeWithText("Speech recognition").assertDoesNotExist()
             compose.onNodeWithTag("settings-page-LISTENING").performScrollTo().performClick()
             compose.onNodeWithTag("auto-language").assertIsOff().performClick()
             assertEquals(SpeechLanguage.AUTO, GuidanceSettings(app).speechLanguage.value)
