@@ -145,3 +145,36 @@ no session ideas), plus the cohort check.
   Simulated: 72.0% -> 72.7%, strangers 0, the profile stayed .992 similar to the setup. It cannot bridge a large
   setup/microphone mismatch (no turn is confident enough there); setting up through the phone does (15.5% -> 72.6%).
   Consent notice version 2 mentions it, so earlier consent is asked again.
+
+## Larger test (November 17, 2026): 1,813 stranger voices in all seven app languages
+
+Added LibriSpeech train-clean-100 (251 readers) and Mozilla Common Voice (CC0): Korean, Arabic, Russian and Chinese
+(Taiwan) Scripted 27.0, English, French and German Spontaneous 5.0, up to 300 speakers per language with at least two
+clips each (1,459 people after joining one person who appeared in two languages). 962 people were set up as owners;
+about 6.6 million stranger turns were checked. Results are in `.deps/speaker-public/eval/OVERNIGHT_REPORT.txt` (run 3).
+
+**Result: the "0 strangers" result above does not hold at this size.** Under the shipped rule, 97 stranger turns
+were accepted, all from **17 pairs of people** whose voices the model scores as almost the same person:
+
+| Source | Pairs | Notes |
+| --- | --- | --- |
+| Common Voice Korean | 11 | small volunteer pool; several pairs look like one person under two anonymous ids |
+| Common Voice Russian | 3 | |
+| Common Voice English | 2 | one pair shares age, gender and accent (40s, female, Australian) |
+| LibriSpeech train-clean-100 | 1 | readers 4267 and 8226 (different names; 28 of the 97 turns) |
+| Chinese, Arabic, French, German | 0 | none |
+
+- All accepted turns were clean recordings (plus the LibriSpeech pair's simulated noisy copies). No stranger passed in
+  babble, far or echo rooms, and still 0 of 1,460 through the phone microphone with a phone setup.
+- 6 of the 17 pairs are mutual and ≥ .90 alike (centroids), the pattern of one person recorded under two ids. Common
+  Voice gives a new anonymous id per browser or device, so this is likely for several pairs but cannot be proven.
+- These pairs cannot be removed by raising the bar: rejecting all of them needs a bar of about .86 with cohort z 5,
+  where the owner is recognized about 4% of the time. Recomputing the quality-aware bars on this set gives bars above
+  .9 (owner 0.6%), so the quality bars stay as tuned on the 454-voice set.
+- Owner recognition on this set: 78.9% with every idea (81.9% on the smaller set); learning across sessions
+  77.3% -> 77.7%.
+
+**Decision:** keep the shipped rule. The honest claim is that a stranger is very rarely taken for the owner (17 pairs
+among about 2,150 speakers, none outside very similar-sounding pairs), not that it can never happen. Voices that sound
+nearly identical to the model, such as close relatives or the same person on another device, can occasionally be
+taken for the owner. The earlier confidence statement ("fewer than about 1 in 130 people") is superseded by this test.
