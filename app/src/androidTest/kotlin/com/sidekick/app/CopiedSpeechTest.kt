@@ -26,7 +26,7 @@ class CopiedSpeechTest {
             app.automation.process()
             val original = app.database.commitments().all().single { it.placeName == "Replay Status Test Hall" }; id = original.id
             for ((index, text) in listOf("Move it to 9pm.", "Cancel it.").withIndex()) {
-                app.temporary.appendAttributedLive(text, now.plusSeconds(index + 1L), zone, Speaker.UNKNOWN, false); app.automation.process()
+                app.temporary.appendAttributedLive(text, now.plusSeconds(index + 1L), zone, Speaker.USER, false); app.automation.process() // the owner's own commands
             }
             val token = app.database.commitments().change(original.id)!!.token
             assertEquals("Event cancelled automatically", app.automation.status.value)

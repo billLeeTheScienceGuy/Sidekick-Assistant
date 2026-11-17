@@ -96,7 +96,8 @@ class AutomaticMemoryTest {
         memory.appendAttributedLive("회의 를 내일 오후 7 시로 변경 해줘.", now.plusSeconds(10), zone, Speaker.UNKNOWN, false); auto.process()
         assertEquals(19, Instant.ofEpochMilli(db.commitments().get(current.id)!!.activityStartAt!!).atZone(zone).hour)
         memory.appendAttributedLive("회의의 를 취소 해줘.", now.plusSeconds(20), zone, Speaker.UNKNOWN, false); auto.process()
-        assertEquals("CANCELLED", db.commitments().get(current.id)!!.state)
+        assertEquals("ACCEPTED", db.commitments().get(current.id)!!.state) // unassigned voice: Review only
+        assertTrue(memory.drafts.value.any { it.sourceKey == "review:cancel:${current.id}" })
         old.forEach { assertEquals(it, db.commitments().get(it.id)) }
     } }
     @Test fun koreanAmbiguityWithoutRecentContextStillLeavesEventsAlone() = runBlocking { fixture { _, memory, db, _, auto ->

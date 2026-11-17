@@ -186,6 +186,7 @@ class HandsOffPlansTest {
         val timed = HandsOffPlans.PlanRef("The dentist is Friday at 3pm", "The dentist is Friday at 3pm",
             at("2026-11-20", "15:00").toEpochMilli(), at("2026-11-20", "16:00").toEpochMilli(), "Assumed: 1 hour (length assumed).", false)
         assertTrue(HandsOffPlans.refines(allDay, timed, zone))
+        assertEquals(HandsOffPlans.identity("I have a dentist appointment on November 20"), HandsOffPlans.identity("My dentist appointment is on November 20 at 3pm"))
         assertFalse(HandsOffPlans.refines(allDay, timed.copy(start = at("2026-11-21", "15:00").toEpochMilli()), zone))
         assertFalse(HandsOffPlans.refines(allDay, timed.copy(evidence = "Party on Friday at 3pm", title = "Party"), zone))
         assertFalse(HandsOffPlans.refines(allDay.copy(note = "Saved automatically."), timed, zone)) // manual edits are final

@@ -125,7 +125,7 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         if (!container.guidance.sharedMessages.value) { message.value = "Shared-message analysis is disabled in Settings."; return@mutate }
         container.risk.inspect(text)
         val input = container.temporary.prepareChanges(Transcript(text.take(6000), Instant.now(), ZoneId.systemDefault(), Speaker.OTHER, true), "shared")
-        val proposals = withContext(Dispatchers.Default) { ActivityTiming.extract(input, informationalOnly = true) }
+        val proposals = withContext(Dispatchers.Default) { AnalysisContext.others(input) }
             .map { it.copy(sourceKey = "shared", needsReview = "Shared message: attendance is unconfirmed. " + it.needsReview) }
         val count = container.temporary.addProposals(proposals)
         container.automation.process()
@@ -141,6 +141,14 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
                 val start = if (activityStart.isBlank()) null else TimeResolver.parseEditor(activityStart, ZoneId.of(zoneId)).toEpochMilli()
                 val end = if (activityEnd.isBlank()) null else TimeResolver.parseEditor(activityEnd, ZoneId.of(zoneId)).toEpochMilli()
                 val target = container.temporary.updateTarget(id) ?: id
+                if (proposal?.sourceKey?.startsWith("review:cancel:") == true) {
+                    // Accepting another voice's cancellation cancels the saved plan (journaled, with Undo).
+                    val saved = dao.get(target)?.takeIf { it.state == "ACCEPTED" } ?: error("This plan was already changed.")
+                    container.reminders.changeEvent(saved, null, true)
+                    container.temporary.remove(id)
+                    onSaved()
+                    return@launch
+                }
                 val targetDraft = container.temporary.drafts.value.find { it.id == target && it.id != id }
                 val source = if (targetDraft != null) proposal?.copy(id = target) else proposal
                 container.reminders.save(target, title, due, zoneId, source, start, end, informational, placeName, placeAddress)

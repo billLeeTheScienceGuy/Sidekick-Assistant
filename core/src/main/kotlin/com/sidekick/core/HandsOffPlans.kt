@@ -101,13 +101,15 @@ object HandsOffPlans {
         "on", "at", "in", "from", "every", "pick", "drop", "call", "meet", "remind", "submit", "pay", "book", "take", "bring", "buy",
         "get", "go", "see", "visit", "send", "finish", "let", "let's", "it's", "that's", "please", "don't", "rent", "flight", "dinner",
         "lunch", "party", "meeting", "dentist", "doctor", "report", "table", "reservation", "plumber", "delivery", "holiday", "vacation")
+    private val dateWords = rx("^(?:$WD|$MO|today|tonight|tomorrow|\\d.*)$")
+    private fun dateWord(word: String) = dateWords.matches(word.trimEnd(',', '.')) || EnglishDates.pattern.matches(word)
     private fun stripped(text: String) = opener.replace(text.trim(), "")
     private fun thirdParty(text: String): Boolean {
         val t = stripped(text)
         if (relation.containsMatchIn(t) || pronoun.containsMatchIn(t) || someoneTravels.containsMatchIn(t)) return true
         val name = Regex("^(\\p{Lu}\\p{Ll}+)").find(t) ?: return false
         val word = name.groupValues[1]
-        if (word.lowercase(Locale.ROOT) in stopWords || kinds.any { it.second.matches(word) } || EnglishDates.pattern.matches(word)) return false
+        if (word.lowercase(Locale.ROOT) in stopWords || kinds.any { it.second.matches(word) } || dateWord(word)) return false
         return afterName.containsMatchIn(t.substring(name.range.last + 1))
     }
     private fun personal(text: String, kind: PlanKind, allDay: Boolean): Boolean {
@@ -257,7 +259,7 @@ object HandsOffPlans {
     fun flightNumber(text: String): String? = flightCode.findAll(text).firstOrNull { it.groupValues[1] !in notAirlines }
         ?.let { "${it.groupValues[1]} ${it.groupValues[2]}" } ?: flightDigits.find(text)?.groupValues?.get(1)
     private fun cleanPlace(value: String?): String? = value?.split(Regex("\\s+"))?.takeWhile { word ->
-        !EnglishDates.pattern.matches(word) && word.lowercase(Locale.ROOT) !in setOf("the", "on", "at", "i", "and")
+        !dateWord(word) && word.lowercase(Locale.ROOT) !in setOf("the", "on", "at", "i", "and")
     }?.joinToString(" ")?.trimEnd('.', ',')?.takeIf { it.length >= 2 }
     private fun flightTitle(text: String): String? {
         val number = flightNumber(text)
@@ -438,7 +440,7 @@ object HandsOffPlans {
     private fun names(text: String): Set<String> {
         val words = Regex("[\\p{L}'’]+").findAll(text).toList()
         val capitals = words.drop(1).map { it.value.replace(Regex("['’]s$"), "") }
-            .filter { it.first().isUpperCase() && !EnglishDates.pattern.matches(it) && it.lowercase(Locale.ROOT) !in stopWords && kind(it) == null }
+            .filter { it.first().isUpperCase() && !dateWord(it) && it.lowercase(Locale.ROOT) !in stopWords && kind(it) == null }
         return (possessive.findAll(text).map { it.groupValues[1] }.filter { it.lowercase(Locale.ROOT) !in notNames } + capitals)
             .map { it.lowercase(Locale.ROOT) }.filter { it !in notNames && it != "i" }.toSet()
     }
