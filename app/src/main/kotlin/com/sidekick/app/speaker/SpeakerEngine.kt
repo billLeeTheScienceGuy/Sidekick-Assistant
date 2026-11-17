@@ -105,7 +105,8 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
             VoiceMatch.normalized(engine.compute(stream))
         } finally { stream.release() }
     }
-    fun identify(samples: FloatArray, nowMs: Long = android.os.SystemClock.elapsedRealtime()): Speaker {
+    /** [session]: this session's confirmed owner turns, for the session-adapted profile (idea 2). */
+    fun identify(samples: FloatArray, nowMs: Long = android.os.SystemClock.elapsedRealtime(), session: com.sidekick.core.OwnerSession? = null): Speaker {
         lastLongOwner = false
         val span = com.sidekick.core.SpeakerAudio.speechSpan(samples)
         if (span == null) {
@@ -113,12 +114,12 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
         }
         val speech = samples.copyOfRange(span.first, span.last + 1)
         return try {
-            identifySpeech(speech, nowMs).also {
+            identifySpeech(speech, nowMs, session).also {
                 lastDiagnostic = String.format(java.util.Locale.US, "%.1fs captured · %s", samples.size / 16000.0, lastDiagnostic.replaceFirst("s:", "s speech:"))
             }
         } finally { speech.fill(0f) }
     }
-    private fun identifySpeech(samples: FloatArray, nowMs: Long): Speaker {
+    private fun identifySpeech(samples: FloatArray, nowMs: Long, session: com.sidekick.core.OwnerSession?): Speaker {
         if (profileLanguage != profile.language.value) { clearRecent(); profileLanguage = profile.language.value }
         val seconds = "%.1f".format(java.util.Locale.US, samples.size / 16000.0)
         val labelled = profile.matchingReferences()
@@ -172,15 +173,32 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
                     // Re-trimming each window can shrink a long turn below 1.5 seconds at a pause.
                     try { vectors += computeEmbedding(window) } finally { window.fill(0f) }
                 }
-                val result = VoiceMatch.identifyProfiles(references, vectors, t, cohort, quiet)
+                var result = VoiceMatch.identifyProfiles(references, vectors, t, cohort, quiet)
                 lastLongOwner = result == Speaker.USER
+                // Idea 2: the quiet profile nudged toward how the owner sounded earlier in this session. Never confirms
+                // a turn for the session itself and never overrides "someone else".
+                var adapted = false
+                val adapt = t.adapt
+                if (result == Speaker.UNKNOWN && adapt != null && session != null) {
+                    val mean = session.mean(nowMs)
+                    val quietRef = labelled.firstOrNull { it.first == VoiceSetting.QUIET }?.second ?: references.first()
+                    if (mean != null && mean.size == quietRef.size) {
+                        val profileNow = adapt.profile(quietRef, mean)
+                        try {
+                            val rule = adapt.rule(t)
+                            if (VoiceMatch.identifyTurn(profileNow, vectors, rule) == Speaker.USER && VoiceMatch.aboveStrangers(profileNow, vectors, rule, cohort)) {
+                                result = Speaker.USER; adapted = true
+                            }
+                        } finally { profileNow.fill(0f); mean.fill(0f) }
+                    }
+                }
                 val reference = references.firstOrNull { VoiceMatch.identifyTurn(it, vectors, t) == Speaker.USER }
                     ?: references.maxBy { candidate -> vectors.sumOf { VoiceMatch.similarity(candidate, it).toDouble() } }
                 if (result == Speaker.USER) anchors.remember(vectors, nowMs) else clearRecent()
                 val scores = vectors.joinToString(" / ") { String.format(java.util.Locale.US, "%.2f", VoiceMatch.similarity(reference, it)) }
                 val consistency = vectors.zipWithNext { a, b -> VoiceMatch.similarity(a, b) }.minOrNull() ?: 0f
                 lastDiagnostic = String.format(java.util.Locale.US, "%ss: %s; %d speaker windows; profile %s; minimum consistency %.2f; %d enrolled profiles; thresholds %s",
-                    seconds, result.name, vectors.size, scores, consistency, references.size, mode)
+                    seconds, result.name, vectors.size, scores, consistency, references.size, mode) + if (adapted) "; session-adapted profile" else ""
                 result
             }
                 catch (e: IllegalArgumentException) { clearRecent(); lastDiagnostic = "${seconds}s: ${e.message}"; Speaker.UNKNOWN }

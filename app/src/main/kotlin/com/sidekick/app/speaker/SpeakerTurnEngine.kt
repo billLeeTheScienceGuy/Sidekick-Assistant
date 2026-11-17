@@ -14,11 +14,17 @@ class SpeakerTurnEngine(context: Context, profile: VoiceProfile, private val spe
      * was given. [scores] holds only match scores (safe for logs); [diagnostic] adds the label for the on-screen list.
      */
     data class Attribution(val speaker: Speaker, val key: String, val label: String, val diagnostic: String,
-        val scores: String = diagnostic, val display: String = label, val name: String? = null, val grouped: Boolean = false)
+        val scores: String = diagnostic, val display: String = label, val name: String? = null, val grouped: Boolean = false,
+        /** Decision for the chunk held back before this one: true = the owner, false = unassigned, null = none held. */
+        val heldWasOwner: Boolean? = null,
+        /** This chunk is held back: its text waits for the next chunk's decision. */
+        val held: Boolean = false)
     private val diarizer = NeuralDiarizer(context) { profile.model.value }
     private val voices = SessionVoices()
     /** The owner's voice as confirmed against the saved profile earlier in this session (memory only). */
     private val owner = OwnerSession()
+    /** Idea 4: holds one unassigned chunk after an owner chunk until the next chunk is decided. */
+    private val neighbors = NeighborChunks()
     private val session = java.util.UUID.randomUUID().toString().replace("-", "")
     private var unassigned = 0
     private var previous: String? = null
@@ -46,7 +52,7 @@ class SpeakerTurnEngine(context: Context, profile: VoiceProfile, private val spe
     /** Set by [forgetOthers] from any thread; the speech worker clears the owner's recent anchors before its next use. */
     @Volatile private var anchorsStale = false
     fun classify(samples: FloatArray, part: SpeakerPart): Attribution {
-        if (anchorsStale) { anchorsStale = false; speaker.newTurn(); previous = null; owner.clear() }
+        if (anchorsStale) { anchorsStale = false; speaker.newTurn(); previous = null; owner.clear(); neighbors.clear() }
         val now = SystemClock.elapsedRealtime()
         val vector = if (!part.ambiguous) try { speaker.embedding(samples) } catch (_: IllegalArgumentException) { null } else null
         // Task 10 (a): the signature exists only for these comparisons and is zeroed right after them. Only turns that
@@ -59,7 +65,7 @@ class SpeakerTurnEngine(context: Context, profile: VoiceProfile, private val spe
             // which says nothing about a change; short phrases still need their own profile and recent-voice scores.
             val changed = previous != null && previous != key && anonymous != null && previous?.contains("_unassigned") == false
             if (changed || part.ambiguous) speaker.newTurn()
-            var identified = if (part.ambiguous) Speaker.UNKNOWN else speaker.identify(samples)
+            var identified = if (part.ambiguous) Speaker.UNKNOWN else speaker.identify(samples, now, owner)
             var scores = lastError ?: if (part.ambiguous) "attribution withheld" else speaker.lastDiagnostic
             if (vector != null && identified == Speaker.USER && speaker.lastLongOwner) owner.confirm(vector, now)
             else if (vector != null && identified == Speaker.UNKNOWN && owner.size > 0) {
@@ -69,9 +75,12 @@ class SpeakerTurnEngine(context: Context, profile: VoiceProfile, private val spe
                 if (carry.owner) identified = Speaker.USER
             }
             previous = key
+            val (heldWasOwner, held) = neighbors.next(if (part.ambiguous) Speaker.OTHER else identified, vector, now,
+                speaker.rules().first.takeIf { it.session != null }?.neighbor)
+            if (held) scores += "; held for the next chunk"
             val contextKey = if (identified == Speaker.USER) "spk_${session}_owner" else key
             val name = anonymous?.let { synchronized(voices) { voices.nameOf(it.key) } }?.takeIf { identified != Speaker.USER }
-            return Attribution(identified, contextKey, label, "$label · $scores", scores, name ?: label, name, anonymous != null)
+            return Attribution(identified, contextKey, label, "$label · $scores", scores, name ?: label, name, anonymous != null, heldWasOwner, held)
         } finally { vector?.fill(0f) }
     }
     /** Session-only name for a grouped voice; never persisted. Returns false if the voice is gone or the name is invalid. */
@@ -81,5 +90,5 @@ class SpeakerTurnEngine(context: Context, profile: VoiceProfile, private val spe
      * biometric STRICT, or NOTICE before notice, and at session end.
      */
     fun forgetOthers() { synchronized(voices) { voices.clear() }; anchorsStale = true }
-    fun close() { diarizer.close(); synchronized(voices) { voices.clear() }; speaker.newTurn(); previous = null; owner.clear() }
+    fun close() { diarizer.close(); synchronized(voices) { voices.clear() }; speaker.newTurn(); previous = null; owner.clear(); neighbors.clear() }
 }

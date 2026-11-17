@@ -6,7 +6,6 @@ import com.sidekick.app.data.MemoryDatabase
 import com.sidekick.core.CommitmentPipeline
 import com.sidekick.core.RuleIntentExtractor
 import com.sidekick.app.speech.SpeechEngine
-import com.sidekick.app.intent.IntentEngine
 import com.sidekick.app.reminders.ReminderCoordinator
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
@@ -19,7 +18,6 @@ class SidekickApplication : Application() {
     val voiceProfile by lazy { com.sidekick.app.speaker.VoiceProfile(this, guidance.speechLanguage.value) }
     val temporary = TemporaryMemory { guidance.includeInformational.value }
     val guidance by lazy { GuidanceSettings(this) }
-    val intent by lazy { IntentEngine(this) }
     val background = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val risk by lazy { LocalRiskAlerts(this) { guidance.riskAdvisories.value } }
     val messageInbox by lazy { MessageInbox(guidance, temporary, background, onRisk = risk::inspect) { automation.process() } }
@@ -36,6 +34,8 @@ class SidekickApplication : Application() {
         background.launch { guidance.speechLanguage.collect { voiceProfile.selectLanguage(it) } }
         // Owner voiceprint retention: delete the profile and its consent record after 12 months unused.
         background.launch { runCatching { voiceProfile.purgeIfExpired() } }
+        // The optional Qwen model was removed (rules matched or beat it on every test case); free its 484 MB.
+        background.launch { runCatching { java.io.File(noBackupFilesDir, "qwen3-0.6b-q4_k_m.gguf").delete(); java.io.File(noBackupFilesDir, "intent-model.import").delete() } }
         background.launch { guidance.riskAdvisories.collect { if (!it) risk.clear() } }
         background.launch { guidance.messageNotifications.collect { if (it) MessageNotificationListener.requestConnection(this@SidekickApplication) } }
         background.launch { guidance.retentionDays.collectLatest { days ->

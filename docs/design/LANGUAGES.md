@@ -38,7 +38,7 @@ across languages, and every event still requires review.
 Run scripts/prepare_speech.py or scripts/prepare-speech.ps1. Both verify the new
 77,691,713-byte model in addition to the existing English model and VAD. CI runs
 the Python preparer. First use verifies the model again before installing its
-private working copy. Original English and separately imported Qwen stay intact.
+private working copy. Original English stays intact.
 
 - Model: multilingual Whisper tiny, MIT.
 - File: ggml-tiny.bin.

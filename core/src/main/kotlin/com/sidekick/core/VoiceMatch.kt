@@ -23,6 +23,13 @@ object VoiceMatch {
          * profiles recorded with background noise (shared room sound) than to quiet-room profiles.
          */
         val quietOffset: Float = 0f,
+        /** Idea 2: profile moved toward this session's confirmed turns; null turns it off. */
+        val adapt: SessionAdapt? = null,
+        /**
+         * Idea 4: an unassigned chunk between two owner chunks counts as the owner when its whole-speech signature
+         * matches both neighbours at least this much; null turns it off.
+         */
+        val neighbor: Float? = null,
     ) {
         init { require(quietOffset in 0f..0.10f) }
         /** The rule for the quiet-room profile. */
@@ -32,6 +39,13 @@ object VoiceMatch {
             val STANDARD = Thresholds(both = .70f, balancedMin = .65f, balancedMean = .72f, consistency = .65f)
             val BEFORE_NOTICE = Thresholds(both = .75f, balancedMin = .70f, balancedMean = .77f, consistency = .65f, shortPhrases = false)
         }
+    }
+    /** Session-adapted profile: (1 - weight) x quiet profile + weight x mean of confirmed turns; rule family bar [both]. */
+    data class SessionAdapt(val weight: Float, val both: Float) {
+        init { require(weight in 0f..0.5f && both in .5f..1f) }
+        fun rule(base: Thresholds) = base.copy(both = both, balancedMin = both - .05f, balancedMean = both + .02f, quietOffset = 0f)
+        fun profile(quiet: FloatArray, confirmedMean: FloatArray): FloatArray =
+            normalized(FloatArray(quiet.size) { (1 - weight) * quiet[it] + weight * confirmedMean[it] })
     }
     /** A chunk's whole-speech signature against this session's confirmed owner turns: every one, their mean, and the profile. */
     data class SessionCarry(val minimum: Float, val mean: Float, val profileFloor: Float) {

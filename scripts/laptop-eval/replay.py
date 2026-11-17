@@ -25,13 +25,17 @@ def beep():
     return (.5 * np.sin(2 * np.pi * 1000 * t)).astype(np.float32)
 
 
-def build(corpus: Path, out: Path):
+def build(corpus: Path, out: Path, enroll: bool = False):
     rows = [l.rstrip("\n").split("\t") for l in open(corpus / "manifest.tsv", encoding="utf-8") if l.strip()]
     clean = defaultdict(list)
     for name, spk, group in rows:
         if group == "librispeech-test-clean":
             clean[spk].append(name)
-    pick = [(n, s) for s in sorted(clean)[:20] for n in clean[s][-4:]]
+    if enroll:
+        # Setup through the same microphone: each person's first 3 readings (setup) and last 4 (turns).
+        pick = [(n, s) for s in sorted(clean)[:20] for n in clean[s][:3] + clean[s][-4:]]
+    else:
+        pick = [(n, s) for s in sorted(clean)[:20] for n in clean[s][-4:]]
     pick += [(n, s) for n, s, g in rows if g == "owner"]
     parts = [np.zeros(LEAD, np.float32), beep(), np.zeros(2 * RATE, np.float32)]
     at = sum(len(p) for p in parts)
@@ -79,7 +83,7 @@ def cut(out: Path, recording: Path):
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "build":
-        build(Path(sys.argv[2]), Path(sys.argv[3]))
+    if sys.argv[1] in ("build", "build-enroll"):
+        build(Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[1] == "build-enroll")
     else:
         cut(Path(sys.argv[2]), Path(sys.argv[3]))

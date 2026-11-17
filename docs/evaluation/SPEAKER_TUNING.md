@@ -1,7 +1,8 @@
 # Speaker threshold tuning (task 8)
 
-**Status: not yet run.** The recordings in "Data" below need consenting participants. No numbers on this page are
-measured yet; do not quote any until the tables are filled from real runs.
+**Status:** the participant study below (owner + 30 people) is **still not run**. On November 16, 2026 the thresholds
+were tuned instead on public voices on the laptop and checked through the phone microphone; see
+"Public-voice tuning (November 16, 2026)" at the end. The participant study remains the final check.
 
 ## What is being tuned
 
@@ -57,3 +58,68 @@ That 0 of 8 owner result is a warning sign: the current thresholds may already b
 ## Chosen thresholds
 
 Not chosen yet. Current values are the starting point in the table at the top.
+
+
+## Public-voice tuning (November 16, 2026)
+
+### Method
+
+- **Voices:** LibriSpeech test-clean (40 people, 30 readings each), test-other (33 people; their signatures form the
+  stranger cohort and are never evaluated), code-switched FLEURS (about 10 readers), FLEURS (400 clips, 6 languages,
+  stranger-only) and the owner's 8 voice memos. 381 stranger voices in total.
+- **Rooms (one shared room per condition, like one café):** quiet; noisy (pink noise, 10 dB); babble (6 people
+  talking, 5 dB); far (2–3 m: RT60 .4 s, direct sound +3 dB); echo (stress: direct sound 27 dB under the echo).
+- **Laptop harness** (`scripts/laptop-eval/`): the same sherpa-onnx extractor, the same `SpeakerAudio` trimming and
+  window layout as `SpeakerEngine`; a phone run of the same 188 clips gave identical signatures. Each clip is one
+  captured chunk (at most 10 s). Owners are enrolled like `VoiceProfile.save` (3 samples, pairwise ≥ .6, averaged).
+- **Rule for every bar:** at least .08 above the closest stranger seen in any room (including echo).
+- **Replay on the phone:** the laptop played clips out loud and the phone recorded them (`ReplayCaptureTest`, same
+  `MIC` source and format as `ListeningService`). Run 1: profiles from clean audio. Run 2: setup clips also replayed,
+  as in the app (setup and listening through the same microphone).
+
+### Results
+
+Model comparison (each model at its own safe bar, one quiet-room setup):
+
+| Model | Size | Closest stranger | Owner turns recognised |
+| --- | --- | --- | --- |
+| CAM++ (default) | 28 MB | .56 | **72%** |
+| TitaNet-small | 40 MB | .54 | 69% (0% far and echo) |
+| ERes2Net (centered) | 27 MB | .52 | 67% |
+| ERes2NetV2 (centered) | 71 MB | .61 | 42% |
+| ResNet34 (old "Standard") | 27 MB | .85–.93 | ~0%: strangers score like the owner; no longer offered |
+
+CAM++, with ideas added one at a time (simulation over about 163,000 stranger turns; strangers accepted: **0**):
+
+| Rule | Overall | Quiet | Noisy | Babble | Far | Echo |
+| --- | --- | --- | --- | --- | --- | --- |
+| Previous (one setup, .70) | 54% | 76% | 30% | – | 67% | 12% |
+| Quiet .64 / other settings .71 | 73% | 89% | 56% | 18% | 83% | 49% |
+| + session carry (.74) | 76% | 90% | 62% | 36% | 83% | 61% |
+| + session-adapted profile (.67) | 78% | 91% | 64% | 36% | 83% | 63% |
+| + second model ERes2Net (not shipped) | 79% | 92% | 65% | 36% | 83% | 64% |
+| + neighbouring chunks (.72) | **82%** | 93% | 70% | 36% | 83% | 67% |
+
+Overall excludes the echo stress room. Noise removal before matching made things worse (all ideas included: GTCRN 71%, DPDFNet 77%, vs 82% without; the
+closest stranger to a session voice rose from .64 to .73–.75), so it is not used.
+
+Phone microphone (replay):
+
+| Setup | Owner recognised at .64 | Strangers |
+| --- | --- | --- |
+| Profile from clean audio (run 1) | 15.5% | 0 of 1,480 |
+| Setup through the phone microphone (run 2) | **72.6%** | 0 of 1,460 (closest .50) |
+
+### Chosen thresholds (CAM++, `Tuned.CAMPPLUS_STANDARD`)
+
+Quiet-room profile .64; noise and table profiles .71; cohort check 2 deviations; session carry .74; session-adapted
+profile .67 (weight .3); neighbouring chunks .72. Before notice in all-party places: unchanged (.75, no short phrases,
+no session ideas), plus the cohort check.
+
+### Limits
+
+- Public read speech in simulated rooms; real conversation, accents, children and relatives are not covered.
+- With 381 stranger voices, zero accepted means fewer than about 1 in 130 people could pass at 95% confidence; the
+  .08 margin is the main safeguard. Recordings of the owner's voice played back are not detectable.
+- The owner's own data is 8 short memos; 10–20 more clips in different places would turn the owner estimate into a
+  measurement. The participant study above is still the final check.

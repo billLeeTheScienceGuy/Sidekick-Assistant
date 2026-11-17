@@ -9,8 +9,7 @@ The team uses Pixel 7a phones. Google specifies Tensor G2 and 8 GB LPDDR5 RAM: h
   according to language and chunk context; explicit Fast/Base modes remain.
   Live decoding can retain a context for sequential chunks and releases it at
   session end. See ASR_EVALUATION.md for dated device measurements and limitations.
-- Initial intent model: Qwen3-0.6B Q4_K_M, non-thinking, 2,048-token context and 256-token output cap. The 1.7B candidate is opt-in benchmarking, not the default. Quantized weight size is not peak process RAM.
-- Serialize ASR and LLM work; release a model context before opening the other if memory pressure warrants it. No parallel agents or concurrent large models.
+- No language model: plan extraction is rule-based. Qwen3-0.6B was tried as an optional helper and removed in November 2026 (14.4 s per sentence on this phone, 23% recall vs 98.8% for the rules; INTENT_MODEL.md).
 - Start with two CPU inference threads and measure two versus four in a release build. More threads may increase heat and worsen sustained performance.
 - Live notes: 16 kHz mono PCM, explicit start, no session timer, Silero speech
   detection and up-to-ten-second chunks with one-second boundary overlap.
@@ -18,8 +17,7 @@ The team uses Pixel 7a phones. Google specifies Tensor G2 and 8 GB LPDDR5 RAM: h
 - No network permission, remote inference, paid APIs, or silent cloud fallback. Missing models must produce a visible setup state.
 
 The normal APK includes English Fast, VAD and speaker weights. Other speech
-models use one-time verified packs; optional Qwen is a separate import for manual
-analysis. See MODEL_PACKS.md and ARCHITECTURE.md for the current packaging/pipeline.
+models use one-time verified packs. See MODEL_PACKS.md and ARCHITECTURE.md for the current packaging/pipeline.
 
 The live pipeline uses two Whisper CPU threads and a 512-position encoder window; one-shot WAV imports retain their 30-second input limit. LLM settings in DeviceProfile remain future defaults. Screen-off capture uses a renewable partial wake lock; unplugged battery impact remains unmeasured.
 

@@ -76,7 +76,6 @@ class MainActivity : ComponentActivity() {
         val listening by ListeningService.state.collectAsStateWithLifecycle()
         val liveText by model.liveText.collectAsStateWithLifecycle()
         val speakerTurns by (application as SidekickApplication).temporary.speakerTurns.collectAsStateWithLifecycle()
-        val smartReady by model.smartReady.collectAsStateWithLifecycle()
         val editError by model.editError.collectAsStateWithLifecycle()
         val guidance by model.guidance.collectAsStateWithLifecycle()
         val handsOff by (application as SidekickApplication).guidance.handsOffMode.collectAsStateWithLifecycle()
@@ -171,9 +170,6 @@ class MainActivity : ComponentActivity() {
         requestListeningAfterChecks = ::requestListening
         val wavPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri?.let { consent = false; model.importWav(it) }
-        }
-        val modelPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            uri?.let(model::importIntentModel)
         }
         fun openEditor(item: CommitmentEntity) {
             model.reopen(); edit = item
@@ -367,11 +363,7 @@ class MainActivity : ComponentActivity() {
                             }
                             TextButton(onClick = { showNoteTools = !showNoteTools }, modifier = Modifier.testTag("note-tools")) { Text(if (showNoteTools) "Hide note tools" else "More note tools") }
                             if (showNoteTools) {
-                            Text(if (smartReady) "Smart analysis · Qwen3-0.6B · installed" else "Basic rules · smart model not installed", style = MaterialTheme.typography.bodySmall)
-                            TextButton(onClick = { modelPicker.launch(arrayOf("*/*")) }, enabled = !busy && !listening.recording && !listening.processing) {
-                                Text(if (smartReady) "Replace local intent model" else "Import local intent model (484 MB)")
-                            }
-                                QuietLabel("Optional smart analysis works on typed notes. Live event detection uses local rules; unclear details stay unknown.")
+                                QuietLabel("Notes and live speech use the same local rules; unclear details stay unknown.")
                             }
                             Text(message, style = MaterialTheme.typography.bodySmall)
                             if (busy) TextButton(onClick = model::cancelImport) { Text("Cancel current operation") }

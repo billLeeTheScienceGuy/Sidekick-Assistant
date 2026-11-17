@@ -23,6 +23,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SpeakerEmbed {
     /** Input scale check: SCALE=32768 feeds int16-range samples (diagnostic only). */
     static final float SCALE = Float.parseFloat(System.getenv().getOrDefault("SCALE", "1"));
+    /** DENOISE=gtcrn:<model.onnx> or dpdfnet:<model.onnx>: clean each clip before voice matching (ASR audio untouched). */
+    static final String DENOISE = System.getenv().getOrDefault("DENOISE", "");
+    static float[] denoise(OfflineSpeechDenoiser d, float[] audio) {
+        if (d == null) return audio;
+        float[] out = d.run(audio, 16000).getSamples();
+        return out.length == audio.length ? out : Arrays.copyOf(out, audio.length);
+    }
     static float[] wav(Path path) throws IOException {
         ByteBuffer b = ByteBuffer.wrap(Files.readAllBytes(path)).order(ByteOrder.LITTLE_ENDIAN);
         int offset = 12;
@@ -68,6 +75,14 @@ public class SpeakerEmbed {
         for (String line : Files.readAllLines(corpus.resolve("manifest.tsv"))) if (!line.isBlank()) files.add(line.split("\t")[0]);
         ThreadLocal<SpeakerEmbeddingExtractor> engines = ThreadLocal.withInitial(() ->
             new SpeakerEmbeddingExtractor(SpeakerEmbeddingExtractorConfig.builder().setModel(model).setNumThreads(1).build()));
+        ThreadLocal<OfflineSpeechDenoiser> denoisers = ThreadLocal.withInitial(() -> {
+            if (DENOISE.isEmpty()) return null;
+            String kind = DENOISE.substring(0, DENOISE.indexOf(':')), path = DENOISE.substring(DENOISE.indexOf(':') + 1);
+            OfflineSpeechDenoiserModelConfig.Builder m = OfflineSpeechDenoiserModelConfig.builder().setNumThreads(1);
+            if (kind.equals("gtcrn")) m.setGtcrn(OfflineSpeechDenoiserGtcrnModelConfig.builder().setModel(path).build());
+            else m.setDpdfnet(OfflineSpeechDenoiserDpdfNetModelConfig.builder().setModel(path).build());
+            return new OfflineSpeechDenoiser(OfflineSpeechDenoiserConfig.builder().setModel(m.build()).build());
+        });
         ExecutorService pool = Executors.newFixedThreadPool(workers);
         ByteArrayOutputStream[] results = new ByteArrayOutputStream[files.size()];
         AtomicInteger done = new AtomicInteger();
@@ -77,7 +92,7 @@ public class SpeakerEmbed {
             futures.add(pool.submit(() -> {
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 try {
-                    float[] audio = wav(corpus.resolve(files.get(clip)));
+                    float[] audio = denoise(denoisers.get(), wav(corpus.resolve(files.get(clip))));
                     IntRange span = SpeakerAudio.INSTANCE.speechSpan(audio);
                     if (span != null) {
                         int from = span.getFirst(), until = Math.min(span.getLast() + 1, from + 160_000);

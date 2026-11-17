@@ -28,9 +28,11 @@ internal object Tuned {
     /**
      * CAM++: quiet-room profile .64 (closest stranger .56), other settings .71 (closest .63), session voices .74
      * (closest .58). The cohort check (2 deviations above strangers) never rejected an owner turn and guards outliers.
-     * Evaluation: owner 77% of turns (was 54%), strangers 0 of about 160,000.
+     * Evaluation: owner 82% of turns with ideas 2 and 4 (was 54%), strangers 0 of about 163,000.
      */
     val CAMPPLUS_STANDARD = VoiceMatch.Thresholds(both = .71f, balancedMin = .66f, balancedMean = .73f, consistency = .65f,
-        cohortZ = 2f, quietOffset = .07f, session = VoiceMatch.SessionCarry(minimum = .74f, mean = .74f, profileFloor = .40f))
+        cohortZ = 2f, quietOffset = .07f, session = VoiceMatch.SessionCarry(minimum = .74f, mean = .74f, profileFloor = .40f),
+        // Idea 2: closest stranger .58 against .67. Idea 4: closest stranger .64 against .72.
+        adapt = VoiceMatch.SessionAdapt(weight = .3f, both = .67f), neighbor = .72f)
     val CAMPPLUS_BEFORE_NOTICE = VoiceMatch.Thresholds.BEFORE_NOTICE.copy(cohortZ = 2f)
 }

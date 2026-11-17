@@ -77,6 +77,37 @@ class OwnerSessionTest {
         assertThrows(IllegalArgumentException::class.java) { t.copy(quietOffset = .2f) }
     }
 
+    @Test fun `held chunk becomes the owner only between two owner chunks that it sounds like`() {
+        val me = unit(1); val n = NeighborChunks()
+        assertEquals(null to false, n.next(Speaker.USER, near(me, .95f, 2), 0, .72f))
+        assertEquals(null to true, n.next(Speaker.UNKNOWN, near(me, .9f, 3), 1000, .72f))
+        assertEquals(true to false, n.next(Speaker.USER, near(me, .95f, 4), 2000, .72f))
+        // Next chunk is someone else: the held chunk stays unassigned.
+        n.next(Speaker.UNKNOWN, near(me, .9f, 5), 3000, .72f)
+        assertEquals(false to false, n.next(Speaker.OTHER, unit(9), 4000, .72f))
+        // A stranger between two owner chunks does not sound like them.
+        n.next(Speaker.USER, near(me, .95f, 6), 5000, .72f)
+        assertEquals(null to true, n.next(Speaker.UNKNOWN, unit(10), 6000, .72f))
+        assertEquals(false to false, n.next(Speaker.USER, near(me, .95f, 7), 7000, .72f))
+        // Off (no bar, e.g. before notice), and too far apart.
+        n.next(Speaker.USER, near(me, .95f, 8), 8000, null)
+        assertEquals(null to false, n.next(Speaker.UNKNOWN, near(me, .9f, 9), 9000, null))
+        n.next(Speaker.USER, near(me, .95f, 8), 10_000, .72f); n.next(Speaker.UNKNOWN, near(me, .9f, 9), 11_000, .72f)
+        assertEquals(false to false, n.next(Speaker.USER, near(me, .95f, 10), 11_000 + NeighborChunks.MAX_GAP_MS + 1, .72f))
+    }
+
+    @Test fun `session-adapted profile moves toward confirmed turns and has its own bar`() {
+        val quiet = unit(1); val today = near(quiet, .6f, 2)
+        val adapt = VoiceMatch.SessionAdapt(weight = .3f, both = .67f)
+        val moved = adapt.profile(quiet, today)
+        assertTrue(VoiceMatch.similarity(moved, today) > VoiceMatch.similarity(quiet, today))
+        assertTrue(VoiceMatch.similarity(moved, quiet) > .9f)
+        assertEquals(.62f, adapt.rule(VoiceMatch.Thresholds.STANDARD).balancedMin, 1e-6f)
+        val session = OwnerSession(); assertNull(session.mean(0))
+        session.confirm(today, 0); assertEquals(1f, VoiceMatch.similarity(session.mean(10)!!, today), 1e-5f)
+        assertNull(session.mean(OwnerSession.KEEP_MS + 1))
+    }
+
     @Test fun `cohort file round trip`() {
         val vectors = List(50) { unit(2000 + it, 256) }
         val buffer = java.nio.ByteBuffer.allocate(8 + 50 * 256 * 4).order(java.nio.ByteOrder.LITTLE_ENDIAN)

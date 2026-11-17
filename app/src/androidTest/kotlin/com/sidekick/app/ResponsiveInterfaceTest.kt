@@ -80,7 +80,7 @@ class ResponsiveInterfaceTest {
         compose.onNodeWithText("New times use phone timezone:", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("note-tools"))
         compose.onNodeWithTag("note-tools").performClick()
-        compose.onNode(hasText("Import local intent model (484 MB)") or hasText("Replace local intent model")).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Notes and live speech use the same local rules", substring = true).performScrollTo().assertIsDisplayed()
         assertFalse(ListeningService.state.value.recording)
     }
     @Test fun actualWindowLayoutAndControlsRemainUsable() {

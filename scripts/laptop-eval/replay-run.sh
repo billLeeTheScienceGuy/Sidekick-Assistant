@@ -4,7 +4,7 @@
 # Usage: scripts/laptop-eval/replay-run.sh <model.onnx> [<model.onnx> ...]
 set -u
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-D=$ROOT/.deps; R=$D/speaker-public/replay
+D=$ROOT/.deps; R=$D/speaker-public/${REPLAY_DIR:-replay}
 ADB="$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe"
 export MSYS_NO_PATHCONV=1
 PKG=com.sidekick.app.benchmark

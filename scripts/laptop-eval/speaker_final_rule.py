@@ -24,7 +24,7 @@ full, P, person_of, profile_room = g["full"], g["P"], g["person_of"], np.array(g
 bar = np.where(profile_room == "clean", Q, R)
 accept = ((CRIT >= bar[:, None]) & (ZMIN >= 2.0))          # profiles x turns
 turn_full = np.stack([full[i] for i in turns])
-rooms = ("clean", "noisy", "far", "echo", "replay")
+rooms = ("clean", "noisy", "babble", "far", "echo", "replay")
 stats = {r: [0, 0, 0, 0, 0] for r in rooms}  # genuine total, by profile, by carry, stranger turns, stranger accepted
 worst = 0.0
 for spk in g["people"]:

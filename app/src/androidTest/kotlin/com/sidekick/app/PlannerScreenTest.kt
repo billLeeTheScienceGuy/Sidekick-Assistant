@@ -41,7 +41,9 @@ class PlannerScreenTest {
         compose.onNodeWithTag("settings").performClick()
         compose.onNodeWithTag("settings-page-LISTENING").performScrollTo().performClick()
         compose.onNodeWithText("Set up my voice").performScrollTo().performClick()
-        compose.onNodeWithText("Start voice setup").performScrollTo().assertIsDisplayed()
+        // Without a consent record the written-consent notice comes first; with one, the start button.
+        if (app.voiceProfile.consent.value?.valid == true) compose.onNodeWithText("Start voice setup").performScrollTo().assertIsDisplayed()
+        else compose.onNodeWithTag("voice-consent").performScrollTo().assertIsDisplayed()
         assertFalse(com.sidekick.app.audio.ListeningService.state.value.recording)
         compose.onNodeWithText("Back to SideKick").performScrollTo().performClick()
     }

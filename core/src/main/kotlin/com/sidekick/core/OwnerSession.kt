@@ -45,6 +45,12 @@ class OwnerSession {
         return Carry(owner, lowest, profileScore, if (owner) "matches your voice earlier in this session" else "not close enough to your voice earlier")
     }
 
+    /** Normalized mean of the confirmed turns (a copy), or null when none is fresh. */
+    fun mean(nowMs: Long): FloatArray? {
+        if (confirmed.isEmpty() || nowMs - lastConfirmedMs !in 0..KEEP_MS) return null
+        val size = confirmed.first().size
+        return VoiceMatch.normalized(FloatArray(size) { i -> confirmed.sumOf { it[i].toDouble() }.toFloat() })
+    }
     fun clear() { confirmed.forEach { it.fill(0f) }; confirmed.clear(); lastConfirmedMs = Long.MIN_VALUE }
 
     companion object {
@@ -59,6 +65,45 @@ class OwnerSession {
  * signatures score against many other people's voices: "is this closer than strangers usually get?". Public voices only
  * (LibriSpeech test-other, CC BY 4.0), stored as signatures; no audio.
  */
+/**
+ * Idea 4: holds back one unassigned chunk that follows an owner chunk until the next chunk is decided. If that next
+ * chunk is the owner too and the held chunk sounds like both neighbours ([VoiceMatch.Thresholds.neighbor]), the held
+ * chunk is the owner. Only signatures are held (memory only, at most one chunk, at most [MAX_GAP_MS] apart).
+ */
+class NeighborChunks {
+    private var previousOwner: FloatArray? = null; private var previousAt = 0L
+    private var held: FloatArray? = null; private var heldBefore: FloatArray? = null; private var heldAt = 0L
+    val holding: Boolean get() = held != null
+
+    /**
+     * Call once per chunk with its decision and whole-speech signature (null when unavailable). Returns the decision
+     * for the chunk held before this one (true = owner), or null when nothing was held. [hold] tells whether this
+     * chunk is now held back.
+     */
+    fun next(speaker: Speaker, vector: FloatArray?, nowMs: Long, bar: Float?): Pair<Boolean?, Boolean> {
+        var decided: Boolean? = null
+        if (held != null) {
+            val h = held!!; val b = heldBefore!!
+            decided = bar != null && speaker == Speaker.USER && vector != null && vector.size == h.size && nowMs - heldAt in 0..MAX_GAP_MS &&
+                VoiceMatch.similarity(h, b) >= bar && VoiceMatch.similarity(h, vector) >= bar
+            h.fill(0f); b.fill(0f); held = null; heldBefore = null
+        }
+        var hold = false
+        when {
+            vector == null || bar == null || speaker == Speaker.OTHER -> clearOwner()
+            speaker == Speaker.USER -> { clearOwner(); previousOwner = VoiceMatch.normalized(vector); previousAt = nowMs }
+            previousOwner != null && nowMs - previousAt in 0..MAX_GAP_MS && decided != true -> {
+                held = VoiceMatch.normalized(vector); heldBefore = previousOwner; heldAt = nowMs; previousOwner = null; hold = true
+            }
+            else -> clearOwner()
+        }
+        return decided to hold
+    }
+    private fun clearOwner() { previousOwner?.fill(0f); previousOwner = null }
+    fun clear() { clearOwner(); held?.fill(0f); heldBefore?.fill(0f); held = null; heldBefore = null }
+    companion object { const val MAX_GAP_MS = 20_000L }
+}
+
 class StrangerCohort(vectors: List<FloatArray>, private val top: Int = 50) {
     private val cohort: List<FloatArray> = vectors.map(VoiceMatch::normalized)
     val dimension: Int = cohort.firstOrNull()?.size ?: 0

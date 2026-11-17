@@ -57,7 +57,7 @@ Finishing listening before import is required by the UI.
 
 Installing all packs still uses substantial storage. A smaller APK does not imply
 lower inference memory, better accuracy or lower battery consumption. Speaker
-profiles and the separate optional Qwen intent model are not part of these packs.
+profiles are not part of these packs.
 
 ## Verification
 

@@ -40,7 +40,6 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         message.value = if (container.automation.undo(id, token)) "Automatic change undone"
             else "This change was already undone or edited."
     }
-    val smartReady = container.intent.ready
     val guidance = container.guidance.mode
     fun setGuidance(mode: GuidanceMode) = container.guidance.setMode(mode)
     val message = MutableStateFlow("Record your voice or type your own words.")
@@ -51,17 +50,6 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     private var analysisSource: String? = null
     val editError = MutableStateFlow<String?>(null)
     private var importJob: Job? = null
-
-    fun importIntentModel(uri: Uri) {
-        if (busy.value) return
-        busy.value = true; message.value = "Verifying and installing the local Qwen model…"
-        importJob = viewModelScope.launch {
-            try { container.intent.importModel(uri); message.value = "Qwen installed. Find commitments now uses local smart analysis." }
-            catch (e: CancellationException) { message.value = "Model import cancelled."; throw e }
-            catch (e: Exception) { message.value = e.message ?: "Model import failed." }
-            finally { busy.value = false }
-        }
-    }
 
     fun importWav(uri: Uri) {
         if (busy.value) return
@@ -106,7 +94,7 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         transcript.value = text
     }
     fun copyLiveText() {
-        setTranscript(liveText.value.takeLast(if (smartReady.value) 4000 else 6000), Instant.now())
+        setTranscript(liveText.value.takeLast(6000), Instant.now())
         analysisSource = "voice:copied"
     }
     fun clearTranscript() { transcript.value = ""; analysisSource = null; container.temporary.clearText() }
@@ -119,20 +107,12 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         busy.value = true
         importJob = viewModelScope.launch {
             try {
-                val count = if (input.text.isBlank()) 0 else if (smartReady.value) {
-                    val proposals = withTimeout(90_000) { container.intent.extract(input) }
-                    container.temporary.addProposals(proposals.map { it.copy(sourceKey = origin) })
-                } else withContext(Dispatchers.Default) { container.temporary.propose(input, origin) }
+                val count = if (input.text.isBlank()) 0 else withContext(Dispatchers.Default) { container.temporary.propose(input, origin) }
                 container.automation.process()
                 message.value = if (container.guidance.handsOffMode.value) container.automation.status.value
                     else if (count > 0) "$count temporary proposal(s) ready for review. Approve to save."
                     else "No new validated commitment found. Review existing proposals or add one manually."
-                container.intent.notice.value?.let { message.value += " " + it }
-            } catch (_: TimeoutCancellationException) {
-                container.temporary.propose(input, origin); container.automation.process()
-                message.value = "Smart analysis timed out. Used local rules; some plans may be missed."
-            }
-            catch (e: CancellationException) { message.value = "Analysis cancelled."; throw e }
+            } catch (e: CancellationException) { message.value = "Analysis cancelled."; throw e }
             catch (e: Exception) { message.value = e.message ?: "Could not analyze. Try a shorter note." }
             finally { busy.value = false }
         }

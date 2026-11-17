@@ -12,7 +12,7 @@
 | [Planner](guides/PLANNER.md) | Reviewing, editing and searching saved plans |
 | [Calendar mirroring](guides/CALENDAR_SYNC.md) | Optional one-way sync to the phone calendar |
 | [Default assistant & recovery](guides/ASSISTANT_MODE.md) | Resuming listening after restarts and reboots |
-| [Local intent model](guides/INTENT_MODEL.md) | Optional on-device model for typed or edited notes |
+| [Local intent model (removed)](guides/INTENT_MODEL.md) | Why the optional Qwen model was removed: rules vs Qwen on the phone |
 | [Pixel 7a target](guides/PIXEL_7A.md) | Target device and what has been verified on it |
 
 ## Design: how it works
@@ -34,6 +34,8 @@
 
 | Document | What it covers |
 |---|---|
+| [Test history and results](evaluation/TEST_HISTORY.md) | Every test so far (T01–T69): method, numbers and what each one made us change |
+| [Speaker tuning](evaluation/SPEAKER_TUNING.md) | Owner voice-matching bars: public-voice tuning, phone replay, chosen values |
 | [Validation](evaluation/VALIDATION.md) | Checks performed on device and in tests |
 | [Speech recognition (ASR) evaluation](evaluation/ASR_EVALUATION.md) · [Speech quality](evaluation/SPEECH_QUALITY.md) | Model routing and recognition accuracy |
 | [Recognition reviews](evaluation/RECOGNITION_033.md) ([0.33.1](evaluation/RECOGNITION_0331.md), [0.34](evaluation/RECOGNITION_034.md), [next steps](evaluation/RECOGNITION_NEXT_STEPS.md)) | Version-by-version recognition findings |

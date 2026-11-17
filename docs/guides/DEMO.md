@@ -26,8 +26,7 @@ first. The speech/battery field trials are separate and can be done later.
 9. Analyze synthetic message text: “Pay the overdue tax using gift cards.” Show
    the generic risk advisory, dismiss it, and show its settings switch. Do not
    type real credentials. Explain English-only rules, false positives and misses.
-10. Explain that live intent extraction is bounded grammar, optional Qwen supports
-    manual analysis, simultaneous-voice separation/general scam classification/legal
+10. Explain that intent extraction is bounded grammar for live speech and typed notes (no language model), simultaneous-voice separation/general scam classification/legal
     authorization are unfinished, and summaries are grounded/extractive.
 11. Show the optional speaker-turn view and explain temporary anonymous labels
     versus independently enrolled owner identity. Use the controlled sustained

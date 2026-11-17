@@ -32,8 +32,8 @@ shared text, venue lookup with address confirmation, calendar conflict reads and
 explicit handoff to the calendar editor, plus opt-in one-way mirroring with
 interruption recovery and external-edit protection. Daily summaries derive from saved facts;
 conversation highlights are bounded source excerpts. These are not unrestricted
-LLM narratives. Optional Qwen assists manual analysis; live extraction uses
-bounded grammar and validated fields. Default-assistant recovery supports an
+LLM narratives. Live and typed extraction use bounded grammar and validated fields;
+the optional Qwen model was removed after it matched none of the rules' misses (INTENT_MODEL.md). Default-assistant recovery supports an
 enabled session subject to Android restrictions and explicit Stop.
 
 Version 0.27 adds opt-in 30/90/365-day retention, explicit JSON event export with
@@ -77,7 +77,7 @@ time accuracy 100% and matched-event attendance accuracy 100%. There are no fals
 or mistimed reminders in these cases; one expected reminder is missed. Failed language cases
 remain in [the full report](../evaluation/ACCURACY_REPORT.md); the aggregate scores must not be
 presented as real-world speech accuracy. Speaker labels were supplied, not inferred.
-Optional Qwen and live action execution are not measured by this text benchmark.
+Live action execution is not measured by this text benchmark.
 
 The evaluation exposed unsafe guesses for alternative bare clocks, ambiguous
 numeric dates and vague future periods. These now retain unknown times rather

@@ -55,7 +55,7 @@ N = len(name)
 
 
 def room(g):
-    for key in ("replay", "noisy", "echo", "far"):
+    for key in ("replay", "babble", "noisy", "echo", "far"):
         if key in g: return key
     return "clean"
 
@@ -153,7 +153,7 @@ def masks(person):
 
 T_GRID = [round(float(x), 2) for x in np.arange(.40, .901, .01)]
 Z_GRID = [None, 1.0, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
-CONDS = ("clean", "noisy", "far", "echo", "replay")
+CONDS = ("clean", "noisy", "babble", "far", "echo", "replay")
 results = {}
 for mode in ("single", "multi"):
     rows = []  # per person: (gen mask, str mask, profile indices)

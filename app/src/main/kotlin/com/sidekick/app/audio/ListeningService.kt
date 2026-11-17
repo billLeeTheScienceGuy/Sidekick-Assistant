@@ -387,6 +387,19 @@ class ListeningService : Service() {
                 var voiceGrouped = false
                 var continuation = false
                 var changedVoice = true
+                // Idea 4: text of a chunk held back until the next chunk decides whether it was the owner (memory only).
+                class HeldText(val text: String, val at: Instant, val continuation: Boolean, val reliable: Boolean, val choices: List<String>)
+                var holdNext = false
+                var heldText: HeldText? = null
+                fun releaseHeld(owner: Boolean, track: String, label: String) {
+                    val h = heldText ?: return
+                    heldText = null
+                    if (discard) return
+                    app.temporary.appendAttributedLive(h.text, h.at, zone, if (owner) Speaker.USER else Speaker.UNKNOWN, h.continuation,
+                        if (owner) track else "spk_session_unassigned_held", if (owner) label else "Unassigned voice", recognitionReliable = h.reliable, timeChoices = h.choices)
+                    if (owner) mutableState.update { it.copy(userVoiceChunks = it.userVoiceChunks + 1, unknownVoiceChunks = (it.unknownVoiceChunks - 1).coerceAtLeast(0)) }
+                    // Saved plans are processed with the next chunk's text (or at session end).
+                }
                 val pipeline = LiveSpeechProcessor(app.speech, onBoundary = { continuation = it && !changedVoice }, contextKey = { if (identified == Speaker.USER) voiceTrack else null }, voiceKey = { voiceTrack },
                     partition = { samples ->
                         val parts = if (enrollment) listOf(com.sidekick.core.SpeakerPart(0, samples.size, null, false)) else turns.partition(samples)
@@ -396,6 +409,8 @@ class ListeningService : Service() {
                     }, onPart = { samples, part ->
                         if (!enrollment) {
                             val attributed = turns.classify(samples, part)
+                            attributed.heldWasOwner?.let { releaseHeld(it, attributed.key, attributed.display) }
+                            holdNext = attributed.held
                             changedVoice = voiceTrack != attributed.key || identified != attributed.speaker
                             identified = attributed.speaker; voiceTrack = attributed.key; voiceLabel = attributed.display
                             voiceName = attributed.name; voiceGrouped = attributed.grouped
@@ -446,7 +461,10 @@ class ListeningService : Service() {
                     }
                 }) { text, startSample, latency ->
                     ensureActive()
-                    if (!discard) {
+                    if (!discard && holdNext && text.isNotBlank()) {
+                        app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text)
+                        heldText = HeldText(text, started.plusMillis(startSample * 1000 / 16000), continuation, !app.speech.lastUncertain, app.speech.lastTimeChoices)
+                    } else if (!discard) {
                         app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text)
                         app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified, continuation, voiceTrack, voiceLabel, recognitionReliable = !app.speech.lastUncertain, timeChoices = app.speech.lastTimeChoices,
                             speakerName = voiceName, grouped = voiceGrouped && consent.groupingAllowed())
@@ -505,6 +523,7 @@ class ListeningService : Service() {
                 else getSystemService(NotificationManager::class.java).notify(1, notification(false))
                 pipeline.finish()
                 worker.join()
+                if (heldText != null) { releaseHeld(false, "", ""); app.automation.process() }
                 watchers.forEach { it.cancel() }
             }
             currentCoroutineContext().ensureActive()

@@ -4,12 +4,21 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 
 ## Unreleased (privacy, consent and location work package)
 
+- Removed the optional Qwen3-0.6B model ("smart analysis" for typed notes), its llama.cpp native build and import
+  screen. On the phone over the 92-case corpus it found 19 of 83 events (rules: 82), took 14.4 s per sentence (rules:
+  7 ms) and found nothing the rules missed. The app deletes a previously imported model file (484 MB) on start. Typed
+  notes and live speech now use the same local rules. See `docs/guides/INTENT_MODEL.md`.
 - Owner voice matching retuned on 381 public stranger voices (about 160,000 stranger turns in quiet, noisy, far and
   echo rooms; laptop evaluation in `scripts/laptop-eval/`, checked against the phone's own library). Owner turns
-  recognised: 77% (was 54%); strangers accepted: 0. Every bar sits at least .08 above the closest stranger seen.
+  recognised: 82% (was 54%); strangers accepted: 0. Through the phone microphone with setup on the phone: 73% at the
+  quiet bar, 0 of 1,460 stranger turns. Every bar sits at least .08 above the closest stranger seen.
   Before notice in all-party places nothing is loosened. See `docs/evaluation/SPEAKER_TUNING.md`.
 - Your voice from earlier in the same session counts: once a long turn matches your saved profile, later chunks that
   sound like those turns (.74) count as you; never overrides "someone else", off before notice in all-party places.
+- During a session, your profile is nudged toward how you sound today (memory only; bar .67), and an unassigned
+  chunk between two of your chunks that sounds like both counts as you (.72). Such a chunk's text appears once the
+  next chunk is decided (a few seconds). Both are off before notice in all-party places.
+- Noise removal before voice matching (GTCRN, DPDFNet) was tested and not adopted: it brought strangers closer.
 - Voice setup can be recorded in a quiet room, with background noise, or with the phone on a table; each is its own
   profile. The quiet-room profile uses a bar of .64, the others .71.
 - A stranger cohort (198 public LibriSpeech signatures, 150 KB, CC BY 4.0) adds a check that every matching window is

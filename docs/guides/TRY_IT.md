@@ -11,15 +11,13 @@ until you select a calendar and confirm. Optional region guidance is under
 Listening privacy & region guidance; it never authorizes listening.
 Earlier version-specific notes below are historical.
 
-## Version 0.4 smart analysis
+## Typed notes
 
-With the separate Qwen model installed, stop listening, copy recent text into
-**Edit or type notes**, confirm your words, and tap **Find commitments**. Or type
-"I'll water the plants tomorrow." This action is outside the original rules vocabulary.
-Review evidence and time wording, then approve to save. Analysis can take several
-seconds; **Cancel current operation** should stop it. Negated or quoted promises should
-produce no new proposals. Start with short notes, under 4,000 characters; check dates
-manually. Report missed or invented tasks as well as the delay.
+Stop listening, copy recent text into **Edit or type notes** (or type your own),
+confirm your words, and tap **Find commitments**. Typed notes use the same local rules
+as live speech. Review evidence and time wording, then approve to save. Negated or
+quoted promises should produce no new proposals. (The optional Qwen model from 0.4 was
+removed in November 2026; see INTENT_MODEL.md.)
 
 Install the debug APK over the previous version. Existing saved commitments remain.
 Start from the visible app. Models are bundled; the phone needs no account or download.
