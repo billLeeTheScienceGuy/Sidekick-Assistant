@@ -178,3 +178,16 @@ were accepted, all from **17 pairs of people** whose voices the model scores as 
 among about 2,150 speakers, none outside very similar-sounding pairs), not that it can never happen. Voices that sound
 nearly identical to the model, such as close relatives or the same person on another device, can occasionally be
 taken for the owner. The earlier confidence statement ("fewer than about 1 in 130 people") is superseded by this test.
+
+## Follow-up tests (November 18, 2026)
+
+- **Second model for the 17 pairs:** the 30 people in the pairs were embedded with CAM++ (shipped), ERes2NetV2,
+  ERes2Net (English, VoxCeleb) and WeSpeaker CAM++ (English). All four models, trained on different data, score every
+  pair as the same person (22-100% of cross clips reach each model's own 10th-percentile owner score; 0 of 17 pairs
+  separated by any model). This strongly suggests the pairs are one person under two ids, not a CAM++ weakness, and a
+  second model would not help. Not adopted (would add about 28 MB). Script: `pairs17` corpus, scratch analysis.
+- **Learned calibration** (`scripts/laptop-eval/speaker_calibration.py`): logistic regression on score, cohort z,
+  speech length and SNR, trained on half the people and measured on the other half, without the 17 pairs. At "zero
+  strangers on the training half" the raw score keeps 57.7% of owner turns (1 stranger turn of about 6 million on the
+  held-out half); the calibrated score keeps 0.2%. A linear calibration improves the average case but its extreme tail
+  is set by a few strangers, so it does not help at the near-zero operating point this app needs. Not adopted.
