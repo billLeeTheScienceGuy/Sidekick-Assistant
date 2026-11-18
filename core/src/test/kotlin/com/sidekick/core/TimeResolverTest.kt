@@ -9,13 +9,26 @@ class TimeResolverTest {
             assertNull(TimeResolver.suggest(text, captured, zone), text)
         assertEquals(captured.plusSeconds(1800), TimeResolver.suggest("I'll call in thirty minutes", captured, zone))
     }
-    @Test fun `alternative clocks offsets and compound durations stay unknown`() {
+    @Test fun `alternative clocks and offsets stay unknown`() {
         for (text in listOf("I'll call tomorrow at 5pm or 6pm", "I'll call tomorrow at noon or 5pm",
-            "I'll call tomorrow at 17:00 or 18:00", "I'll call in 30 minutes or in an hour",
-            "I'll call in an hour and thirty minutes", "I'll call in 1 hour 30 minutes")) {
+            "I'll call tomorrow at 17:00 or 18:00", "I'll call in 30 minutes or in an hour")) {
             assertNull(TimeResolver.suggest(text, captured, zone), text)
         }
         assertNotNull(TimeResolver.suggest("I'll call tomorrow at 5:30 pm", captured, zone))
+    }
+    @Test fun `compound and fractional durations add up to one delay`() {
+        val expected = mapOf(
+            "I'll call in an hour and a half" to 5400L, "I'll call in an hour and thirty minutes" to 5400L,
+            "I'll call in 1 hour 30 minutes" to 5400L, "I'll call in 1 hour and 30 minutes" to 5400L,
+            "I'll call in 1.5 hours" to 5400L, "I'll call in two and a half hours" to 9000L,
+            "I'll call in two hours and a half" to 9000L, "I'll call in a minute and a half" to 90L,
+            "I'll call in forty-five minutes" to 2700L, "I'll call in twenty five minutes" to 1500L)
+        for ((text, seconds) in expected) assertEquals(captured.plusSeconds(seconds), TimeResolver.suggest(text, captured, zone), text)
+    }
+    @Test fun `duration ranges and malformed compounds stay unknown`() {
+        for (text in listOf("I'll call in an hour or two", "I'll call in a minute or so", "I'll call in 5 minutes 30 minutes",
+            "I'll call in two and a half hours and a half", "I'll call this weekend at 5 pm"))
+            assertNull(TimeResolver.suggest(text, captured, zone), text)
     }
     @Test fun `relative reminders retain the full requested delay including seconds`() {
         val start = captured.plusSeconds(59)
