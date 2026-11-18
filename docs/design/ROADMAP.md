@@ -49,6 +49,10 @@ not repeated tuning on these development recordings.
    Version 0.25 adds named attendance updates across multiple activities and
    bounded attendance/withdrawal phrases in all seven languages. Daily summaries
    use saved facts; conversation highlights remain temporary exact excerpts.
+   English sentences with several plans ("lunch at 1pm and a meeting at 3pm") now
+   yield one activity per plan when each part has its own event word and single
+   start time; parts share the sentence's date, and only named follow-ups attach.
+   Plans outside the event vocabulary (for example "the gym") are not detected.
 4. **Real integrations.** Validate actual messaging apps, grouped notifications,
    location/venue/address updates and reminder delivery under Doze. Calendar access
    checks conflicts. Version 0.25 can hand an event to the calendar editor for
