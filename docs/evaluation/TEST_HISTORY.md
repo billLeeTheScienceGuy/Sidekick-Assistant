@@ -526,7 +526,7 @@ passed on the phone with the flag (13 of 13).
 | T73 | Regression | Full device suite after merging T70–T72 | 124 test runs | First run 5 failures: 3 real bugs fixed (two venues merged; a change command merged into an older plan; an assumed length hid a repeat), 1 test missed by the new cancel rule, 1 Korean recognizer reading of a synthetic voice (separate, not caused by these changes) | Fixes merged; final result below |
 | T74 | Speaker matching | Larger stranger set in all 7 app languages (LibriSpeech train-clean-100, Common Voice ko/ar/ru/zh-TW/en/fr/de) | 1,813 stranger voices, about 6.6 million stranger turns | 97 stranger turns from 17 pairs of near-identical voices (11 Korean, 3 Russian, 2 English, 1 LibriSpeech); 0 in Chinese, Arabic, French, German; owner 78.9% | Rule kept; claim changed from "0 strangers" to "very rare, near-identical voices can pass" (SPEAKER_TUNING.md) |
 | T75 | Speaker matching | Second model on the 17 near-identical pairs; learned calibration instead of hand-set bars | 30 people x 4 models; 962 owners, about 12 million stranger turns (two halves) | All 4 models score every pair as one person (0 of 17 separated); calibration keeps 0.2% of owner turns vs 57.7% for the raw score at zero strangers | Neither adopted; the pairs are most likely duplicate people |
-| T76 | Transcription | Korean name correction against known names (`NameCorrection`), only before a person particle | 49-clip Korean names set (synthetic voices, 7 recognizers); 547 other Korean sentences | SenseVoice names right 27 -> 40 of 49; Qwen3 35 -> 43; Omni 20 -> 31; 0 of 547 other sentences changed; core 294 passed | Built and unit-tested; not yet wired into the app (needs a source of known names) |
+| T76 | Transcription | Korean name correction against known names (`NameCorrection`), only before a person particle | 49-clip Korean names set (synthetic voices, 7 recognizers); 547 other Korean sentences | SenseVoice names right 27 -> 40 of 49; Qwen3 35 -> 43; Omni 20 -> 31; 0 of 547 other sentences changed; core 294 passed | Wired into the app with names from saved plans (Settings > Saved plans > Names); phone run, see note |
 
 **What T73 found and fixed.** (1) Plans of the same kind at different places were merged; merging now requires the
 same place. (2) "Move the meeting to 7" also read as a new plan and was merged into an older 7 PM meeting, which then
@@ -546,3 +546,10 @@ drops a lone filler between Korean words (unit-tested, including cases that must
 Two-syllable names are now corrected only before particles used for people (한테, 랑, 씨, 네 …), and a particle as the next
 word must match exactly; after that 0 of 547 changed. The names set was also used to tune these rules, so real recordings
 are the next check.
+
+**T76 on the phone (Pixel, SenseVoice, app routing).** Same 49 clips, no typed name list: names right 28 of 49 without
+names from plans, 40 of 49 with them; character errors 18.6% -> 17.6%. All 12 changed sentences were fixes. Names come from
+saved plans (not Review, not dismissed); a setting keeps them after a plan is deleted, and Delete all clears them.
+
+**T77 Call notice.** A spoken notice given to people in the room no longer covers a phone call that starts afterwards
+(`ConsentGate.callStarted`); during a call only the owner's words are kept. Unit test added; core 296 passed.

@@ -17,6 +17,13 @@ class NameCorrectionTest {
         assertEquals("메건 이랑 커피", NameCorrection.correct("매건 이랑 커피", known))
     }
 
+    @Test fun namesAreReadFromSavedPlans() {
+        val names = NameCorrection.namesIn(listOf("내일 저녁에 애슐리랑 같이 밥", "케빈 씨가 아침 아홉 시에 온대요", "친구랑 영화", "엄마한테 전화",
+            "Dinner with Sarah", "브랜든네 집에 가요"))
+        assertEquals(setOf("애슐리", "케빈", "브랜든"), names)
+        assertEquals("에밀리 말고 애슐리랑 같이", NameCorrection.correct("에밀리 말고 에슐리랑 같이", names))
+    }
+
     @Test fun ordinaryWordsAndUnknownNamesStay() {
         assertEquals("내일 저녁 녁에 사랑 같이 밥", NameCorrection.correct("내일 저녁 녁에 사랑 같이 밥", known))
         assertEquals("에슐리랑 같이", NameCorrection.correct("에슐리랑 같이", listOf("케빈")))

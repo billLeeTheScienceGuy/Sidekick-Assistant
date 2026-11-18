@@ -10,7 +10,9 @@ import com.sidekick.core.SpeechQuality
 
 class SpeechEngine(private val context: Context, private val language: () -> SpeechLanguage = { SpeechLanguage.ENGLISH }, private val quality: () -> SpeechQuality = { SpeechQuality.FAST },
     /** The user's name list ("Sarah 세라", one per line), see NameSplice. */
-    private val spokenNames: () -> String = { "" }) {
+    private val spokenNames: () -> String = { "" },
+    /** Korean names found in saved plans (NameCorrection.namesIn), held in memory only. */
+    private val planNames: () -> Collection<String> = { emptyList() }) {
     private val koreanNames = TransducerSpeechEngine(context, TransducerSpeechEngine.KOREAN)
     private var namesText: String? = null
     private var namesParsed = emptyList<com.sidekick.core.NameSplice.Name>()
@@ -22,8 +24,11 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
         return File(context.noBackupFilesDir, "names-hotwords.txt").takeIf { namesParsed.isNotEmpty() && it.isFile }
     }
     /** Korean phrase: names from the user's list, heard by the Korean model with the list, replace SenseVoice's guesses. */
-    private suspend fun withNames(text: String, samples: FloatArray, threads: Int, retain: Boolean): String {
-        val hotwords = namesHotwords() ?: return text
+    private suspend fun withNames(heard: String, samples: FloatArray, threads: Int, retain: Boolean): String {
+        val hotwords = namesHotwords()
+        // Near-miss spellings of known names ("에슐리랑" -> "애슐리랑"), only before a particle used for people.
+        val text = com.sidekick.core.NameCorrection.correct(heard, namesParsed.flatMap { it.forms } + planNames())
+        if (hotwords == null) return text
         if (!koreanNames.available()) return com.sidekick.core.NameSplice.normalize(text, namesParsed)
         currentCoroutineContext().ensureActive()
         val listed = try { koreanNames.transcribe(samples, threads, retain, hotwords) } catch (e: CancellationException) { throw e } catch (_: Exception) { return text }

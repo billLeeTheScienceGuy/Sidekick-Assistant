@@ -233,6 +233,12 @@ class ConsentGate(
     @Volatile var noticeIncludedVoice: Boolean = false
         private set
 
+    /** A call started: the person on the line never heard a notice given in the room, so it no longer counts. */
+    @Synchronized fun callStarted() {
+        moveTo(RecordingJurisdiction.duringCall())
+        noticeAtMs = null; noticePlace = null; noticeIncludedVoice = false
+    }
+
     /** Returns true if the move cleared the notice (the new place is stricter in either rule than where it was given). */
     @Synchronized fun moveTo(next: RecordingJurisdiction.Place): Boolean {
         place = next

@@ -11,6 +11,16 @@ object NameCorrection {
     private val PERSON = setOf("이랑", "한테", "에게", "하고", "랑", "씨", "님", "네", "내")
     private val TOKEN = Regex("[가-힣]+")
 
+    /** Common words for people ("친구랑", "엄마한테") are not names. */
+    private val NOT_NAMES = setOf("친구", "엄마", "아빠", "동생", "언니", "오빠", "누나", "선생님", "선생", "남편", "아내", "부모님",
+        "할머니", "할아버지", "사장님", "팀장님", "아이", "애들", "우리", "저희", "그분", "사람", "가족", "회사", "누구", "여자친구", "남자친구")
+    private val NAMED = Regex("([가-힣]{2,4})(?:이랑|한테|에게|하고|랑|님|네)(?![가-힣])|([가-힣]{2,4}) ?씨(?:가|는|를|의|도|랑|한테|에게)?(?![가-힣])")
+
+    /** Korean names found in saved plan text: a word directly before a particle used for people ("세라랑 저녁"). */
+    fun namesIn(texts: Iterable<String>): Set<String> = texts.flatMap { text ->
+        NAMED.findAll(text).map { (it.groupValues[1].ifEmpty { it.groupValues[2] }) }.toList()
+    }.filter { it !in NOT_NAMES }.toSet()
+
     fun correct(text: String, known: Collection<String>): String {
         val names = known.map { it.trim() }.filter { it.length >= 2 && it.all { c -> c in '가'..'힣' } }.distinct()
         if (names.isEmpty()) return text

@@ -22,6 +22,14 @@ class RecordingConsentTest {
         assertEquals(Rule.ONE_PARTY, at(29.7604, -95.3698).recording)         // Houston, TX
         assertEquals(Rule.ONE_PARTY, at(21.3069, -157.8583).recording)        // Honolulu, HI
     }
+    @Test fun `a call ends a notice given in the room, even in an all-party state`() {
+        val gate = ConsentGate(RecordingJurisdiction.strictestEverywhere())
+        gate.noticeGiven(1_000)
+        assertTrue(gate.keepOthers(2_000))
+        gate.callStarted()
+        assertNull(gate.noticeAtMs)
+        assertFalse(gate.keepOthers(3_000))
+    }
     @Test fun `a faked location never loosens the rules`() {
         // Madison, WI is one-party with no voice rule, but a position from a mock-location app gets the strictest rules.
         val faked = RecordingJurisdiction.locate(43.0731, -89.4012, 5.0, 1_000, precise = true, simulated = true)

@@ -34,6 +34,24 @@ class GuidanceSettings(context: Context) {
     private val spokenNamesValue = MutableStateFlow(preferences.getString("spoken_names", "").orEmpty())
     val spokenNames = spokenNamesValue.asStateFlow()
     fun setSpokenNames(value: String) { val v = value.take(2000); preferences.edit().putString("spoken_names", v).apply(); spokenNamesValue.value = v }
+    /** Add Korean names from saved plans (not ones waiting in Review) to [learnedNames] automatically. Off: typed names only. */
+    private val learnNamesValue = MutableStateFlow(preferences.getBoolean("learn_names", true))
+    val learnNames = learnNamesValue.asStateFlow()
+    fun setLearnNames(value: Boolean) { preferences.edit().putBoolean("learn_names", value).apply(); learnNamesValue.value = value }
+    /** Keep learned names after their plan is past or deleted. Off: only names in plans that still exist. */
+    private val keepNamesValue = MutableStateFlow(preferences.getBoolean("keep_learned_names", true))
+    val keepLearnedNames = keepNamesValue.asStateFlow()
+    fun setKeepLearnedNames(value: Boolean) { preferences.edit().putBoolean("keep_learned_names", value).apply(); keepNamesValue.value = value }
+    /** Names learned from saved plans, on this phone only. Cleared by "Delete all". */
+    private val learnedNamesValue = MutableStateFlow(preferences.getString("learned_names", "").orEmpty().split('\n').filter { it.isNotBlank() }.toSet())
+    val learnedNames = learnedNamesValue.asStateFlow()
+    @Synchronized fun setLearnedNames(value: Set<String>) {
+        val v = value.take(100).toSet()
+        if (v == learnedNamesValue.value) return
+        preferences.edit().putString("learned_names", v.joinToString("\n")).apply(); learnedNamesValue.value = v
+    }
+    fun forgetLearnedName(name: String) = setLearnedNames(learnedNamesValue.value - name)
+    fun clearLearnedNames() = setLearnedNames(emptySet())
     /** Simple home (large Start/Stop button, next plans; Today / Plans / More) is the default. Detailed stays in Settings. */
     private val oneScreenValue = MutableStateFlow(preferences.getBoolean("one_screen_home", true))
     val oneScreenHome = oneScreenValue.asStateFlow()

@@ -372,7 +372,7 @@ class ListeningService : Service() {
                             }
                             if (calling != inCall) {
                                 inCall = calling
-                                consent.moveTo(if (calling) com.sidekick.core.RecordingJurisdiction.duringCall() else located)
+                                if (calling) consent.callStarted() else consent.moveTo(located)
                                 mutableState.update { it.copy(callActive = calling) }
                                 refreshConsent()
                             }

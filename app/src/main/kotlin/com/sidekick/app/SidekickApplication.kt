@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.collectLatest
 class SidekickApplication : Application() {
     val database by lazy { Room.databaseBuilder(this, MemoryDatabase::class.java, "sidekick.db").addMigrations(MemoryDatabase.MIGRATION_1_2, MemoryDatabase.MIGRATION_2_3, MemoryDatabase.MIGRATION_3_4, MemoryDatabase.MIGRATION_4_5, MemoryDatabase.MIGRATION_5_6, MemoryDatabase.MIGRATION_6_7, MemoryDatabase.MIGRATION_7_8).build() }
     val pipeline by lazy { CommitmentPipeline(RuleIntentExtractor()) }
-    val speech by lazy { SpeechEngine(this, { guidance.speechLanguage.value }, { guidance.speechQuality.value }, { guidance.spokenNames.value }) }
+    val speech by lazy { SpeechEngine(this, { guidance.speechLanguage.value }, { guidance.speechQuality.value }, { guidance.spokenNames.value },
+        { if (guidance.learnNames.value) guidance.learnedNames.value else emptySet() }) }
     val voiceProfile by lazy { com.sidekick.app.speaker.VoiceProfile(this, guidance.speechLanguage.value) }
     val temporary = TemporaryMemory { guidance.includeInformational.value }
     val guidance by lazy { GuidanceSettings(this) }
@@ -29,6 +30,14 @@ class SidekickApplication : Application() {
         super.onCreate()
         guidance // Read persisted mode before any background worker starts.
         calendarMirror.start(background)
+        // Korean names in saved plans (not Review, not dismissed) feed the names list used to correct Korean speech.
+        background.launch { kotlinx.coroutines.flow.combine(database.commitments().observe(), guidance.learnNames, guidance.keepLearnedNames) { saved, learn, keep ->
+            Triple(saved, learn, keep)
+        }.collect { (saved, learn, keep) ->
+            if (!learn) return@collect
+            val found = com.sidekick.core.NameCorrection.namesIn(saved.filter { it.state == "ACCEPTED" || it.state == "DONE" }.flatMap { listOf(it.title, it.evidence) })
+            guidance.setLearnedNames(if (keep) guidance.learnedNames.value + found else found)
+        } }
         background.launch { runCatching { reminders.restore(); automation.restoreNotifications() } }
         background.launch { guidance.handsOffMode.collect { if (it) automation.process() } }
         background.launch { guidance.speechLanguage.collect { voiceProfile.selectLanguage(it) } }

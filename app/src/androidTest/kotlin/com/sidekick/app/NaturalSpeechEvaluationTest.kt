@@ -64,7 +64,9 @@ class NaturalSpeechEvaluationTest {
                 val selected = if (mode == "auto") SpeechLanguage.AUTO else SpeechLanguage.fromCode(language)
                 // -e names "Sarah 세라|Jessica 제시카": a name list (| separates entries), as typed in Settings.
         val names = arguments.getString("names")?.replace("|", "\n") ?: File(directory, "names.txt").takeIf { it.isFile }?.readText().orEmpty() // or names.txt beside the clips
-        val engine = SpeechEngine(context, { selected }, { SpeechQuality.ADAPTIVE }, { names })
+        // -e planNames "세라|제시카": Korean names as if found in saved plans (no typed list needed).
+        val planNames = arguments.getString("planNames")?.split('|')?.filter { it.isNotBlank() }.orEmpty()
+        val engine = SpeechEngine(context, { selected }, { SpeechQuality.ADAPTIVE }, { names }, { planNames })
                 try {
                     for (row in group) {
                         if ("$mode/${row[0]}" in finished) continue

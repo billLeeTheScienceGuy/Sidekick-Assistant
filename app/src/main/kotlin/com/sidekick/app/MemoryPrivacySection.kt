@@ -48,6 +48,29 @@ internal fun MemoryPrivacySection() {
     }
     QuietLabel("Checks common scam phrases in English on this phone. Can miss scams. Alerts don’t save conversation text.")
     QuietLabel("Audio and full conversations aren’t saved. Saved plans may include source quotes. Deleting a plan also deletes its Undo history.")
+    val learnNames by app.guidance.learnNames.collectAsState()
+    val keepNames by app.guidance.keepLearnedNames.collectAsState()
+    val learned by app.guidance.learnedNames.collectAsState()
+    Text("Names", style = MaterialTheme.typography.titleSmall)
+    Row {
+        Switch(learnNames, app.guidance::setLearnNames, modifier = Modifier.testTag("learn-names").controlLabel("Learn names from my plans"))
+        Text("Learn names from my plans", Modifier.padding(start = 8.dp))
+    }
+    QuietLabel("Korean names in saved plans (not ones waiting in Review) help SideKick spell them right. Off: only the names you type under Voice.")
+    Row {
+        Switch(keepNames, app.guidance::setKeepLearnedNames, enabled = learnNames, modifier = Modifier.testTag("keep-learned-names").controlLabel("Keep names after a plan is deleted"))
+        Text("Keep names after a plan is deleted", Modifier.padding(start = 8.dp))
+    }
+    if (learned.isEmpty()) QuietLabel("No names learned yet.")
+    else {
+        QuietLabel("Learned from your plans, on this phone only. Tap a name to remove it.")
+        learned.sorted().chunked(3).forEach { row ->
+            Row { row.forEach { name ->
+                TextButton(onClick = { app.guidance.forgetLearnedName(name) }, modifier = Modifier.testTag("learned-name").controlLabel("Remove $name")) { Text("$name ✕") }
+            } }
+        }
+        TextButton(onClick = app.guidance::clearLearnedNames, modifier = Modifier.testTag("clear-learned-names")) { Text("Clear learned names") }
+    }
     Box {
         TextButton(onClick = { menu = true }, modifier = Modifier.testTag("retention-choice")) {
             Text(if (days == 0) "Keep saved plans: keep until I delete" else "Keep saved plans: $days days")
