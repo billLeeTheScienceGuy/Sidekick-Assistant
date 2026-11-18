@@ -553,3 +553,10 @@ saved plans (not Review, not dismissed); a setting keeps them after a plan is de
 
 **T77 Call notice.** A spoken notice given to people in the room no longer covers a phone call that starts afterwards
 (`ConsentGate.callStarted`); during a call only the owner's words are kept. Unit test added; core 296 passed.
+
+**November 18 additions (unit-tested; phone run to follow).** Voice questions about plans in all seven languages
+(`PlanQuestion`, 4 tests: answers in each language, a manual language understands only itself, no name means no
+answer); Auto-detect limited to chosen languages (`DetectLanguages`, 3 tests); speech files can be switched off,
+removed or downloaded with sizes shown; read-aloud reminders option; home-screen widget; names learned from plans.
+Core 303 passed. An earlier phone suite with the widget, names and read-aloud options: 128 of 128 passed.
+Battery-day procedure: `scripts/phone-tests/battery-day.sh`.

@@ -23,6 +23,35 @@ quality choices and installed weights are retained on upgrade; a fresh install
 starts with English Fast. Choosing a mode with missing weights disables Start
 until the needed packs are installed. Text, Planner and Summary remain available.
 
+## Every language: base and better-accuracy files (November 18, 2026)
+
+Sizes are the download size (MB = 1,000,000 bytes) and the space used on the phone. Built in means it is part of
+the app itself.
+
+| Language | Needed to work (Faster) | Recommended mode also uses | Better accuracy (optional) |
+|---|---|---|---|
+| English | Built in: Whisper Tiny English, 78 MB | Whisper languages, 226 MB | English accuracy (Parakeet), 137 MB, used by Auto-detect |
+| Korean | Korean & Chinese (SenseVoice), 240 MB | (same) | Korean names & time check, 76 MB (not offered for download yet) |
+| Chinese | Korean & Chinese (SenseVoice), 240 MB | (same) | none |
+| French | Whisper languages, 226 MB | + Auto-detect & multilingual (Omni), 366 MB | none |
+| German | Whisper languages, 226 MB | + Omni, 366 MB | none |
+| Russian | Whisper languages, 226 MB | + Omni, 366 MB | Russian accuracy (GigaAM), 229 MB |
+| Arabic | Whisper languages, 226 MB | Omni, 366 MB | none |
+| Auto-detect | Omni, 366 MB | + SenseVoice 240 MB and Whisper 226 MB for short phrases | English 137 MB, Russian 229 MB |
+
+Always built in: voice matching (CAM++, 28 MB), speaker turns (1.5 MB) and speech detection (0.9 MB). Everything
+for every language together: about 1,274 MB of speech files plus the built-in 109 MB. (The retired ResNet voice model, 27 MB, is still bundled for older voice setups.)
+
+**In the app (Settings > Listening > Speech files):** each file shows its size, what it is for, and whether it is on
+the phone. Installed files can be switched off without deleting them (SideKick then works as if they were not
+there), removed to free their space (a confirmation shows how much), or downloaded (the button shows the download size
+and opens SideKick's release page in the browser). Settings > Listening > Languages to detect limits Auto-detect to
+the languages you choose; one language means no guessing.
+
+**Security.** SideKick has no internet permission. Files are downloaded by the browser from SideKick's own release
+page only, and each file is installed only if its exact size and SHA-256 fingerprint match the list built into the
+app; any other file is refused before it is read.
+
 ## Build without optional weights
 
 Normal debug/release and compactTest builds need only

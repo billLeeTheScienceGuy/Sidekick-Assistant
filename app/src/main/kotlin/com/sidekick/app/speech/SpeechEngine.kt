@@ -12,7 +12,9 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
     /** The user's name list ("Sarah 세라", one per line), see NameSplice. */
     private val spokenNames: () -> String = { "" },
     /** Korean names found in saved plans (NameCorrection.namesIn), held in memory only. */
-    private val planNames: () -> Collection<String> = { emptyList() }) {
+    private val planNames: () -> Collection<String> = { emptyList() },
+    /** Languages Auto-detect may choose (Settings); all by default. */
+    private val detectLanguages: () -> Set<SpeechLanguage> = { SpeechLanguage.entries.filter { it != SpeechLanguage.AUTO }.toSet() }) {
     private val koreanNames = TransducerSpeechEngine(context, TransducerSpeechEngine.KOREAN)
     private var namesText: String? = null
     private var namesParsed = emptyList<com.sidekick.core.NameSplice.Name>()
@@ -61,6 +63,27 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
         shortPhrase: Boolean = samples.size < if (selectedLanguage in setOf(SpeechLanguage.AUTO, SpeechLanguage.FRENCH, SpeechLanguage.GERMAN, SpeechLanguage.RUSSIAN)) 128_000 else 48_000,
         /** Live voice track (Auto-detect remembers each voice's language); null for one-off audio. */
         voiceKey: String? = null,
+    ): String {
+        if (selectedLanguage != SpeechLanguage.AUTO) return transcribeOnce(samples, threads, retainModel, audioContext, selectedLanguage, selectedQuality, beamSize, shortPhrase, voiceKey)
+        // Auto-detect limited to the languages turned on: one language means no guessing; a reading in a language that
+        // is off is read again in an allowed one.
+        val allowed = detectLanguages()
+        com.sidekick.core.DetectLanguages.single(allowed)?.let { only ->
+            return transcribeOnce(samples, threads, retainModel, audioContext, only, selectedQuality, beamSize, shortPhrase, null)
+        }
+        val first = transcribeOnce(samples, threads, retainModel, audioContext, selectedLanguage, selectedQuality, beamSize, shortPhrase, voiceKey)
+        val again = com.sidekick.core.DetectLanguages.fallback(first, allowed) ?: return first
+        val backend = lastBackend
+        return try {
+            transcribeOnce(samples, threads, retainModel, audioContext, again, selectedQuality, beamSize, shortPhrase, null).also {
+                lastBackend = "${lastBackend ?: again.code} · ${again.code} (heard a language that is off, after $backend)"
+            }
+        } catch (e: CancellationException) { throw e } catch (_: Exception) { first }
+    }
+
+    private suspend fun transcribeOnce(
+        samples: FloatArray, threads: Int, retainModel: Boolean, audioContext: Int,
+        selectedLanguage: SpeechLanguage, selectedQuality: SpeechQuality, beamSize: Int, shortPhrase: Boolean, voiceKey: String?,
     ): String = try {
         gate.withLock {
             lastUncertain = false

@@ -14,9 +14,40 @@ object ModelPacks {
     val revision = MutableStateFlow(0)
     private val gate = Mutex()
     val labels = linkedMapOf("whisper" to "Whisper languages", "sensevoice" to "Korean & Chinese", "omni" to "Auto-detect & multilingual", "english" to "English accuracy (Auto-detect)", "russian" to "Russian accuracy (Auto-detect)", "korean" to "Korean names & time check")
-    fun catalog(context: Context) = context.assets.open("model-packs.tsv").bufferedReader().use { ModelPackCatalog.parse(it.readText()) }
+    /** What each speech file is for, shown next to its size. "Base" packs make a language work; the rest improve it. */
+    val usedFor = mapOf(
+        "whisper" to "Base: French, German, Russian, Arabic; English Recommended",
+        "sensevoice" to "Base: Korean, Chinese; also used by Auto-detect",
+        "omni" to "Base: Arabic and Auto-detect; French, German, Russian Recommended",
+        "english" to "Better accuracy: English in Auto-detect",
+        "russian" to "Better accuracy: Russian",
+        "korean" to "Better accuracy: Korean names and times")
+    @Volatile private var catalogCache: List<PackAsset>? = null
+    fun catalog(context: Context) = catalogCache ?: context.assets.open("model-packs.tsv").bufferedReader().use { ModelPackCatalog.parse(it.readText()) }.also { catalogCache = it }
     private fun store(context: Context) = ModelPackStore(File(context.noBackupFilesDir, "model-packs"), catalog(context))
+    private fun use(context: Context) = context.getSharedPreferences("model-pack-use", Context.MODE_PRIVATE)
+    /** A pack can stay installed but unused: SideKick then works as if it were not there. */
+    fun inUse(context: Context, pack: String): Boolean = use(context).getBoolean(pack, true)
+    fun setInUse(context: Context, pack: String, value: Boolean) { use(context).edit().putBoolean(pack, value).apply(); revision.value++ }
+    fun bytes(context: Context, pack: String): Long = catalog(context).filter { it.pack == pack }.sumOf { it.bytes }
+    /** Files on the phone, whether or not the pack is in use. */
+    fun installed(context: Context, pack: String): Boolean = catalog(context).filter { it.pack == pack }.let { rows -> rows.isNotEmpty() && rows.all { present(context, it.name) } }
+    /** Part of this app build itself (test builds): can be turned off but not removed. */
+    fun bundled(context: Context, pack: String): Boolean = catalog(context).filter { it.pack == pack }.all { context.assets.list("models").orEmpty().contains(it.name) }
+    /** Deletes a downloaded pack's files (not ones built into the app). Returns the bytes freed. */
+    suspend fun remove(context: Context, pack: String): Long = gate.withLock { SpeechEngine.modelMaintenance { withContext(Dispatchers.IO) {
+        var freed = 0L
+        catalog(context).filter { it.pack == pack }.forEach { asset ->
+            listOf(store(context).file(asset), File(context.noBackupFilesDir, asset.name)).forEach { f -> if (f.isFile) { freed += f.length(); f.delete() } }
+        }
+        revision.value++; freed
+    } } }
     fun available(context: Context, name: String): Boolean {
+        val asset = catalog(context).find { it.name == name }
+        if (asset != null && !inUse(context, asset.pack)) return false
+        return present(context, name)
+    }
+    private fun present(context: Context, name: String): Boolean {
         val asset = catalog(context).find { it.name == name }
         val old = File(context.noBackupFilesDir, name)
         if (old.isFile && (asset == null || old.length() == asset.bytes)) return true

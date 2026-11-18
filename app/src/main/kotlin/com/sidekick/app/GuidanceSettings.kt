@@ -34,6 +34,10 @@ class GuidanceSettings(context: Context) {
     private val spokenNamesValue = MutableStateFlow(preferences.getString("spoken_names", "").orEmpty())
     val spokenNames = spokenNamesValue.asStateFlow()
     fun setSpokenNames(value: String) { val v = value.take(2000); preferences.edit().putString("spoken_names", v).apply(); spokenNamesValue.value = v }
+    /** Optional mode: reminders are also read aloud when they arrive. */
+    private val readAloudValue = MutableStateFlow(preferences.getBoolean("read_reminders_aloud", false))
+    val readRemindersAloud = readAloudValue.asStateFlow()
+    fun setReadRemindersAloud(value: Boolean) { preferences.edit().putBoolean("read_reminders_aloud", value).apply(); readAloudValue.value = value }
     /** Add Korean names from saved plans (not ones waiting in Review) to [learnedNames] automatically. Off: typed names only. */
     private val learnNamesValue = MutableStateFlow(preferences.getBoolean("learn_names", true))
     val learnNames = learnNamesValue.asStateFlow()
@@ -124,6 +128,16 @@ class GuidanceSettings(context: Context) {
     private val handsOff = MutableStateFlow(preferences.getBoolean("hands_off", !context.packageName.endsWith(".benchmark")))
     val handsOffMode = handsOff.asStateFlow()
     fun setHandsOff(value: Boolean) { preferences.edit().putBoolean("hands_off", value).apply(); handsOff.value = value }
+    /** Languages Auto-detect may choose (all by default). Fewer languages: fewer wrong-language guesses on short phrases. */
+    private val detectValue = MutableStateFlow(preferences.getString("detect_languages", null)?.split(',')
+        ?.mapNotNull { code -> com.sidekick.core.SpeechLanguage.entries.firstOrNull { it.code == code && it != com.sidekick.core.SpeechLanguage.AUTO } }
+        ?.toSet()?.takeIf { it.isNotEmpty() } ?: com.sidekick.core.SpeechLanguage.entries.filter { it != com.sidekick.core.SpeechLanguage.AUTO }.toSet())
+    val detectLanguages = detectValue.asStateFlow()
+    fun setDetectLanguages(value: Set<com.sidekick.core.SpeechLanguage>) {
+        val v = value.filter { it != com.sidekick.core.SpeechLanguage.AUTO }.toSet()
+        if (v.isEmpty()) return // at least one language stays on
+        preferences.edit().putString("detect_languages", v.joinToString(",") { it.code }).apply(); detectValue.value = v
+    }
     private val languageValue = MutableStateFlow(com.sidekick.core.SpeechLanguage.fromCode(preferences.getString("speech_language", "en")))
     val speechLanguage = languageValue.asStateFlow()
     private val qualityValue = MutableStateFlow(preferences.getString("speech_quality", null)?.let(com.sidekick.core.SpeechQuality::fromName)

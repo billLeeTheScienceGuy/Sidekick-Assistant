@@ -43,14 +43,45 @@ internal fun ModelPackSection(initiallyExpanded: Boolean = true) {
     Text(if (missing.isEmpty()) "Speech is ready" else "Install for this language: ${missing.joinToString { ModelPacks.labels[it].orEmpty() }}", modifier = Modifier.testTag("model-readiness"))
     if (missing.isEmpty()) TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Hide speech files" else "Manage speech files") }
     if (expanded || missing.isNotEmpty()) {
-    Text("English Faster mode and voice matching are included. Install other speech files once. Speech stays on this phone.")
-    Text("Extra files can help check unclear Korean times.")
-    Text("Auto-detect uses the multilingual file. Other installed files can help with short phrases. Unclear times stay unknown.")
+    Text("English Faster mode and voice matching are included (built in). Base files make a language work; the others improve accuracy. " +
+        "Installed files can be switched off without deleting them. Speech stays on this phone.")
+    var removing by remember { mutableStateOf<String?>(null) }
     ModelPacks.labels.forEach { (id, label) ->
-        val rows = remember(revision) { ModelPacks.catalog(context).filter { it.pack == id } }
-        val ready = remember(revision) { rows.all { ModelPacks.available(context, it.name) } }
-        Text("$label · ${rows.sumOf { it.bytes } / 1_000_000} MB · ${if (ready) "Ready" else "Not installed"}")
+        val megabytes = remember { ModelPacks.bytes(context, id) / 1_000_000 }
+        val installed = remember(revision) { ModelPacks.installed(context, id) }
+        val bundled = remember(revision) { installed && ModelPacks.bundled(context, id) }
+        val inUse = remember(revision) { ModelPacks.inUse(context, id) }
+        OutlinedCard(Modifier.fillMaxWidth().testTag("pack-$id")) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("$label · $megabytes MB", style = MaterialTheme.typography.titleSmall)
+                QuietLabel(ModelPacks.usedFor[id].orEmpty())
+                Text(when { !installed -> "Not on this phone"; !inUse -> "On this phone · switched off"; bundled -> "Included in this app · in use"; else -> "On this phone · in use" })
+                if (installed) Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Switch(inUse, { ModelPacks.setInUse(context, id, it) }, enabled = !listening.recording && !listening.processing,
+                        modifier = Modifier.testTag("pack-use-$id").controlLabel("Use $label"))
+                    Text("Use", Modifier.padding(start = 8.dp))
+                }
+                if (installed && !bundled) TextButton(enabled = !working && !listening.recording && !listening.processing, onClick = { removing = id },
+                    modifier = Modifier.testTag("pack-remove-$id")) { Text("Remove from phone (frees $megabytes MB)") }
+                if (!installed && id == "korean") QuietLabel("Not offered for download yet: its training data's license still needs confirmation.")
+                else if (!installed) TextButton(modifier = Modifier.testTag("pack-get-$id"), onClick = {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/billLeeTheScienceGuy/Sidekick-Assistant/releases/tag/speech-packs")))
+                }) { Text("Download $megabytes MB (opens browser)") }
+            }
+        }
     }
+    removing?.let { id ->
+        val megabytes = ModelPacks.bytes(context, id) / 1_000_000
+        AlertDialog(onDismissRequest = { removing = null }, title = { Text("Remove ${ModelPacks.labels[id]}?") },
+            text = { Text("Deletes $megabytes MB of speech files from this phone. You can download and install them again later.") },
+            confirmButton = { TextButton(onClick = {
+                removing = null
+                scope.launch { working = true; try { val freed = ModelPacks.remove(context, id); message = "Removed · freed ${freed / 1_000_000} MB" }
+                    catch (e: CancellationException) { throw e } catch (_: Exception) { message = "Couldn't remove the files. Try again." } finally { working = false } }
+            }, modifier = Modifier.testTag("pack-remove-confirm")) { Text("Remove") } },
+            dismissButton = { TextButton(onClick = { removing = null }) { Text("Cancel") } })
+    }
+    QuietLabel("Downloads come only from SideKick's own page. Each file is checked against a fingerprint built into the app before it is installed; any other file is refused. SideKick itself never connects to the internet.")
     TextButton(enabled = !working && !listening.recording && !listening.processing, modifier = Modifier.testTag("import-speech-pack"),
         onClick = { picker.launch(arrayOf("*/*")) }) { Text("Install speech file") }
     // SideKick has no network permission: the browser downloads the file, then "Install speech file" verifies it.

@@ -132,7 +132,20 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                                     settings.setAutomaticLanguage(it)
                                     voice.selectLanguage(settings.speechLanguage.value)
                                 }, "auto-language", !listening.recording && !listening.processing)
-                                if (auto) QuietLabel("Works across conversations. Short or mixed-language phrases can be wrong.")
+                                if (auto) {
+                                    QuietLabel("Works across conversations. Short or mixed-language phrases can be wrong.")
+                                    val detect by settings.detectLanguages.collectAsState()
+                                    Text("Languages to detect", style = MaterialTheme.typography.titleSmall)
+                                    QuietLabel("Fewer languages: fewer wrong-language guesses. One language: no guessing at all.")
+                                    com.sidekick.core.SpeechLanguage.entries.filter { it != com.sidekick.core.SpeechLanguage.AUTO }.forEach { language ->
+                                        Row(Modifier.heightIn(min = 48.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                            Checkbox(language in detect, { on -> settings.setDetectLanguages(if (on) detect + language else detect - language) },
+                                                enabled = !listening.recording && !listening.processing && !(language in detect && detect.size == 1),
+                                                modifier = Modifier.testTag("detect-${language.code}").controlLabel("Detect ${language.label}"))
+                                            Text(language.label, Modifier.padding(start = 8.dp))
+                                        }
+                                    }
+                                }
                                 else {
                                     var languageMenu by remember { mutableStateOf(false) }
                                     Box {
@@ -235,6 +248,9 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                                     Text("Keep plans I’m not attending", Modifier.padding(start = 8.dp))
                                 }
                                 QuietLabel("These plans don’t block your calendar. You can mark them as your own later.")
+                                HorizontalDivider()
+                                val readAloud by settings.readRemindersAloud.collectAsState()
+                                SettingsToggle("Read reminders aloud", "Off by default. When a reminder arrives, the phone also says it out loud.", readAloud, settings::setReadRemindersAloud, "read-reminders-aloud")
                                 TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)) },
                                     modifier = Modifier.heightIn(min = 48.dp)) { Text("Reminder alerts") }
                                 CalendarSyncSection()

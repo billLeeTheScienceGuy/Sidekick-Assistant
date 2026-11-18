@@ -161,6 +161,9 @@ class ReminderCoordinator(private val context: Context, private val dao: Commitm
             .setSmallIcon(android.R.drawable.ic_popup_reminder).setContentTitle("SideKick reminder")
             .setContentText(text(item)).setStyle(Notification.BigTextStyle().bigText(text(item)))
             .setVisibility(Notification.VISIBILITY_PRIVATE).setContentIntent(open).setOnlyAlertOnce(true).setAutoCancel(true).build())
+        // Optional mode (Settings > Plans): the reminder is also read aloud.
+        if ((context.applicationContext as? com.sidekick.app.SidekickApplication)?.guidance?.readRemindersAloud?.value == true)
+            ReminderVoice.speak(context, "Reminder: ${text(item)}")
         val now = System.currentTimeMillis()
         // A second default reminder (medical: 1 hour before) re-arms instead of marking the item delivered.
         val follow = com.sidekick.core.PlanNotes.followUp(item.reviewNote, item.activityStartAt, now)

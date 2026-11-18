@@ -52,6 +52,8 @@ data class ListeningState(
     val noticeActive: Boolean = false,
     /** A phone call is active: strictest rule for the call. */
     val callActive: Boolean = false,
+    /** The latest answer to "SideKick, what's my plan today?" (shown on screen; spoken only when it won't interrupt). */
+    val answer: String = "",
     /** Identifies this listening session's notice records (no audio, no voice data). */
     val sessionId: String? = null,
 )
@@ -72,7 +74,43 @@ class ListeningService : Service() {
     /** While the spoken notice plays (plus a short tail), microphone input is replaced by silence: SideKick never transcribes itself. */
     @Volatile private var muteUntil = 0L
     @Volatile private var noticePlaying = false
-    private fun speakingNotice(now: Long) = noticePlaying || now < muteUntil
+    @Volatile private var answerPlaying = false
+    private var answerVoice: android.speech.tts.TextToSpeech? = null
+    private fun speakingNotice(now: Long) = noticePlaying || answerPlaying || now < muteUntil
+
+    /** Reads an answer aloud; the microphone is muted meanwhile so SideKick never writes down its own voice. */
+    private fun speakAnswer(text: String, language: String) {
+        answerVoice?.shutdown()
+        answerPlaying = true
+        answerVoice = android.speech.tts.TextToSpeech(this) { status ->
+            val tts = answerVoice
+            if (status != android.speech.tts.TextToSpeech.SUCCESS || tts == null) { answerPlaying = false; return@TextToSpeech }
+            tts.language = if (language == "en") java.util.Locale.US else java.util.Locale.forLanguageTag(language)
+            tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                override fun onStart(id: String?) {}
+                override fun onDone(id: String?) { answerPlaying = false; muteUntil = SystemClock.elapsedRealtime() + 700 }
+                @Deprecated("Deprecated in Java") override fun onError(id: String?) { answerPlaying = false; muteUntil = SystemClock.elapsedRealtime() + 700 }
+            })
+            if (tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "sidekick-answer") != android.speech.tts.TextToSpeech.SUCCESS) answerPlaying = false
+        }
+    }
+
+    /**
+     * "SideKick, what's my plan today?" (any app language): answered from saved plans. The question must start with
+     * SideKick's name, so the same words said to someone else never trigger it. Spoken for the owner's voice when no call
+     * is active; an unassigned voice gets the answer on screen only; another person's voice asking is ignored.
+     */
+    private fun answerQuestion(question: com.sidekick.core.PlanQuestion.Question, speaker: Speaker) {
+        if (speaker == Speaker.OTHER) return
+        scope.launch {
+            val plans = app.database.commitments().all().filter { it.state == "ACCEPTED" || it.state == "DONE" }
+                .map { com.sidekick.core.PlanQuestion.Plan(it.title, it.activityStartAt ?: it.dueAt, it.informational) }
+            val text = com.sidekick.core.PlanQuestion.answer(question, plans, System.currentTimeMillis(), java.time.ZoneId.systemDefault())
+            val speak = speaker == Speaker.USER && !mutableState.value.callActive
+            mutableState.update { it.copy(answer = text) }
+            if (speak) mainHandler.post { speakAnswer(text, question.language) }
+        }
+    }
     /** Microphone frame levels (numbers only) measured while the notice plays: was it loud enough to count? */
     private val noticeLevels = java.util.concurrent.ConcurrentLinkedQueue<Float>()
     private val autoAnnouncer = com.sidekick.core.AutoAnnouncer()
@@ -461,7 +499,14 @@ class ListeningService : Service() {
                     }
                 }) { text, startSample, latency ->
                     ensureActive()
-                    if (!discard && holdNext && text.isNotBlank()) {
+                    // Understood languages follow the language setting: one language, or Auto-detect's chosen languages.
+                    val questionLanguages = app.guidance.speechLanguage.value.let { l ->
+                        if (l == com.sidekick.core.SpeechLanguage.AUTO) app.guidance.detectLanguages.value.map { it.code }.toSet() else setOf(l.code) }
+                    val question = if (!discard && !enrollment) com.sidekick.core.PlanQuestion.parse(text, questionLanguages) else null
+                    if (question != null) {
+                        // A question to SideKick is answered, not saved as conversation text or a plan.
+                        answerQuestion(question, identified)
+                    } else if (!discard && holdNext && text.isNotBlank()) {
                         app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text)
                         heldText = HeldText(text, started.plusMillis(startSample * 1000 / 16000), continuation, !app.speech.lastUncertain, app.speech.lastTimeChoices)
                     } else if (!discard) {
@@ -565,7 +610,7 @@ class ListeningService : Service() {
     }
 
     override fun onTimeout(startId: Int) { CaptureStatusAlerts.stopped(this); app.assistant.disarm("Android stopped listening"); capture?.cancel(); stopSelf() }
-    override fun onDestroy() { noticeVoice?.shutdown(); noticeVoice = null; gate = null; scope.cancel(); stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy() }
+    override fun onDestroy() { noticeVoice?.shutdown(); noticeVoice = null; answerVoice?.shutdown(); answerVoice = null; gate = null; scope.cancel(); stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy() }
     companion object {
         private const val CHANNEL = "listening"
         const val FINISH = "com.sidekick.FINISH"

@@ -50,7 +50,9 @@ class MainActivity : ComponentActivity() {
     }
     private var sharedText by mutableStateOf<String?>(null)
     private var calendarTarget by mutableStateOf<String?>(null)
+    private var widgetStart by mutableStateOf(false)
     private fun receiveShare(incoming: Intent?) {
+        if (incoming?.action == PlanWidget.START) { widgetStart = true; incoming.action = null }
         if (incoming?.action == Intent.ACTION_VIEW) calendarTarget = CalendarTarget.parse(incoming.data, packageName)
         if (incoming?.action == Intent.ACTION_SEND && incoming.type == "text/plain")
             sharedText = runCatching { incoming.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.take(6000) }.getOrNull()?.takeIf { it.isNotBlank() }
@@ -168,6 +170,10 @@ class MainActivity : ComponentActivity() {
             if (app.guidance.skipListeningIntro.value) beginListening()
             else micDialog = true
         }
+        // Start from the home-screen widget: the same checks as the Start button (permissions, consent, intro).
+        LaunchedEffect(widgetStart) {
+            if (widgetStart) { widgetStart = false; if (!ListeningService.state.value.recording) requestListening() }
+        }
         requestListeningAfterChecks = ::requestListening
         val wavPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri?.let { consent = false; model.importWav(it) }
@@ -274,6 +280,7 @@ class MainActivity : ComponentActivity() {
                                 if (listening.consent.isNotBlank()) QuietLabel(listening.consent, Modifier.testTag("consent-status"))
                                 if (listening.droppedChunks > 0) QuietLabel("${listening.droppedChunks} phrases from other voices dropped, never saved")
                                 if (listening.callActive) QuietLabel("Call detected: strictest rule", Modifier.testTag("call-status"))
+                                if (listening.answer.isNotBlank()) Text(listening.answer, style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("plan-answer"))
                                 if (listening.noticeNeeded || alwaysAnnounce) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OutlinedButton(onClick = { serviceAction(ListeningService.ANNOUNCE) }, modifier = Modifier.testTag("announce-notice")) {
                                         Text(if (listening.noticeActive) "Announce again" else "Announce note-taking")

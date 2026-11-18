@@ -10,12 +10,14 @@ import com.sidekick.app.reminders.ReminderCoordinator
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 class SidekickApplication : Application() {
     val database by lazy { Room.databaseBuilder(this, MemoryDatabase::class.java, "sidekick.db").addMigrations(MemoryDatabase.MIGRATION_1_2, MemoryDatabase.MIGRATION_2_3, MemoryDatabase.MIGRATION_3_4, MemoryDatabase.MIGRATION_4_5, MemoryDatabase.MIGRATION_5_6, MemoryDatabase.MIGRATION_6_7, MemoryDatabase.MIGRATION_7_8).build() }
     val pipeline by lazy { CommitmentPipeline(RuleIntentExtractor()) }
     val speech by lazy { SpeechEngine(this, { guidance.speechLanguage.value }, { guidance.speechQuality.value }, { guidance.spokenNames.value },
-        { if (guidance.learnNames.value) guidance.learnedNames.value else emptySet() }) }
+        { if (guidance.learnNames.value) guidance.learnedNames.value else emptySet() }, { guidance.detectLanguages.value }) }
     val voiceProfile by lazy { com.sidekick.app.speaker.VoiceProfile(this, guidance.speechLanguage.value) }
     val temporary = TemporaryMemory { guidance.includeInformational.value }
     val guidance by lazy { GuidanceSettings(this) }
@@ -30,6 +32,10 @@ class SidekickApplication : Application() {
         super.onCreate()
         guidance // Read persisted mode before any background worker starts.
         calendarMirror.start(background)
+        // Home-screen widget: redraw when plans change or listening starts or stops.
+        background.launch { kotlinx.coroutines.flow.combine(database.commitments().observe(),
+            com.sidekick.app.audio.ListeningService.state.map { it.recording }.distinctUntilChanged()) { _, _ -> Unit }
+            .collect { runCatching { PlanWidget.render(this@SidekickApplication) } } }
         // Korean names in saved plans (not Review, not dismissed) feed the names list used to correct Korean speech.
         background.launch { kotlinx.coroutines.flow.combine(database.commitments().observe(), guidance.learnNames, guidance.keepLearnedNames) { saved, learn, keep ->
             Triple(saved, learn, keep)
