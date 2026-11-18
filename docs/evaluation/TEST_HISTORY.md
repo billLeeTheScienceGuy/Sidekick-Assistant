@@ -566,3 +566,9 @@ in the chosen mode, only missing files are downloaded, a switched-off file needs
 switching off a file first says which languages stop and which keep working in Faster mode. Core 308 passed. Phone:
 full suite 129 of 129 (before this screen); then NewOptionsTest, ListeningSettingsTest and BundledOfflineTest 9 of 9
 on the new build.
+
+**T78 Speech models on the phone (November 18).** 16 models, 140 noisy clips (20 per language), on the Pixel, locked
+and unplugged (docs/evaluation/PHONE_MODEL_BENCH.md). The app's models stay best for English (Parakeet 1.4%),
+Korean (SenseVoice 10.3%) and Russian (GigaAM 2.8%). Qwen3-ASR is more accurate for Chinese (14.4% vs 19.6%) and French
+(11.9% vs 15.8%) but needs 7-10 s per phrase and 954 MB. Cohere Transcribe: German 3.9% (vs 11.4%) but 30 s per phrase
+and out of memory; not usable on this phone.
