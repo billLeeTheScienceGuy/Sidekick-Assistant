@@ -28,16 +28,20 @@ until the needed packs are installed. Text, Planner and Summary remain available
 Sizes are the download size (MB = 1,000,000 bytes) and the space used on the phone. Built in means it is part of
 the app itself.
 
-| Language | Needed to work (Faster) | Recommended mode also uses | Better accuracy (optional) |
+| Language | Faster mode | Recommended mode | Better accuracy (optional) |
 |---|---|---|---|
-| English | Built in: Whisper Tiny English, 78 MB | Whisper languages, 226 MB | English accuracy (Parakeet), 137 MB, used by Auto-detect |
-| Korean | Korean & Chinese (SenseVoice), 240 MB | (same) | Korean names & time check, 76 MB (not offered for download yet) |
-| Chinese | Korean & Chinese (SenseVoice), 240 MB | (same) | none |
-| French | Whisper languages, 226 MB | + Auto-detect & multilingual (Omni), 366 MB | none |
-| German | Whisper languages, 226 MB | + Omni, 366 MB | none |
-| Russian | Whisper languages, 226 MB | + Omni, 366 MB | Russian accuracy (GigaAM), 229 MB |
+| English | Built in (78 MB) | Whisper languages, 226 MB | English accuracy (Parakeet), 137 MB, used by Auto-detect |
+| Korean | Whisper languages, 226 MB | Korean & Chinese (SenseVoice), 240 MB | Korean names & time check, 76 MB (not offered for download yet) |
+| Chinese | Whisper languages, 226 MB | SenseVoice, 240 MB | none |
+| French, German | Whisper languages, 226 MB | Whisper + Omni (366 MB) | none |
+| Russian | Whisper languages, 226 MB | Whisper + Omni | Russian accuracy (GigaAM), 229 MB |
 | Arabic | Whisper languages, 226 MB | Omni, 366 MB | none |
-| Auto-detect | Omni, 366 MB | + SenseVoice 240 MB and Whisper 226 MB for short phrases | English 137 MB, Russian 229 MB |
+| Auto-detect | Whisper languages, 226 MB | Omni (+ SenseVoice and Whisper for short phrases) | English 137 MB, Russian 229 MB |
+
+Files are shared: Whisper alone makes every language work in Faster mode; Whisper + Omni + SenseVoice (about 830 MB)
+make every language work in Recommended mode. The app's Speech files screen shows, for each language, exactly what is
+still missing (only that is downloaded), which other languages the same download makes ready, and, before removing or
+switching off a file, which languages stop working and which keep working in Faster mode (`LanguageReadiness`).
 
 Always built in: voice matching (CAM++, 28 MB), speaker turns (1.5 MB) and speech detection (0.9 MB). Everything
 for every language together: about 1,274 MB of speech files plus the built-in 109 MB. (The retired ResNet voice model, 27 MB, is still bundled for older voice setups.)

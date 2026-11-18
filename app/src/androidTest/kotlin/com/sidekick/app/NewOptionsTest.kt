@@ -64,6 +64,33 @@ class NewOptionsTest {
         compose.onNodeWithTag("keep-learned-names").performScrollTo().assertIsDisplayed()
     }
 
+    @Test fun detectLanguagesAndSpeechFileControls() {
+        val s = app.guidance
+        val oldLanguage = s.speechLanguage.value; val oldQuality = s.speechQuality.value; val oldDetect = s.detectLanguages.value
+        try {
+            compose.runOnUiThread { s.setSpeechQuality(com.sidekick.core.SpeechQuality.ADAPTIVE); s.setSpeechLanguage(com.sidekick.core.SpeechLanguage.AUTO) }
+            compose.onNodeWithTag("settings").performClick()
+            compose.onNodeWithTag("settings-page-LISTENING").performScrollTo().performClick()
+            compose.onNodeWithTag("detect-ru").performScrollTo().performClick()
+            waitFor { com.sidekick.core.SpeechLanguage.RUSSIAN !in s.detectLanguages.value }
+            compose.onNodeWithText("Manage speech files").performScrollTo().performClick()
+            compose.onNodeWithTag("pack-omni").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag("language-ready-fr").performScrollTo().assertIsDisplayed()
+            // Switching off asks first and says what changes (SenseVoice: Korean and Chinese fall back to Faster mode).
+            compose.onNodeWithTag("pack-use-sensevoice").performScrollTo().performClick()
+            compose.onNodeWithText("Still works in Faster mode only", substring = true).assertIsDisplayed()
+            compose.onNodeWithTag("pack-confirm").performClick()
+            waitFor { !com.sidekick.app.speech.ModelPacks.inUse(app, "sensevoice") }
+            assertFalse("a switched-off pack is treated as absent", com.sidekick.app.speech.ModelPacks.available(app, "sensevoice-ko.int8.onnx"))
+            // The language list offers to turn it back on, with no download.
+            compose.onNodeWithTag("language-turn-on-ko").performScrollTo().performClick()
+            waitFor { com.sidekick.app.speech.ModelPacks.inUse(app, "sensevoice") }
+        } finally {
+            com.sidekick.app.speech.ModelPacks.setInUse(app, "korean", true); com.sidekick.app.speech.ModelPacks.setInUse(app, "sensevoice", true)
+            s.setDetectLanguages(oldDetect); s.setSpeechQuality(oldQuality); s.setSpeechLanguage(oldLanguage)
+        }
+    }
+
     @Test fun widgetDrawsWithoutError() = runBlocking {
         PlanWidget.render(app) // no widget placed: returns quietly; placed: redraws
         com.sidekick.app.reminders.ReminderVoice.speak(app, "Reminder: test")

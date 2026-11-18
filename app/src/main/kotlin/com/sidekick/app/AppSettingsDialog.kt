@@ -152,7 +152,12 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                                         OutlinedButton(onClick = { languageMenu = true }, enabled = !listening.recording && !listening.processing, modifier = Modifier.heightIn(min = 48.dp).testTag("language-choice")) { Text(speechLanguage.label) }
                                         DropdownMenu(expanded = languageMenu, onDismissRequest = { languageMenu = false }) {
                                             com.sidekick.core.SpeechLanguage.entries.filter { it != com.sidekick.core.SpeechLanguage.AUTO }.forEach { language ->
-                                                DropdownMenuItem(text = { Text(language.label) }, onClick = {
+                                                val st = remember(languageMenu, speechQuality) { com.sidekick.app.speech.ModelPacks.status(context, language, speechQuality) }
+                                                DropdownMenuItem(text = { Text(language.label + when {
+                                                    st.ready -> " · ready"
+                                                    st.download.isEmpty() -> " · turn on files"
+                                                    else -> " · needs ${(st.downloadBytes + 500_000) / 1_000_000} MB" + if (st.readyInFaster) " (works in Faster)" else ""
+                                                }) }, onClick = {
                                                     settings.setSpeechLanguage(language); voice.selectLanguage(language); languageMenu = false
                                                 }, modifier = Modifier.testTag("speech-language-${language.code}"))
                                             }

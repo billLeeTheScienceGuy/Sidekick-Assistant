@@ -560,3 +560,9 @@ answer); Auto-detect limited to chosen languages (`DetectLanguages`, 3 tests); s
 removed or downloaded with sizes shown; read-aloud reminders option; home-screen widget; names learned from plans.
 Core 303 passed. An earlier phone suite with the widget, names and read-aloud options: 128 of 128 passed.
 Battery-day procedure: `scripts/phone-tests/battery-day.sh`.
+
+**Language-aware speech files (November 18).** `LanguageReadiness` (5 core tests): each language shows what is missing
+in the chosen mode, only missing files are downloaded, a switched-off file needs no download, and removing or
+switching off a file first says which languages stop and which keep working in Faster mode. Core 308 passed. Phone:
+full suite 129 of 129 (before this screen); then NewOptionsTest, ListeningSettingsTest and BundledOfflineTest 9 of 9
+on the new build.

@@ -54,13 +54,12 @@ object ModelPacks {
         if (asset != null && store(context).file(asset).let { it.isFile && it.length() == asset.bytes }) return true
         return context.assets.list("models").orEmpty().contains(name)
     }
-    fun required(language: SpeechLanguage, quality: SpeechQuality): Set<String> = when {
-        quality.usesSenseVoice(language) -> setOf("sensevoice")
-        quality == SpeechQuality.ADAPTIVE && language in setOf(SpeechLanguage.ARABIC, SpeechLanguage.AUTO) -> setOf("omni")
-        quality == SpeechQuality.ADAPTIVE && language in setOf(SpeechLanguage.FRENCH, SpeechLanguage.GERMAN, SpeechLanguage.RUSSIAN) -> setOf("whisper", "omni")
-        language == SpeechLanguage.ENGLISH && quality == SpeechQuality.FAST -> emptySet()
-        else -> setOf("whisper")
-    }
+    fun required(language: SpeechLanguage, quality: SpeechQuality): Set<String> = LanguageReadiness.required(language, quality)
+    fun installedPacks(context: Context): Set<String> = labels.keys.filter { installed(context, it) }.toSet()
+    fun packsInUse(context: Context): Set<String> = labels.keys.filter { installed(context, it) && inUse(context, it) }.toSet()
+    fun sizes(context: Context): Map<String, Long> = labels.keys.associateWith { bytes(context, it) }
+    fun status(context: Context, language: SpeechLanguage, quality: SpeechQuality) =
+        LanguageReadiness.status(language, quality, installedPacks(context), packsInUse(context), sizes(context))
     fun missing(context: Context, language: SpeechLanguage, quality: SpeechQuality): Set<String> = required(language, quality).filter { id ->
         catalog(context).filter { it.pack == id }.any { !available(context, it.name) }
     }.toSet()
