@@ -16,6 +16,48 @@ class ActivityTimingTest {
     }
     private fun source(text: String) = Transcript(text, Instant.parse("2026-10-22T17:00:00Z"), ZoneId.of("America/Chicago"), Speaker.USER, true)
 
+    @Test fun `one sentence with several plans yields one activity per plan`() {
+        for (text in listOf("I have lunch at 1pm and a meeting at 3pm.", "Lunch at 1pm, then a meeting at 3pm.", "Lunch at 1pm and then a meeting at 3pm.")) {
+            val activities = ActivityTiming.extract(source(text))
+            assertEquals(listOf(Instant.parse("2026-10-22T18:00:00Z"), Instant.parse("2026-10-22T20:00:00Z")), activities.map { it.activityStartAt }, text)
+            assertTrue(activities.all { it.needsReview.contains("One of several plans") }, text)
+        }
+        val titles = ActivityTiming.extract(source("I have lunch at 1pm and a meeting at 3pm.")).map { it.title }
+        assertEquals(listOf("I have lunch at 1pm", "A meeting at 3pm"), titles)
+    }
+    @Test fun `plans share the sentence date unless they name their own`() {
+        val shared = ActivityTiming.extract(source("Tomorrow, lunch at noon and a meeting at 3pm."))
+        assertEquals(listOf(Instant.parse("2026-10-23T17:00:00Z"), Instant.parse("2026-10-23T20:00:00Z")), shared.map { it.activityStartAt })
+        assertTrue(shared.none { it.needsReview.contains("Date inferred") })
+        val separate = ActivityTiming.extract(source("Lunch tomorrow at noon and dinner on Saturday at 7pm."))
+        assertEquals(listOf(Instant.parse("2026-10-23T17:00:00Z"), Instant.parse("2026-10-25T00:00:00Z")), separate.map { it.activityStartAt })
+    }
+    @Test fun `details hedges and single plans are not split`() {
+        val party = ActivityTiming.extract(source("There's a party at 8pm and it ends at midnight.")).single()
+        assertEquals(Instant.parse("2026-10-23T05:00:00Z"), party.activityEndAt)
+        assertFalse(party.needsReview.contains("One of several plans"))
+        assertEquals("Lunch and dinner at 7pm", ActivityTiming.extract(source("Lunch and dinner at 7pm.")).single().title)
+        assertTrue(ActivityTiming.extract(source("Maybe lunch at 1pm and a meeting at 3pm.")).isEmpty())
+        assertTrue(ActivityTiming.extract(source("Lunch at 1pm and a meeting at 3pm or 4pm.")).isEmpty())
+    }
+    @Test fun `only named follow-ups attach after a sentence with several plans`() {
+        val pronoun = ActivityTiming.extract(source("There's a lunch at 1pm and a meeting at 3pm. It ends at 4pm."))
+        assertEquals(2, pronoun.size)
+        assertTrue(pronoun.all { it.activityEndAt == null })
+        val named = ActivityTiming.extract(source("There's a lunch at 1pm and a meeting at 3pm. The meeting ends at 4pm."))
+        assertNull(named.single { it.title.contains("lunch") }.activityEndAt)
+        assertEquals(Instant.parse("2026-10-22T21:00:00Z"), named.single { it.title.contains("meeting") }.activityEndAt)
+    }
+    @Test fun `a promise covering several plans makes each plan personal unless it has its own subject`() {
+        val both = source("I'll go to lunch at 1pm and the meeting at 3pm.")
+        val personal = ActivityTiming.merge(both, RuleIntentExtractor().extract(both))
+        assertEquals(2, personal.size)
+        assertTrue(personal.none { it.informational })
+        val mixed = source("I'll go to lunch at 1pm and there's a meeting at 3pm.")
+        val result = ActivityTiming.merge(mixed, RuleIntentExtractor().extract(mixed))
+        assertEquals(listOf(false, true), result.map { it.informational })
+    }
+
     @Test fun `spoken AM at a sentence end stays morning`() {
         // Parakeet's reading of the owner's line 8 used to become 7 PM: "AM." was not recognized as morning.
         for (text in listOf("There's a gym class tomorrow at seven AM.", "There's a gym class tomorrow at seven a.m.", "There's a gym class tomorrow at 7am."))

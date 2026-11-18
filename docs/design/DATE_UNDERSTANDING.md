@@ -14,6 +14,11 @@ still have one. Automatic rescheduling does not choose between the interpretatio
 They work across DST changes without shortening the requested delay. Absolute
 wall-clock times in a DST gap or overlap stay unresolved. Midnight is supported.
 
+Compound and fractional delays add up to one elapsed time: “in an hour and a half,”
+“in 1 hour 30 minutes,” “in two and a half hours,” “in 1.5 hours” and “in forty-five
+minutes.” Ranges such as “in an hour or two” or “in a minute or so” stay unresolved.
+“This weekend,” “next week” and similar spans name no single day and stay unresolved.
+
 Alternative clocks, alternative offsets, compound durations outside the supported
 grammar, conflicting dates and invalid calendar dates stay unresolved. Multilingual
 rules also reject alternative start clocks in Korean, Chinese, French, German and
