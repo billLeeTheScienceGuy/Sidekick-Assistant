@@ -532,7 +532,12 @@ class ListeningService : Service() {
                 var privacyCheckAt = 0L
                 var renewAt = SystemClock.elapsedRealtime() + 5 * 60_000L
                 // Optional "pause when resting": screen on, unlock or carrying motion count as activity and resume.
-                val rest = com.sidekick.core.RestingPause(SystemClock.elapsedRealtime())
+                // Test switches (phone tests only, never shown): the old capture loop for battery comparisons, and a
+                // short resting window so the pause can be tested in minutes.
+                val switches = getSharedPreferences("test-switches", MODE_PRIVATE)
+                val legacy = switches.getBoolean("legacy_capture", false)
+                pipeline.quietGate = !legacy
+                val rest = com.sidekick.core.RestingPause(SystemClock.elapsedRealtime(), switches.getLong("rest_quiet_ms", 30 * 60_000L))
                 val woke = java.util.concurrent.atomic.AtomicBoolean(false)
                 val wakeReceiver = object : android.content.BroadcastReceiver() {
                     override fun onReceive(c: android.content.Context?, i: Intent?) { woke.set(true) }
@@ -573,7 +578,7 @@ class ListeningService : Service() {
                     if (SystemClock.elapsedRealtime() >= privacyCheckAt) {
                         // Every 2 s (was 4 times a second): revoking the permission ends the app anyway, and a muted
                         // microphone only delivers silence, so at most 2 s of silence is read before stopping.
-                        privacyCheckAt = SystemClock.elapsedRealtime() + 2_000
+                        privacyCheckAt = SystemClock.elapsedRealtime() + if (legacy) 250 else 2_000
                         check(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) { "Microphone access was removed. Listening stopped." }
                         check(!audioManager.isMicrophoneMute && (Build.VERSION.SDK_INT < 29 || audio.activeRecordingConfiguration?.isClientSilenced != true)) {
                             "Android muted the microphone. Listening stopped; check other audio apps and microphone privacy settings."
@@ -581,7 +586,7 @@ class ListeningService : Service() {
                     }
                     // Waits for a full quarter-second of audio (Android buffers 2 s, so nothing is lost) instead of
                     // checking every 10 ms: about 4 wake-ups a second instead of 100.
-                    val read = audio.read(raw, filled, raw.size - filled, AudioRecord.READ_BLOCKING)
+                    val read = audio.read(raw, filled, raw.size - filled, if (legacy) AudioRecord.READ_NON_BLOCKING else AudioRecord.READ_BLOCKING)
                     captureHealth.check(read, SystemClock.elapsedRealtime())
                     if (read > 0) filled += read
                     if (filled == raw.size) {
@@ -593,10 +598,10 @@ class ListeningService : Service() {
                         if (detected) rest.activity(SystemClock.elapsedRealtime())
                         filled = 0
                         // The level meter and timer are only for the screen: skipped while it is off.
-                        if (power.isInteractive || detected != mutableState.value.speechActive)
+                        if (legacy || power.isInteractive || detected != mutableState.value.speechActive)
                             mutableState.update { it.copy(level = level, speechActive = detected, seconds = ((SystemClock.elapsedRealtime() - startedClock) / 1000).toInt()) }
                     }
-                    if (read <= 0) delay(20) // only when the microphone delivered nothing (e.g. while it is being released)
+                    if (legacy) delay(10) else if (read <= 0) delay(20) // new: only when the microphone delivered nothing
                 }
                 } finally {
                     runCatching { unregisterReceiver(wakeReceiver) }

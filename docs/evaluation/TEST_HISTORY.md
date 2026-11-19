@@ -572,3 +572,13 @@ and unplugged (docs/evaluation/PHONE_MODEL_BENCH.md). The app's models stay best
 Korean (SenseVoice 10.3%) and Russian (GigaAM 2.8%). Qwen3-ASR is more accurate for Chinese (14.4% vs 19.6%) and French
 (11.9% vs 15.8%) but needs 7-10 s per phrase and 954 MB. Cohere Transcribe: German 3.9% (vs 11.4%) but 30 s per phrase
 and out of memory; not usable on this phone.
+
+**T79 Battery while listening (November 18).** `BatteryListeningTest` on the Pixel, real microphone, started from the
+open app, screen off, no speech, 5 minutes each: old microphone loop (checked every 10 ms, checks 4 times a second,
+status updates with the screen off) 29.7 processor-seconds per minute; new loop (waits for a quarter-second of audio,
+checks every 2 s, no screen-off status updates, speech detector skipped below -60 dBFS) 20.9 per minute: 30% less.
+The silence gate did not trigger in this room (louder than -60 dBFS). The remaining cost is mostly the speech detector
+re-reading about 1 s of audio every quarter-second. Pause when resting: paused after a 20 s test window with the screen
+off, stayed paused while untouched, resumed and kept recording when the screen woke. Full phone suite 129 of 129;
+core 311. Wake-word chip research: EU DMA decision of July 16, 2026 requires Google to open custom low-power wake words
+to all assistants by Android 18 (August 1, 2027); today only rooted/Shizuku hacks exist.

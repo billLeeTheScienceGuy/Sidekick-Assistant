@@ -73,6 +73,8 @@ class LiveSpeechProcessor(
     }
 
     /** At most 4096 new samples; VAD sees a rolling context to avoid per-frame state resets. */
+    /** Test switch only (phone battery comparison): false runs the speech detector on every chunk, as before. */
+    @Volatile var quietGate = true
     fun accept(samples: FloatArray): Boolean {
         require(samples.size in 1..4096)
         val keep = minOf(historySize, history.size - samples.size)
@@ -81,7 +83,7 @@ class LiveSpeechProcessor(
         historySize = keep + samples.size
         // A truly silent room (below -60 dBFS; the softest speech measured on the phone microphone was -56 dBFS): skip
         // the speech detector, which is the main cost while nobody talks. The audio is still kept as context.
-        if (com.sidekick.core.QuietGate.silent(samples)) {
+        if (quietGate && com.sidekick.core.QuietGate.silent(samples)) {
             for (index in samples.indices step 512) {
                 val frame = samples.copyOfRange(index, minOf(index + 512, samples.size))
                 try { segmenter.accept(frame, false).forEach(::enqueue) } finally { frame.fill(0f) }
