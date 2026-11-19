@@ -536,7 +536,7 @@ class ListeningService : Service() {
                 // short resting window so the pause can be tested in minutes.
                 val switches = getSharedPreferences("test-switches", MODE_PRIVATE)
                 val legacy = switches.getBoolean("legacy_capture", false)
-                pipeline.quietGate = !legacy
+                pipeline.quietGate = !legacy; pipeline.batchVad = !legacy
                 val rest = com.sidekick.core.RestingPause(SystemClock.elapsedRealtime(), switches.getLong("rest_quiet_ms", 30 * 60_000L))
                 val woke = java.util.concurrent.atomic.AtomicBoolean(false)
                 val wakeReceiver = object : android.content.BroadcastReceiver() {
@@ -557,7 +557,7 @@ class ListeningService : Service() {
                     if (!enrollment && rest.shouldPause(nowMs, app.guidance.pauseWhenResting.value, mutableState.value.callActive)) {
                         // Microphone fully off and the processor free to sleep until the phone is used or carried.
                         if (filled > 0) { val tail = FloatArray(filled) { raw[it] / 32768f }; try { pipeline.accept(tail) } finally { tail.fill(0f); raw.fill(0) }; filled = 0 }
-                        audio.stop(); rest.pause()
+                        pipeline.flushPending(); audio.stop(); rest.pause()
                         if (wake.isHeld) wake.release()
                         mutableState.update { it.copy(note = "Paused · the phone is resting and it's quiet. Pick it up, turn on the screen or unlock to resume.", level = 0f, speechActive = false) }
                         while (!finish && !woke.get() && !power.isInteractive && app.guidance.pauseWhenResting.value) delay(1_000)

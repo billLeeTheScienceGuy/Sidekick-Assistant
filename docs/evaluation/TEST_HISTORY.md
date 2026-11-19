@@ -582,3 +582,12 @@ re-reading about 1 s of audio every quarter-second. Pause when resting: paused a
 off, stayed paused while untouched, resumed and kept recording when the screen woke. Full phone suite 129 of 129;
 core 311. Wake-word chip research: EU DMA decision of July 16, 2026 requires Google to open custom low-power wake words
 to all assistants by Android 18 (August 1, 2027); today only rooted/Shizuku hacks exist.
+
+**T80 Speech detector work while listening (November 18).** Thread sampling showed the remaining cost was the
+listening thread: the speech detector (whisper.cpp Silero, restarted on every call with 1 s of earlier audio) and its
+input loudness pass, both slow with the screen off. `VadContextTest` on 20 minutes of real phone recording: a shorter
+warm-up changes decisions (12,288 samples: 5.4% of frames differ, 3 speech stretches lost), so it was rejected; running
+the detector on 1 s of new audio after the same 12,288 samples uses 44% of the detector time, loses no speech stretch
+and flags slightly more audio as speech (0.5 s pieces lost one stretch, rejected). The loudness pass is now one loop
+instead of three (same results). Screen-off silence, 5 minutes each: old loop 32.0 processor-seconds per minute, new
+12.0 (62% less), still recording. Resting pause test passed; full phone suite 129 of 129; core passed.

@@ -26,7 +26,7 @@ class LiveSpeechProcessor(
     private val speechContext = com.sidekick.core.SpeechContext()
     private val queued = AtomicInteger()
     private val queue = Channel<SpeechSegmenter.Segment>(2, onUndeliveredElement = { queued.decrementAndGet(); it.samples.fill(0f) })
-    private val history = FloatArray(16_384)
+    private val history = FloatArray(28_672)
     private var historySize = 0
     private val transcriptions = AtomicInteger()
     val transcriptionCount: Int get() = transcriptions.get()
@@ -72,12 +72,38 @@ class LiveSpeechProcessor(
         } finally { speechContext.clear(); withContext(NonCancellable) { speech.release() } }
     }
 
-    /** At most 4096 new samples; VAD sees a rolling context to avoid per-frame state resets. */
     /** Test switch only (phone battery comparison): false runs the speech detector on every chunk, as before. */
     @Volatile var quietGate = true
+    /**
+     * The speech detector runs on 1 s of new audio at a time (after 12,288 samples of earlier audio), not every
+     * quarter-second: 44% of the detector work, and on 20 minutes of real phone recording no speech stretch was lost
+     * (it flags slightly more audio as speech). Speech is recognized as started up to 1 s later; no audio is dropped.
+     * Test switch: false = the old quarter-second runs.
+     */
+    @Volatile var batchVad = true
+    private val pending = FloatArray(BATCH)
+    private var pendingSize = 0
+    private var lastDetected = false
+
+    /** At most 4096 new samples; VAD sees a rolling context to avoid per-frame state resets. */
     fun accept(samples: FloatArray): Boolean {
         require(samples.size in 1..4096)
-        val keep = minOf(historySize, history.size - samples.size)
+        if (!batchVad) return detect(samples, 16_384)
+        samples.copyInto(pending, pendingSize); pendingSize += samples.size
+        if (pendingSize + 4096 <= BATCH) return lastDetected
+        return flushPending()
+    }
+
+    /** Runs the detector on audio waiting for a full second (at a pause or the end of listening). */
+    fun flushPending(): Boolean {
+        if (pendingSize == 0) return lastDetected
+        val batch = pending.copyOf(pendingSize)
+        pending.fill(0f); pendingSize = 0
+        return try { detect(batch, PRE + BATCH).also { lastDetected = it } } finally { batch.fill(0f) }
+    }
+
+    private fun detect(samples: FloatArray, capacity: Int): Boolean {
+        val keep = minOf(historySize, capacity - samples.size)
         history.copyInto(history, 0, historySize - keep, historySize)
         samples.copyInto(history, keep)
         historySize = keep + samples.size
@@ -117,6 +143,8 @@ class LiveSpeechProcessor(
         }
     }
 
-    fun finish() { segmenter.finish()?.let(::enqueue); queue.close() }
-    fun close() { queue.cancel(); segmenter.clear(); history.fill(0f); historySize = 0 }
+    fun finish() { flushPending(); segmenter.finish()?.let(::enqueue); queue.close() }
+    fun close() { queue.cancel(); segmenter.clear(); history.fill(0f); historySize = 0; pending.fill(0f); pendingSize = 0 }
+
+    private companion object { const val PRE = 12_288; const val BATCH = 16_384 }
 }
