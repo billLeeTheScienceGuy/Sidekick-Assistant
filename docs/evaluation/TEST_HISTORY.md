@@ -612,3 +612,10 @@ screen off, 5 minutes each): old 260.9 mW, new 230.3 mW whole phone; listening's
 without location permission), so location adds about 3 mW here. Note: the old loop varied between runs (261-303 mW);
 the new one was steady (227-230 mW). Moving outdoors with GPS was not measured. Pause test passed; full phone suite
 129 of 130, the one failure being the new card test's harness (fixed, then passed): 130 of 130.
+
+**T83 Listening stopped "when locked" (November 19).** Android's recording log showed the owner's SideKick listening
+10 hours overnight (02:09-12:03), then silenced twice when a leftover test copy (com.sidekick.app.benchmark, same name
+and icon) started listening and Android gave it the microphone. The test copies were uninstalled. Listening now waits
+while another app has the microphone and carries on when it comes back (`MicHandback`, 3 core tests); it stops only
+after 10 minutes taken, or at once if the microphone is muted or the permission removed. The battery-day run was
+interrupted and must restart from a full charge.

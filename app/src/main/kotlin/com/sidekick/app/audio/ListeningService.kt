@@ -564,6 +564,7 @@ class ListeningService : Service() {
                 val audioManager = getSystemService(AudioManager::class.java)
                 val power = getSystemService(android.os.PowerManager::class.java)
                 var privacyCheckAt = 0L
+                val handback = com.sidekick.core.MicHandback()
                 var renewAt = SystemClock.elapsedRealtime() + 5 * 60_000L
                 // Optional "pause when resting": screen on, unlock or carrying motion count as activity and resume.
                 // Test switches (phone tests only, never shown): the old capture loop for battery comparisons, and a
@@ -614,8 +615,17 @@ class ListeningService : Service() {
                         // microphone only delivers silence, so at most 2 s of silence is read before stopping.
                         privacyCheckAt = SystemClock.elapsedRealtime() + if (legacy) 250 else 2_000
                         check(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) { "Microphone access was removed. Listening stopped." }
-                        check(!audioManager.isMicrophoneMute && (Build.VERSION.SDK_INT < 29 || audio.activeRecordingConfiguration?.isClientSilenced != true)) {
-                            "Android muted the microphone. Listening stopped; check other audio apps and microphone privacy settings."
+                        check(!audioManager.isMicrophoneMute) { "The microphone is muted. Listening stopped; unmute it and start again." }
+                        // Another app took the microphone (a call, a recorder, the camera): wait and carry on when it is
+                        // free; stop only if it stays taken for 10 minutes. Silenced audio is silence, so nothing is heard.
+                        val silenced = Build.VERSION.SDK_INT >= 29 && audio.activeRecordingConfiguration?.isClientSilenced == true
+                        when (handback.update(silenced, SystemClock.elapsedRealtime())) {
+                            com.sidekick.core.MicHandback.State.TAKEN -> if (!mutableState.value.note.startsWith("Paused · another app"))
+                                mutableState.update { it.copy(note = "Paused · another app is using the microphone. SideKick carries on when it's free.", level = 0f, speechActive = false) }
+                            com.sidekick.core.MicHandback.State.RETURNED -> mutableState.update { it.copy(note = "Listening · the microphone is back") }
+                            com.sidekick.core.MicHandback.State.GIVE_UP ->
+                                error("Another app kept the microphone for 10 minutes. Listening stopped; start again when it's free.")
+                            com.sidekick.core.MicHandback.State.LISTENING -> Unit
                         }
                     }
                     // Waits for audio instead of checking every 10 ms: 1 s at a time (one wake-up a second; Android buffers 8 s,
