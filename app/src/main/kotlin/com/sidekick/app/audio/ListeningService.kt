@@ -312,13 +312,17 @@ class ListeningService : Service() {
         return if (!enrollment && app.assistant.armed) START_STICKY else START_NOT_STICKY
     }
 
-    private fun notification(recording: Boolean): Notification {
+    /** Shows a pause reason in the listening notification (null: back to normal). */
+    private fun pausedNotification(status: String?) =
+        runCatching { getSystemService(NotificationManager::class.java).notify(1, notification(true, status)) }
+
+    private fun notification(recording: Boolean, paused: String? = null): Notification {
         val cancel = PendingIntent.getService(this, 1, Intent(this, ListeningService::class.java).setAction(CANCEL), PendingIntent.FLAG_IMMUTABLE)
         val done = PendingIntent.getService(this, 3, Intent(this, ListeningService::class.java).setAction(FINISH), PendingIntent.FLAG_IMMUTABLE)
         val open = PendingIntent.getActivity(this, 2, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         return Notification.Builder(this, CHANNEL).setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setContentTitle(if (recording) "SideKick · Listening" else "SideKick · Finishing transcript")
-            .setContentText(if (app.guidance.handsOffMode.value && !enrollment) "On-device · events save automatically · Undo in event notifications" else "On-device only. No audio files. Tap to review.")
+            .setContentTitle(if (paused != null) "SideKick · Paused" else if (recording) "SideKick · Listening" else "SideKick · Finishing transcript")
+            .setContentText(paused ?: if (app.guidance.handsOffMode.value && !enrollment) "On-device · events save automatically · Undo in event notifications" else "On-device only. No audio files. Tap to review.")
             .setContentIntent(open).setOngoing(true)
             .apply { if (recording) addAction(Notification.Action.Builder(null, "Finish", done).build()) }
             .apply { if (recording && !enrollment) addAction(Notification.Action.Builder(null, "Announce",
@@ -595,6 +599,7 @@ class ListeningService : Service() {
                         pipeline.flushPending(); audio.stop(); rest.pause()
                         if (wake.isHeld) wake.release()
                         mutableState.update { it.copy(note = "Paused · the phone is resting and it's quiet. Pick it up, turn on the screen or unlock to resume.", level = 0f, speechActive = false) }
+                        pausedNotification("The phone is resting and it's quiet. Pick it up or unlock it to resume.")
                         while (!finish && !woke.get() && !power.isInteractive && app.guidance.pauseWhenResting.value) delay(1_000)
                         woke.set(false)
                         if (finish) break
@@ -602,7 +607,7 @@ class ListeningService : Service() {
                         audio.startRecording(); captureHealth = com.sidekick.core.CaptureHealth(SystemClock.elapsedRealtime())
                         rest.resume(SystemClock.elapsedRealtime())
                         check(audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "Microphone did not restart after the pause." }
-                        mutableState.update { it.copy(note = "Listening · resumed") }
+                        mutableState.update { it.copy(note = "Listening · resumed") }; pausedNotification(null)
                         continue
                     }
                     if (enrollment && SystemClock.elapsedRealtime() - startedClock >= 45_000) { finish = true; break }
@@ -620,9 +625,11 @@ class ListeningService : Service() {
                         // free; stop only if it stays taken for 10 minutes. Silenced audio is silence, so nothing is heard.
                         val silenced = Build.VERSION.SDK_INT >= 29 && audio.activeRecordingConfiguration?.isClientSilenced == true
                         when (handback.update(silenced, SystemClock.elapsedRealtime())) {
-                            com.sidekick.core.MicHandback.State.TAKEN -> if (!mutableState.value.note.startsWith("Paused · another app"))
+                            com.sidekick.core.MicHandback.State.TAKEN -> if (!mutableState.value.note.startsWith("Paused · another app")) {
                                 mutableState.update { it.copy(note = "Paused · another app is using the microphone. SideKick carries on when it's free.", level = 0f, speechActive = false) }
-                            com.sidekick.core.MicHandback.State.RETURNED -> mutableState.update { it.copy(note = "Listening · the microphone is back") }
+                                pausedNotification("Another app is using the microphone. SideKick carries on when it's free.")
+                            }
+                            com.sidekick.core.MicHandback.State.RETURNED -> { mutableState.update { it.copy(note = "Listening · the microphone is back") }; pausedNotification(null) }
                             com.sidekick.core.MicHandback.State.GIVE_UP ->
                                 error("Another app kept the microphone for 10 minutes. Listening stopped; start again when it's free.")
                             com.sidekick.core.MicHandback.State.LISTENING -> Unit

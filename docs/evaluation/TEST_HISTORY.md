@@ -619,3 +619,9 @@ and icon) started listening and Android gave it the microphone. The test copies 
 while another app has the microphone and carries on when it comes back (`MicHandback`, 3 core tests); it stops only
 after 10 minutes taken, or at once if the microphone is muted or the permission removed. The battery-day run was
 interrupted and must restart from a full charge.
+
+**T84 Microphone hand-back on the phone (November 19).** `scripts/phone-tests/mic-takeover.sh`: while the owner's
+SideKick listened, a temporary test app took the microphone for 12 s. The owner's app was silenced, its notification
+switched to "SideKick · Paused" within 2 s, back to "SideKick · Listening" with the microphone unsilenced within 2 s of
+the other app letting go, and listening never stopped. The test copy was removed afterwards; every phone-test script now
+removes all test copies when it ends (`remove-test-copies.sh`). The notification also shows the resting pause.

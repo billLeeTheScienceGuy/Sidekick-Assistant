@@ -1,5 +1,6 @@
 #!/bin/sh
 # Processor time SideKick (test build) uses while listening with the screen off, over MINUTES minutes.
+trap 'sh "$(dirname "$0")/remove-test-copies.sh"' EXIT  # never leave a test copy on the phone
 # Usage: sh scripts/phone-tests/idle-cpu.sh <label> [minutes]   (phone on USB; reads only /proc counters)
 export MSYS_NO_PATHCONV=1
 ADB="${ADB:-$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe}"

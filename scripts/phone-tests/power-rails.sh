@@ -1,5 +1,6 @@
 #!/bin/sh
 # Real energy (Pixel power meters, via Perfetto; no settings changed) while the test build listens with the screen
+trap 'sh "$(dirname "$0")/remove-test-copies.sh"' EXIT  # never leave a test copy on the phone
 # off, for each mode: legacy (old loop), new, lowprio (new + detector at background priority).
 # Usage: sh scripts/phone-tests/power-rails.sh [minutes]   Traces go to .deps/power/power-<mode>.pftrace
 export MSYS_NO_PATHCONV=1

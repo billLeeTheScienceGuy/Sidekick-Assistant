@@ -1,5 +1,6 @@
 #!/bin/sh
 # Final phone check in the isolated benchmark package (never the personal app): builds the test copy, installs it and
+trap 'sh "$(dirname "$0")/remove-test-copies.sh"' EXIT  # never leave a test copy on the phone
 # runs the device suite plus the speaker tests. Output: .deps/validation/phone-suite.txt
 set -u
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
