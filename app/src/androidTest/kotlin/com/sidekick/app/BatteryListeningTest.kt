@@ -37,6 +37,11 @@ class BatteryListeningTest {
         assumeTrue(app.packageName.endsWith(".benchmark"))
         instrumentation.uiAutomation.grantRuntimePermission(app.packageName, Manifest.permission.RECORD_AUDIO)
         instrumentation.uiAutomation.grantRuntimePermission(app.packageName, Manifest.permission.POST_NOTIFICATIONS)
+        // -e withLocation true: the test app may use location, so its location requests are measured too.
+        if (InstrumentationRegistry.getArguments().getString("withLocation") == "true") {
+            instrumentation.uiAutomation.grantRuntimePermission(app.packageName, Manifest.permission.ACCESS_FINE_LOCATION)
+            instrumentation.uiAutomation.grantRuntimePermission(app.packageName, Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
         shell("input keyevent KEYCODE_WAKEUP"); shell("wm dismiss-keyguard")
         val activity = ActivityScenario.launch(MainActivity::class.java)
         activity.onActivity { it.startForegroundService(Intent(it, ListeningService::class.java)) }

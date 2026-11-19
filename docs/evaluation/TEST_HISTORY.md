@@ -601,3 +601,14 @@ is now the default, with an 8 s microphone buffer so a delayed detector never lo
 on the 20-minute recording against true speech timings: sherpa-onnx Silero caught 21-43% of speech (rejected); TEN VAD
 caught 96.8% (current 94.7%) at about half the detector time, but its license adds a no-competing-with-Agora condition,
 so it is not used (owner decision, November 19: skipped). Resting pause test passed; full phone suite 129 of 129.
+
+**T82 Location, microphone reads, call events, resting suggestion (November 19).** Location: low-power (Wi-Fi/cell)
+every 5 minutes far from state borders, precise location only within 20 km of another state (back to low power past
+25 km; `RecordingJurisdiction.nearestBorderMeters`, core test). Microphone read once a second (quarter-second around
+SideKick's own speech; a block that overlaps its speech is muted). Calls detected by Android's mode-change event
+(Android 12+), notice timer checked every 30 s instead of every second. One-time card after 3 hours of listening
+suggesting "Pause when the phone is resting" (RestingTipTest). Power with location allowed (indoors, phone still,
+screen off, 5 minutes each): old 260.9 mW, new 230.3 mW whole phone; listening's own share now about 44 mW (41 mW
+without location permission), so location adds about 3 mW here. Note: the old loop varied between runs (261-303 mW);
+the new one was steady (227-230 mW). Moving outdoors with GPS was not measured. Pause test passed; full phone suite
+129 of 130, the one failure being the new card test's harness (fixed, then passed): 130 of 130.

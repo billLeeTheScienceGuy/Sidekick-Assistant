@@ -281,6 +281,7 @@ class MainActivity : ComponentActivity() {
                                 if (listening.droppedChunks > 0) QuietLabel("${listening.droppedChunks} phrases from other voices dropped, never saved")
                                 if (listening.callActive) QuietLabel("Call detected: strictest rule", Modifier.testTag("call-status"))
                                 if (listening.answer.isNotBlank()) Text(listening.answer, style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("plan-answer"))
+                                RestingTip(listening)
                                 if (listening.noticeNeeded || alwaysAnnounce) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OutlinedButton(onClick = { serviceAction(ListeningService.ANNOUNCE) }, modifier = Modifier.testTag("announce-notice")) {
                                         Text(if (listening.noticeActive) "Announce again" else "Announce note-taking")

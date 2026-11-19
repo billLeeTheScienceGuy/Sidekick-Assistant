@@ -81,6 +81,7 @@ internal fun CompactHome(
             if (listening.consent.isNotBlank()) Text(listening.consent, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("consent-status"))
             if (listening.callActive) Text("Call detected: strictest rule", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("call-status"))
             if (listening.answer.isNotBlank()) Text(listening.answer, style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("plan-answer"))
+            RestingTip(listening)
             if (listening.noticeNeeded || showAnnounce) {
                 OutlinedButton(onClick = onAnnounce, modifier = Modifier.fillMaxWidth().heightIn(min = SimpleTarget).testTag("announce-notice")) {
                     Text(if (listening.noticeActive) "Announce again" else "Announce note-taking", style = MaterialTheme.typography.titleMedium)

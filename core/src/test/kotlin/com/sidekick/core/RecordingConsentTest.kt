@@ -30,6 +30,14 @@ class RecordingConsentTest {
         assertNull(gate.noticeAtMs)
         assertFalse(gate.keepOthers(3_000))
     }
+    @Test fun `border distance picks low-power location far from borders`() {
+        // Calumet City, IL is at the Indiana line; downtown Chicago is about 21 km away; central Kansas is far from every border.
+        val chicago = RecordingJurisdiction.nearestBorderMeters(41.6, -87.53, 20_000.0)
+        assertNotNull(chicago); assertTrue(chicago!! < 2_000)
+        assertNull(RecordingJurisdiction.nearestBorderMeters(41.8781, -87.6298, 20_000.0)) // downtown: low power until 20 km
+        assertNull(RecordingJurisdiction.nearestBorderMeters(38.5, -98.5, 20_000.0))
+        assertNull(RecordingJurisdiction.nearestBorderMeters(51.5, -0.12, 20_000.0)) // London: outside the US borders
+    }
     @Test fun `a faked location never loosens the rules`() {
         // Madison, WI is one-party with no voice rule, but a position from a mock-location app gets the strictest rules.
         val faked = RecordingJurisdiction.locate(43.0731, -89.4012, 5.0, 1_000, precise = true, simulated = true)

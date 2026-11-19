@@ -330,7 +330,7 @@ class ListeningService : Service() {
     private suspend fun runSession() {
         var recorder: AudioRecord? = null
         var processor: LiveSpeechProcessor? = null
-        val raw = ShortArray(4096)
+        val raw = ShortArray(16_384) // up to 1 s per read; fed to the detector in quarter-second slices
         val setupLanguage = app.guidance.speechLanguage.value
         app.voiceProfile.selectLanguage(setupLanguage)
         val setupModel = app.voiceProfile.model.value
@@ -399,22 +399,35 @@ class ListeningService : Service() {
                     watchers += launch {
                         // Phone calls: the other person may be in another state.
                         val manager = getSystemService(AudioManager::class.java)
-                        while (isActive) {
+                        val callLock = Any()
+                        fun checkCall() = synchronized(callLock) {
                             val calling = manager.mode == AudioManager.MODE_IN_CALL || manager.mode == AudioManager.MODE_IN_COMMUNICATION
-                            // A notice covers one conversation: 30 min without other voices, or 2 hours at most.
-                            val nowMs = SystemClock.elapsedRealtime()
-                            consent.expireIfStale(nowMs)?.let { reason ->
-                                refreshConsent()
-                                // 2-hour cap in an ongoing meeting: renew right away if the setting is on.
-                                if (autoAnnouncer.expired(reason, nowMs, consent.othersLastMs)) mainHandler.post { announce(auto = true) }
-                            }
                             if (calling != inCall) {
                                 inCall = calling
                                 if (calling) consent.callStarted() else consent.moveTo(located)
                                 mutableState.update { it.copy(callActive = calling) }
                                 refreshConsent()
                             }
-                            delay(1_000)
+                        }
+                        // Android 12+: told the moment a call starts or ends, instead of asking every second.
+                        val modeListener = if (Build.VERSION.SDK_INT >= 31) AudioManager.OnModeChangedListener { checkCall() }.also {
+                            runCatching { manager.addOnModeChangedListener(java.util.concurrent.Executors.newSingleThreadExecutor(), it) }
+                        } else null
+                        try {
+                            while (isActive) {
+                                checkCall()
+                                // A notice covers one conversation: 30 min without other voices, or 2 hours at most.
+                                val nowMs = SystemClock.elapsedRealtime()
+                                consent.expireIfStale(nowMs)?.let { reason ->
+                                    refreshConsent()
+                                    // 2-hour cap in an ongoing meeting: renew right away if the setting is on.
+                                    if (autoAnnouncer.expired(reason, nowMs, consent.othersLastMs)) mainHandler.post { announce(auto = true) }
+                                }
+                                // With call events, only the notice timer needs this loop: every 30 s (minutes-scale limits).
+                                delay(if (modeListener != null) 30_000 else 1_000)
+                            }
+                        } finally {
+                            if (modeListener != null && Build.VERSION.SDK_INT >= 31) runCatching { manager.removeOnModeChangedListener(modeListener) }
                         }
                     }
                 }
@@ -526,6 +539,27 @@ class ListeningService : Service() {
                 check(finish || audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "Microphone did not start." }
                 mutableState.update { it.copy(recording = !finish, processing = false, note = "Listening · waiting for speech") }
                 var filled = 0
+                var target = 4096
+                var blockStart = 0L
+                var blockMuted = false
+                var lastLevel = 0f
+                /** Feeds raw[0 until count] to the detector in quarter-second slices; true if any slice had speech. */
+                fun feed(count: Int, mute: Boolean): Boolean {
+                    var any = false
+                    var at = 0
+                    while (at < count) {
+                        val n = minOf(4096, count - at)
+                        val samples = FloatArray(n) { raw[at + it] / 32768f }
+                        val level = sqrt(samples.sumOf { it.toDouble() * it } / samples.size).toFloat()
+                        lastLevel = level
+                        if (noticePlaying) noticeLevels.add(level)
+                        if (mute) samples.fill(0f)
+                        try { any = pipeline.accept(samples) || any } finally { samples.fill(0f) }
+                        at += n
+                    }
+                    raw.fill(0, 0, count)
+                    return any
+                }
                 var captureHealth = com.sidekick.core.CaptureHealth(SystemClock.elapsedRealtime())
                 val audioManager = getSystemService(AudioManager::class.java)
                 val power = getSystemService(android.os.PowerManager::class.java)
@@ -556,7 +590,7 @@ class ListeningService : Service() {
                     if (woke.getAndSet(false) || power.isInteractive) rest.activity(nowMs)
                     if (!enrollment && rest.shouldPause(nowMs, app.guidance.pauseWhenResting.value, mutableState.value.callActive)) {
                         // Microphone fully off and the processor free to sleep until the phone is used or carried.
-                        if (filled > 0) { val tail = FloatArray(filled) { raw[it] / 32768f }; try { pipeline.accept(tail) } finally { tail.fill(0f); raw.fill(0) }; filled = 0 }
+                        if (filled > 0) { feed(filled, speakingNotice(SystemClock.elapsedRealtime()) || muteUntil > blockStart); filled = 0 }
                         pipeline.flushPending(); audio.stop(); rest.pause()
                         if (wake.isHeld) wake.release()
                         mutableState.update { it.copy(note = "Paused · the phone is resting and it's quiet. Pick it up, turn on the screen or unlock to resume.", level = 0f, speechActive = false) }
@@ -584,22 +618,25 @@ class ListeningService : Service() {
                             "Android muted the microphone. Listening stopped; check other audio apps and microphone privacy settings."
                         }
                     }
-                    // Waits for a full quarter-second of audio (Android buffers 2 s, so nothing is lost) instead of
-                    // checking every 10 ms: about 4 wake-ups a second instead of 100.
-                    val read = audio.read(raw, filled, raw.size - filled, if (legacy) AudioRecord.READ_NON_BLOCKING else AudioRecord.READ_BLOCKING)
+                    // Waits for audio instead of checking every 10 ms: 1 s at a time (one wake-up a second; Android buffers 8 s,
+                    // so nothing is lost), or a quarter-second around SideKick's own speech so it is muted precisely.
+                    if (filled == 0) {
+                        blockStart = SystemClock.elapsedRealtime()
+                        target = if (legacy || noticePlaying || answerPlaying || blockStart < muteUntil + 1_000) 4096 else raw.size
+                        blockMuted = speakingNotice(blockStart)
+                    }
+                    val read = audio.read(raw, filled, target - filled, if (legacy) AudioRecord.READ_NON_BLOCKING else AudioRecord.READ_BLOCKING)
                     captureHealth.check(read, SystemClock.elapsedRealtime())
                     if (read > 0) filled += read
-                    if (filled == raw.size) {
-                        val samples = FloatArray(filled) { raw[it] / 32768f }
-                        val level = sqrt(samples.sumOf { it.toDouble() * it } / samples.size).toFloat()
-                        if (noticePlaying) noticeLevels.add(level)
-                        if (speakingNotice(SystemClock.elapsedRealtime())) samples.fill(0f)
-                        val detected = try { pipeline.accept(samples) } finally { samples.fill(0f); raw.fill(0) }
+                    if (filled >= target) {
+                        // Muted if SideKick was speaking when this block started, is speaking now, or stopped during it.
+                        val mute = blockMuted || speakingNotice(SystemClock.elapsedRealtime()) || muteUntil > blockStart
+                        val detected = feed(filled, mute)
                         if (detected) rest.activity(SystemClock.elapsedRealtime())
                         filled = 0
                         // The level meter and timer are only for the screen: skipped while it is off.
                         if (legacy || power.isInteractive || detected != mutableState.value.speechActive)
-                            mutableState.update { it.copy(level = level, speechActive = detected, seconds = ((SystemClock.elapsedRealtime() - startedClock) / 1000).toInt()) }
+                            mutableState.update { it.copy(level = lastLevel, speechActive = detected, seconds = ((SystemClock.elapsedRealtime() - startedClock) / 1000).toInt()) }
                     }
                     if (legacy) delay(10) else if (read <= 0) delay(20) // new: only when the microphone delivered nothing
                 }
@@ -607,10 +644,7 @@ class ListeningService : Service() {
                     runCatching { unregisterReceiver(wakeReceiver) }
                     if (carry != null) runCatching { sensors.cancelTriggerSensor(carried, carry) }
                 }
-                if (filled > 0) {
-                    val tail = FloatArray(filled) { raw[it] / 32768f }
-                    try { pipeline.accept(tail) } finally { tail.fill(0f); raw.fill(0) }
-                }
+                if (filled > 0) feed(filled, speakingNotice(SystemClock.elapsedRealtime()) || muteUntil > blockStart)
                 runCatching { audio.stop() }; audio.release(); recorder = null
                 mutableState.update { it.copy(recording = false, processing = true, level = 0f, note = "Finishing remaining speech…") }
                 if (Build.VERSION.SDK_INT >= 34) startForeground(1, notification(false), ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE)

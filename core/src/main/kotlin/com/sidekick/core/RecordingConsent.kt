@@ -100,6 +100,16 @@ object RecordingJurisdiction {
         unknown("Location lookup failed")
     }
 
+    /**
+     * Distance to the nearest other US state within [limitMeters], or null when none is that close (or the point is
+     * outside the bundled borders). Used to choose low-power location far from borders and precise location near them.
+     */
+    fun nearestBorderMeters(lat: Double, lon: Double, limitMeters: Double): Double? = try {
+        val inside = states.firstOrNull { contains(it, lat, lon) }
+        if (inside == null) null
+        else states.filter { it !== inside }.minOfOrNull { distanceMeters(it, lat, lon, limitMeters) }?.takeIf { it <= limitMeters }
+    } catch (_: Exception) { 0.0 } // unsure: treat as near, so precise location is used
+
     private fun locateOrThrow(lat: Double?, lon: Double?, accuracyMeters: Double?, fixAgeMs: Long?, precise: Boolean): Place {
         if (lat == null || lon == null || !lat.isFinite() || !lon.isFinite()) return unknown("No location fix")
         if (fixAgeMs == null || fixAgeMs !in 0..MAX_FIX_AGE_MS) return unknown("Location older than 30 minutes")

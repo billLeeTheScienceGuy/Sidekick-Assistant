@@ -38,6 +38,12 @@ class GuidanceSettings(context: Context) {
     private val pauseRestingValue = MutableStateFlow(preferences.getBoolean("pause_when_resting", false))
     val pauseWhenResting = pauseRestingValue.asStateFlow()
     fun setPauseWhenResting(value: Boolean) { preferences.edit().putBoolean("pause_when_resting", value).apply(); pauseRestingValue.value = value }
+    /** The one-time "pause when resting" suggestion was answered (Turn on or Not now). */
+    private val restingTipValue = MutableStateFlow(preferences.getBoolean("resting_tip_done", false))
+    val restingTipDone = restingTipValue.asStateFlow()
+    fun setRestingTipDone() { preferences.edit().putBoolean("resting_tip_done", true).apply(); restingTipValue.value = true }
+    /** Shows the suggestion again (phone tests). */
+    internal fun resetRestingTip() { preferences.edit().putBoolean("resting_tip_done", false).apply(); restingTipValue.value = false }
     /** Optional mode: reminders are also read aloud when they arrive. */
     private val readAloudValue = MutableStateFlow(preferences.getBoolean("read_reminders_aloud", false))
     val readRemindersAloud = readAloudValue.asStateFlow()
