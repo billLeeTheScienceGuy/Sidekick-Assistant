@@ -526,37 +526,81 @@ class ListeningService : Service() {
                 check(finish || audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "Microphone did not start." }
                 mutableState.update { it.copy(recording = !finish, processing = false, note = "Listening · waiting for speech") }
                 var filled = 0
-                val captureHealth = com.sidekick.core.CaptureHealth(SystemClock.elapsedRealtime())
+                var captureHealth = com.sidekick.core.CaptureHealth(SystemClock.elapsedRealtime())
                 val audioManager = getSystemService(AudioManager::class.java)
+                val power = getSystemService(android.os.PowerManager::class.java)
                 var privacyCheckAt = 0L
                 var renewAt = SystemClock.elapsedRealtime() + 5 * 60_000L
+                // Optional "pause when resting": screen on, unlock or carrying motion count as activity and resume.
+                val rest = com.sidekick.core.RestingPause(SystemClock.elapsedRealtime())
+                val woke = java.util.concurrent.atomic.AtomicBoolean(false)
+                val wakeReceiver = object : android.content.BroadcastReceiver() {
+                    override fun onReceive(c: android.content.Context?, i: Intent?) { woke.set(true) }
+                }
+                registerReceiver(wakeReceiver, android.content.IntentFilter().apply { addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_USER_PRESENT) })
+                val sensors = getSystemService(android.hardware.SensorManager::class.java)
+                val carry = sensors?.getDefaultSensor(android.hardware.Sensor.TYPE_SIGNIFICANT_MOTION)
+                val carried = object : android.hardware.TriggerEventListener() {
+                    override fun onTrigger(event: android.hardware.TriggerEvent?) { woke.set(true); carry?.let { sensors.requestTriggerSensor(this, it) } }
+                }
+                if (!enrollment && carry != null) sensors.requestTriggerSensor(carried, carry)
+                try {
                 while (!finish) {
                     ensureActive()
+                    val nowMs = SystemClock.elapsedRealtime()
+                    if (woke.getAndSet(false) || power.isInteractive) rest.activity(nowMs)
+                    if (!enrollment && rest.shouldPause(nowMs, app.guidance.pauseWhenResting.value, mutableState.value.callActive)) {
+                        // Microphone fully off and the processor free to sleep until the phone is used or carried.
+                        if (filled > 0) { val tail = FloatArray(filled) { raw[it] / 32768f }; try { pipeline.accept(tail) } finally { tail.fill(0f); raw.fill(0) }; filled = 0 }
+                        audio.stop(); rest.pause()
+                        if (wake.isHeld) wake.release()
+                        mutableState.update { it.copy(note = "Paused · the phone is resting and it's quiet. Pick it up, turn on the screen or unlock to resume.", level = 0f, speechActive = false) }
+                        while (!finish && !woke.get() && !power.isInteractive && app.guidance.pauseWhenResting.value) delay(1_000)
+                        woke.set(false)
+                        if (finish) break
+                        wake.acquire(10 * 60_000L); renewAt = SystemClock.elapsedRealtime() + 5 * 60_000L
+                        audio.startRecording(); captureHealth = com.sidekick.core.CaptureHealth(SystemClock.elapsedRealtime())
+                        rest.resume(SystemClock.elapsedRealtime())
+                        check(audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "Microphone did not restart after the pause." }
+                        mutableState.update { it.copy(note = "Listening · resumed") }
+                        continue
+                    }
                     if (enrollment && SystemClock.elapsedRealtime() - startedClock >= 45_000) { finish = true; break }
                     if (SystemClock.elapsedRealtime() >= renewAt) {
                         wake.acquire(10 * 60_000L)
                         renewAt = SystemClock.elapsedRealtime() + 5 * 60_000L
                     }
                     if (SystemClock.elapsedRealtime() >= privacyCheckAt) {
-                        privacyCheckAt = SystemClock.elapsedRealtime() + 250
+                        // Every 2 s (was 4 times a second): revoking the permission ends the app anyway, and a muted
+                        // microphone only delivers silence, so at most 2 s of silence is read before stopping.
+                        privacyCheckAt = SystemClock.elapsedRealtime() + 2_000
                         check(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) { "Microphone access was removed. Listening stopped." }
                         check(!audioManager.isMicrophoneMute && (Build.VERSION.SDK_INT < 29 || audio.activeRecordingConfiguration?.isClientSilenced != true)) {
                             "Android muted the microphone. Listening stopped; check other audio apps and microphone privacy settings."
                         }
                     }
-                    val read = audio.read(raw, filled, raw.size - filled, AudioRecord.READ_NON_BLOCKING)
+                    // Waits for a full quarter-second of audio (Android buffers 2 s, so nothing is lost) instead of
+                    // checking every 10 ms: about 4 wake-ups a second instead of 100.
+                    val read = audio.read(raw, filled, raw.size - filled, AudioRecord.READ_BLOCKING)
                     captureHealth.check(read, SystemClock.elapsedRealtime())
-                    filled += read
+                    if (read > 0) filled += read
                     if (filled == raw.size) {
                         val samples = FloatArray(filled) { raw[it] / 32768f }
                         val level = sqrt(samples.sumOf { it.toDouble() * it } / samples.size).toFloat()
                         if (noticePlaying) noticeLevels.add(level)
                         if (speakingNotice(SystemClock.elapsedRealtime())) samples.fill(0f)
                         val detected = try { pipeline.accept(samples) } finally { samples.fill(0f); raw.fill(0) }
+                        if (detected) rest.activity(SystemClock.elapsedRealtime())
                         filled = 0
-                        mutableState.update { it.copy(level = level, speechActive = detected, seconds = ((SystemClock.elapsedRealtime() - startedClock) / 1000).toInt()) }
+                        // The level meter and timer are only for the screen: skipped while it is off.
+                        if (power.isInteractive || detected != mutableState.value.speechActive)
+                            mutableState.update { it.copy(level = level, speechActive = detected, seconds = ((SystemClock.elapsedRealtime() - startedClock) / 1000).toInt()) }
                     }
-                    delay(10)
+                    if (read <= 0) delay(20) // only when the microphone delivered nothing (e.g. while it is being released)
+                }
+                } finally {
+                    runCatching { unregisterReceiver(wakeReceiver) }
+                    if (carry != null) runCatching { sensors.cancelTriggerSensor(carried, carry) }
                 }
                 if (filled > 0) {
                     val tail = FloatArray(filled) { raw[it] / 32768f }

@@ -34,6 +34,10 @@ class GuidanceSettings(context: Context) {
     private val spokenNamesValue = MutableStateFlow(preferences.getString("spoken_names", "").orEmpty())
     val spokenNames = spokenNamesValue.asStateFlow()
     fun setSpokenNames(value: String) { val v = value.take(2000); preferences.edit().putString("spoken_names", v).apply(); spokenNamesValue.value = v }
+    /** Optional: pause listening (microphone off) after 30 quiet minutes with the phone untouched; resumes on use or carrying. */
+    private val pauseRestingValue = MutableStateFlow(preferences.getBoolean("pause_when_resting", false))
+    val pauseWhenResting = pauseRestingValue.asStateFlow()
+    fun setPauseWhenResting(value: Boolean) { preferences.edit().putBoolean("pause_when_resting", value).apply(); pauseRestingValue.value = value }
     /** Optional mode: reminders are also read aloud when they arrive. */
     private val readAloudValue = MutableStateFlow(preferences.getBoolean("read_reminders_aloud", false))
     val readRemindersAloud = readAloudValue.asStateFlow()

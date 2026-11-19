@@ -79,6 +79,15 @@ class LiveSpeechProcessor(
         history.copyInto(history, 0, historySize - keep, historySize)
         samples.copyInto(history, keep)
         historySize = keep + samples.size
+        // A truly silent room (below -60 dBFS; the softest speech measured on the phone microphone was -56 dBFS): skip
+        // the speech detector, which is the main cost while nobody talks. The audio is still kept as context.
+        if (com.sidekick.core.QuietGate.silent(samples)) {
+            for (index in samples.indices step 512) {
+                val frame = samples.copyOfRange(index, minOf(index + 512, samples.size))
+                try { segmenter.accept(frame, false).forEach(::enqueue) } finally { frame.fill(0f) }
+            }
+            return false
+        }
         val paddedSize = ((historySize + 511) / 512) * 512
         // Thirty-two frames of context retain VAD continuity across native state resets.
         val context = history.copyOf(historySize).copyOf(paddedSize)

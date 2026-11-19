@@ -165,6 +165,10 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                                     }
                                 }
                                 if (listening.recording || listening.processing) QuietLabel("Stop listening before changing the language.")
+                                val pauseResting by settings.pauseWhenResting.collectAsState()
+                                SettingsToggle("Pause when the phone is resting", "Off by default. Saves battery: after 30 quiet minutes with the phone untouched " +
+                                    "(no speech, screen off, not carried) the microphone turns off. Picking it up, turning on the screen or unlocking resumes. " +
+                                    "Talk that starts while it stays untouched is missed until then.", pauseResting, settings::setPauseWhenResting, "pause-when-resting")
                                 val skipIntro by settings.skipListeningIntro.collectAsState()
                                 SettingsToggle("Show listening tips", "Recommended. Show a short reminder before you start listening.", !skipIntro, { settings.setSkipListeningIntro(!it) }, "start-reminder")
                                 HorizontalDivider()
