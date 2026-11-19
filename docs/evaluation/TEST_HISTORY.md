@@ -600,4 +600,4 @@ detector moves to the efficient cores; processor time barely changes, 11.3 vs 11
 is now the default, with an 8 s microphone buffer so a delayed detector never loses audio. Streaming detectors tested
 on the 20-minute recording against true speech timings: sherpa-onnx Silero caught 21-43% of speech (rejected); TEN VAD
 caught 96.8% (current 94.7%) at about half the detector time, but its license adds a no-competing-with-Agora condition,
-so it is not used without a decision. Resting pause test passed; full phone suite 129 of 129.
+so it is not used (owner decision, November 19: skipped). Resting pause test passed; full phone suite 129 of 129.
