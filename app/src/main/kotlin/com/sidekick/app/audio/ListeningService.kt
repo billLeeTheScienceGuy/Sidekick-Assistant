@@ -362,7 +362,7 @@ class ListeningService : Service() {
             val minimum = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
             check(minimum > 0) { "This microphone configuration is unavailable." }
             val audio = AudioRecord(MediaRecorder.AudioSource.MIC, 16000, AudioFormat.CHANNEL_IN_MONO,
-                AudioFormat.ENCODING_PCM_16BIT, maxOf(minimum, 64_000))
+                AudioFormat.ENCODING_PCM_16BIT, maxOf(minimum, 256_000)) // 8 s of buffer: no audio lost if processing is briefly delayed
             recorder = audio
             check(audio.state == AudioRecord.STATE_INITIALIZED) { "Microphone could not initialize." }
             val started = Instant.now()
@@ -536,7 +536,7 @@ class ListeningService : Service() {
                 // short resting window so the pause can be tested in minutes.
                 val switches = getSharedPreferences("test-switches", MODE_PRIVATE)
                 val legacy = switches.getBoolean("legacy_capture", false)
-                pipeline.quietGate = !legacy; pipeline.batchVad = !legacy
+                pipeline.quietGate = !legacy; pipeline.batchVad = !legacy; pipeline.lowPriority = !legacy && switches.getBoolean("background_priority", true)
                 val rest = com.sidekick.core.RestingPause(SystemClock.elapsedRealtime(), switches.getLong("rest_quiet_ms", 30 * 60_000L))
                 val woke = java.util.concurrent.atomic.AtomicBoolean(false)
                 val wakeReceiver = object : android.content.BroadcastReceiver() {

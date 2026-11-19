@@ -56,7 +56,7 @@ class BatteryListeningTest {
         val mode = args.getString("mode") ?: "new"
         val minutes = args.getString("minutes")?.toLong() ?: 5
         val switches = app.getSharedPreferences("test-switches", android.content.Context.MODE_PRIVATE)
-        switches.edit().putBoolean("legacy_capture", mode == "legacy").remove("rest_quiet_ms").commit()
+        switches.edit().putBoolean("legacy_capture", mode == "legacy").putBoolean("background_priority", mode != "new").remove("rest_quiet_ms").commit()
         val oldPause = app.guidance.pauseWhenResting.value
         app.guidance.setPauseWhenResting(false)
         val activity = startListening()

@@ -591,3 +591,13 @@ the detector on 1 s of new audio after the same 12,288 samples uses 44% of the d
 and flags slightly more audio as speech (0.5 s pieces lost one stretch, rejected). The loudness pass is now one loop
 instead of three (same results). Screen-off silence, 5 minutes each: old loop 32.0 processor-seconds per minute, new
 12.0 (62% less), still recording. Resting pause test passed; full phone suite 129 of 129; core passed.
+
+**T81 Real power while listening (November 19).** Pixel power meters (ODPM rails via Perfetto, no settings changed),
+screen off, silence, 5 minutes each (`scripts/phone-tests/power-rails.sh`, `power_report.py`). Whole phone: not
+listening 186 mW; old listening loop 303 mW; new loop 256 mW; new loop with the speech detector at background
+priority 227 mW. Listening's own cost: 117 -> 70 -> 41 mW (65% less); processor rails 82.4 -> 40.6 -> 23.6 mW (the
+detector moves to the efficient cores; processor time barely changes, 11.3 vs 11.7 s per minute). Background priority
+is now the default, with an 8 s microphone buffer so a delayed detector never loses audio. Streaming detectors tested
+on the 20-minute recording against true speech timings: sherpa-onnx Silero caught 21-43% of speech (rejected); TEN VAD
+caught 96.8% (current 94.7%) at about half the detector time, but its license adds a no-competing-with-Agora condition,
+so it is not used without a decision. Resting pause test passed; full phone suite 129 of 129.
