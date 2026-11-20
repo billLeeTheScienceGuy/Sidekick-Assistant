@@ -637,3 +637,12 @@ only if Android reports memory as low while the line is over its limit, and the 
 logged (no words or audio). Phone: BusyRecognizerTest (20 back-to-back copies of a clip, faster than real time):
 nothing dropped, all copies transcribed. AutomaticMemoryTest's date case failed only at night (8 pm today already past);
 it now uses tomorrow. Full suite 130 of 131 before that fix; both classes pass after it (21 tests).
+
+**T86 Full-day battery (November 19-20).** Pixel, owner's SideKick listening the whole time (one continuous microphone
+session, never stopped; one 6-second hand-back to another app at 23:34, resumed by itself), screen off 99.7% of the
+time, 14 h 19 min on battery. Battery 100% -> 81%: 900 mAh of 4,262 (21% of capacity), about 63 mA average for the
+whole phone (cellular 93 mAh, Wi-Fi 17 mAh, Bluetooth 15 mAh of that). Temperature 24.3-30.7 degrees C. Android's own
+per-app figure for SideKick (1,561 mAh) is a fixed-table estimate larger than the phone's whole measured drain, so it
+is not used; the power-meter tests (T81) put listening's own share at about 41-44 mW, roughly 11 mA, about 160 mAh or
+4% of the battery over this day. Projected: about 32% of the battery per 24 hours of always-on listening in a quiet
+day like this one, of which SideKick about 6%.
