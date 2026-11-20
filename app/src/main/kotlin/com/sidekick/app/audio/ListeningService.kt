@@ -67,6 +67,8 @@ class ListeningService : Service() {
     private var enrollment = false
     private var enrollmentTarget: com.sidekick.core.SpeechLanguage? = null
     private var enrollmentSetting = com.sidekick.app.speaker.VoiceSetting.QUIET
+    /** Setup of the optional SideKick voice check: five phrases that start with "SideKick". */
+    private var wakeEnrollment = false
     @Volatile private var gate: com.sidekick.core.ConsentGate? = null
     @Volatile private var turnEngine: com.sidekick.app.speaker.SpeakerTurnEngine? = null
     @Volatile private var sessionId: String? = null
@@ -306,6 +308,7 @@ class ListeningService : Service() {
         enrollment = intent?.getBooleanExtra(ENROLL, false) == true
         enrollmentTarget = intent?.getStringExtra(ENROLL_LANGUAGE)?.let { code -> com.sidekick.core.SpeechLanguage.entries.firstOrNull { it.code == code && it != com.sidekick.core.SpeechLanguage.AUTO } }
         enrollmentSetting = com.sidekick.app.speaker.VoiceSetting.entries.firstOrNull { it.name == intent?.getStringExtra(ENROLL_SETTING) } ?: com.sidekick.app.speaker.VoiceSetting.QUIET
+        wakeEnrollment = enrollment && intent?.getBooleanExtra(ENROLL_WAKE, false) == true
         if (!enrollment && !recovering) app.assistant.rememberUserStart()
         try {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
@@ -390,6 +393,7 @@ class ListeningService : Service() {
             if (app.voiceProfile.ready.value) app.voiceProfile.markUsed()
         }
         val enrollmentSamples = mutableListOf<FloatArray>()
+        val wakeSamples = mutableListOf<FloatArray>()
         val wake = getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SideKick:LiveNotes")
         wake.setReferenceCounted(false)
         try {
@@ -478,6 +482,8 @@ class ListeningService : Service() {
                     }
                 }
                 var identified = Speaker.UNKNOWN
+                // Optional SideKick voice check: how the start of an unassigned phrase matches the owner's "SideKick".
+                var wakeScore: Float? = null
                 var voiceTrack = "spk_session_unassigned0"
                 var voiceLabel = "Unassigned voice"
                 var voiceName: String? = null
@@ -515,6 +521,8 @@ class ListeningService : Service() {
                             holdNext = attributed.held
                             changedVoice = voiceTrack != attributed.key || identified != attributed.speaker
                             identified = attributed.speaker; voiceTrack = attributed.key; voiceLabel = attributed.display
+                            // Questions are short: only unassigned phrases up to 8 s, and only with the check on.
+                            wakeScore = if (identified == Speaker.UNKNOWN && samples.size <= 128_000) runCatching { speaker.wakeScore(samples) }.getOrNull() else null
                             voiceName = attributed.name; voiceGrouped = attributed.grouped
                             if (identified == Speaker.USER) { consent.ownerSpoke(SystemClock.elapsedRealtime()); refreshConsent() }
                             mutableState.update { it.copy(userVoiceChunks = it.userVoiceChunks + if (identified == Speaker.USER) 1 else 0,
@@ -545,7 +553,18 @@ class ListeningService : Service() {
                         }
                         true
                     }, inspect = { samples ->
-                    if (enrollment) {
+                    if (wakeEnrollment) {
+                        if (!discard && wakeSamples.size < com.sidekick.core.WakeVoice.SAMPLES) {
+                            val vector = runCatching { speaker.wakeEmbedding(samples) }.getOrNull()
+                            if (vector == null) mutableState.update { it.copy(note = "Couldn't hear “SideKick” clearly at the start. Say it again, then pause briefly (${wakeSamples.size}/${com.sidekick.core.WakeVoice.SAMPLES}).") }
+                            else {
+                                wakeSamples += vector
+                                mutableState.update { it.copy(voiceSamples = wakeSamples.size, note = "SideKick voice check: ${wakeSamples.size}/${com.sidekick.core.WakeVoice.SAMPLES} samples") }
+                                if (wakeSamples.size == com.sidekick.core.WakeVoice.SAMPLES) finish = true
+                            }
+                        }
+                        false
+                    } else if (enrollment) {
                         if (!discard && enrollmentSamples.size < 3 && samples.size < 48_000) {
                             mutableState.update { it.copy(note = String.format(java.util.Locale.US, "That phrase was only %.1f s. Read a full sentence of at least four seconds, then pause (%d/3 kept).", samples.size / 16000.0, enrollmentSamples.size)) }
                         } else if (!discard && enrollmentSamples.size < 3) {
@@ -569,7 +588,7 @@ class ListeningService : Service() {
                     val question = if (!discard && !enrollment) com.sidekick.core.PlanQuestion.parse(text, questionLanguages) else null
                     if (question != null) {
                         // A question to SideKick is answered, not saved as conversation text or a plan.
-                        answerQuestion(question, identified)
+                        answerQuestion(question, com.sidekick.core.WakeVoice.asker(identified, wakeScore))
                     } else if (!discard && holdNext && text.isNotBlank()) {
                         app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text)
                         heldText = HeldText(text, started.plusMillis(startSample * 1000 / 16000), continuation, !app.speech.lastUncertain, app.speech.lastTimeChoices)
@@ -742,13 +761,23 @@ class ListeningService : Service() {
                 watchers.forEach { it.cancel() }
             }
             currentCoroutineContext().ensureActive()
-            if (enrollment && !discard && enrollmentSamples.size == 3) {
+            var wakeSaved = false
+            if (wakeEnrollment && !discard && wakeSamples.size == com.sidekick.core.WakeVoice.SAMPLES) {
+                check(app.voiceProfile.consent.value?.valid == true) { "Voice setup needs your consent first. Nothing was saved." }
+                check(app.voiceProfile.model.value == setupModel) { "Voice settings changed. Repeat setup in the selected language." }
+                wakeSaved = runCatching { app.voiceProfile.saveWake(wakeSamples) }.isSuccess
+            }
+            if (enrollment && !wakeEnrollment && !discard && enrollmentSamples.size == 3) {
                 check(app.voiceProfile.consent.value?.valid == true) { "Voice setup needs your consent first. Nothing was saved." }
                 check(app.voiceProfile.language.value == setupLanguage && app.voiceProfile.model.value == setupModel) { "Voice settings changed. Repeat setup in the selected language." }
                 app.voiceProfile.save(enrollmentSamples, profileTarget, enrollmentSetting)
             }
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
-                note = if (enrollment) {
+                note = if (wakeEnrollment) {
+                    if (wakeSaved) "SideKick voice check is set up and on."
+                    else if (wakeSamples.size == com.sidekick.core.WakeVoice.SAMPLES) "Your “SideKick” samples differed too much. Try again in one place, phone still."
+                    else "SideKick voice check setup incomplete. Nothing was saved."
+                } else if (enrollment) {
                     if (enrollmentSamples.size == 3) "Voice setup complete. Your ${profileTarget.label} profile (${enrollmentSetting.label.lowercase()}) is saved."
                     else "Voice setup incomplete. Speak in longer phrases and try again; any previous profile is unchanged."
                 } else if (it.chunks == 0) "No speech detected. Try speaking closer to the microphone." else if (app.guidance.handsOffMode.value) app.automation.status.value else "Session finished. Review and approve commitments below.") }
@@ -772,7 +801,7 @@ class ListeningService : Service() {
             runCatching { recorder?.stop() }; recorder?.release()
             // Learning across sessions: only after a normal session (not voice setup, not discarded).
             if (!enrollment && !discard) runCatching { turns.learnInto(app.voiceProfile) }
-            processor?.close(); raw.fill(0); turns.close(); speaker.close(); enrollmentSamples.forEach { it.fill(0f) }
+            processor?.close(); raw.fill(0); turns.close(); speaker.close(); enrollmentSamples.forEach { it.fill(0f) }; wakeSamples.forEach { it.fill(0f) }
             NativeVad.close()
             if (wake.isHeld) wake.release()
             if (!enrollment) { app.temporary.forgetVoiceNames(); turnEngine = null }
@@ -794,6 +823,7 @@ class ListeningService : Service() {
         const val ENROLL = "com.sidekick.ENROLL"
         const val ENROLL_LANGUAGE = "com.sidekick.ENROLL_LANGUAGE"
         const val ENROLL_SETTING = "com.sidekick.ENROLL_SETTING"
+        const val ENROLL_WAKE = "com.sidekick.ENROLL_WAKE"
         const val ANNOUNCE = "com.sidekick.ANNOUNCE"
         const val NOTICE_GIVEN = "com.sidekick.NOTICE_GIVEN"
         const val NOTICE = com.sidekick.core.ConsentNotice.BASE

@@ -123,6 +123,7 @@ class VoiceProfile(context: Context, initialLanguage: SpeechLanguage = SpeechLan
         if (model == modelValue.value) return
         embeddings.forEach { it.fill(0f) }; modelValue.value = model
         embeddings = loadAll(); refresh()
+        wakeSavedValue.value = wakeFile().baseFile.exists()
         preferences.edit().putString("model", model.name).apply()
     }
     @Synchronized fun selectLanguage(language: SpeechLanguage) {
@@ -187,8 +188,40 @@ class VoiceProfile(context: Context, initialLanguage: SpeechLanguage = SpeechLan
             return true
         } finally { current.fill(0f); setup.fill(0f); next?.fill(0f) }
     }
+    // Optional "SideKick voice check" (com.sidekick.core.WakeVoice): off unless the owner turns it on; its signature is
+    // one averaged vector per speaker model, kept and deleted with the rest of the voice setup.
+    private fun wakeFile(model: SpeakerModel = modelValue.value) = AtomicFile(File(directory, "wake-voice-${model.name.lowercase()}.json"))
+    private val wakeOnValue = MutableStateFlow(preferences.getBoolean("wake_check", false))
+    val wakeOn = wakeOnValue.asStateFlow()
+    private val wakeSavedValue = MutableStateFlow(wakeFile().baseFile.exists())
+    val wakeSaved = wakeSavedValue.asStateFlow()
+    fun setWakeOn(value: Boolean) { preferences.edit().putBoolean("wake_check", value).apply(); wakeOnValue.value = value }
+    /** The saved name signature, only while the check is on and voice matching is allowed (consent). */
+    @Synchronized fun wakeTemplate(): FloatArray? {
+        if (!wakeOnValue.value || !matchingAllowed() || consentValue.value?.valid != true) return null
+        val data = runCatching { JSONObject(wakeFile().openRead().bufferedReader().use { it.readText() }) }.getOrNull() ?: return null
+        if (data.optString("model") != modelValue.value.hash) return null
+        return data.optJSONArray("embedding")?.let { a -> FloatArray(a.length()) { a.getDouble(it).toFloat() } }
+            ?.takeIf { it.size == modelValue.value.dimension }
+    }
+    @Synchronized fun saveWake(samples: List<FloatArray>) {
+        require(samples.all { it.size == modelValue.value.dimension }) { "Voice samples belong to a different speaker model." }
+        val template = com.sidekick.core.WakeVoice.template(samples)
+            ?: throw IllegalArgumentException("Your “SideKick” samples differed too much. Try again in one place, phone still.")
+        try {
+            val bytes = JSONObject().put("model", modelValue.value.hash).put("embedding", JSONArray(template.toList())).toString().toByteArray()
+            val destination = wakeFile(); val stream = destination.startWrite()
+            try { stream.write(bytes); destination.finishWrite(stream) } catch (e: Exception) { destination.failWrite(stream); throw e }
+        } finally { template.fill(0f) }
+        wakeSavedValue.value = true; setWakeOn(true)
+    }
+    @Synchronized fun deleteWake() {
+        SpeakerModel.entries.forEach { wakeFile(it).delete() }
+        wakeSavedValue.value = false; setWakeOn(false)
+    }
     /** Deletes every profile and the consent record ("Delete my voice setup"). */
     @Synchronized fun delete() {
+        deleteWake()
         SpeakerModel.entries.forEach { model -> SpeechLanguage.entries.forEach { language -> VoiceSetting.entries.forEach { file(model, language, it).delete() } } }
         embeddings.forEach { it.fill(0f) }; embeddings = emptyList(); refresh()
         preferences.edit().remove("consent_name").remove("consent_at").remove("consent_version").remove("consent_method")

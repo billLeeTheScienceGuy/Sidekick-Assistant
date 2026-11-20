@@ -663,3 +663,11 @@ testing (#12): right after an app update Android refuses to start the microphone
 refusal disarmed recovery; recovery now stays armed and resumes when the assistant service reconnects. Phone: after an
 update listening resumed in 1.6 s; muting paused ("SideKick · Paused") and unmuting resumed; another app taking the
 microphone paused and handed back (mic-takeover.sh); full suite 131 of 131; test copies removed. Lint 0 errors.
+
+**T88 Owner recognition ideas (November 20).** Laptop, 962 owners, bars at zero strangers on one half and measured on
+the other (`scripts/laptop-eval/speaker_personal.py`): today's rule 57.7% of owner turns, 1 stranger. Personal voice
+model 2-30% (198 or about 900 stranger voices), distance tie-breaker 59.8% with 6 strangers, learned voice weighting
+up to 59.3% with 2 strangers: none adopted (docs/evaluation/SPEAKER_TUNING.md). Built instead: the optional SideKick
+voice check (`WakeVoice`, 5 core tests: cut at the pause after the name, five consistent samples, only upgrades an
+unassigned voice). Core 325 tests pass, lint 0 errors, installed on the owner's phone. Not yet tested with real
+"SideKick" recordings, owner's or strangers'.

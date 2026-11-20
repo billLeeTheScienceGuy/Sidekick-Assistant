@@ -225,6 +225,22 @@ class SpeakerEngine(private val context: Context, private val profile: VoiceProf
             else session.carry(vector, references.maxOf { VoiceMatch.similarity(it, vector) }, nowMs, rules().first)
         } finally { references.forEach { it.fill(0f) } }
     }
+    /** "SideKick" at the start of [samples] as a signature (setup of the optional SideKick voice check); null if unclear. */
+    fun wakeEmbedding(samples: FloatArray): FloatArray? {
+        val segment = com.sidekick.core.WakeVoice.segment(samples) ?: return null
+        return try { computeEmbedding(segment) } catch (_: IllegalArgumentException) { null } finally { segment.fill(0f) }
+    }
+    /**
+     * How closely "SideKick" at the start of [samples] matches the owner's saved way of saying it; null when the check
+     * is off, nothing is saved, or the start is unclear. Only computed for unassigned voices (see ListeningService).
+     */
+    fun wakeScore(samples: FloatArray): Float? {
+        val template = profile.wakeTemplate() ?: return null
+        return try {
+            val vector = wakeEmbedding(samples) ?: return null
+            try { VoiceMatch.similarity(template, vector) } finally { vector.fill(0f) }
+        } finally { template.fill(0f) }
+    }
     fun close() { clearRecent(); extractor?.release(); extractor = null; extractorModel = null }
     companion object { const val HASH = "e9848563da86f263117134dfd7ad63c92355b37de492b55e325400c9d9c39012" }
 }

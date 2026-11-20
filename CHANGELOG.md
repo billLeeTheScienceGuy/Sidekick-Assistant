@@ -4,6 +4,10 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 
 ## Unreleased (privacy, consent and location work package)
 
+- Optional SideKick voice check (off by default; Set up my voice): say five "SideKick, ..." questions and SideKick
+  recognizes you by how you say its name, so answers to your questions are spoken even when your voice was otherwise
+  unclear. Never overrides another person's voice. Its stranger rate is not yet measured (docs/evaluation/SPEAKER_TUNING.md).
+  Three other owner-recognition ideas were tested and not adopted (same document).
 - Reliability fixes from a code review: muting the microphone pauses listening instead of stopping it; a phrase the
   recognizer fails on is retried or skipped without stopping; other errors restart listening (at most 5 times an hour);
   listening resumes by itself after an app update; reminders ring on time (exact alarms); faster start with large

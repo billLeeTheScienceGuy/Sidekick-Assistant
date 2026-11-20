@@ -206,11 +206,26 @@ rule on this split: owner 57.7% of turns, 1 stranger turn of about 12 million.
 | Distance tie-breaker (close, clean speech may pass a lower bar) | 59.8% | 6 |
 | Learned voice weighting (WCCN from 480 people's own clips), alone | 50.5-57.1% | 2 |
 | Learned voice weighting as a second way in | 59.1-59.3% | 2 |
+| Personal voice model against about 900 stranger voices (6,000-7,000 clips) instead of 198, alone | 8.2-30.0% | 10-24 |
+| Same, as a second way in | 57.8-59.5% | 11-25 |
 
 - The personal model has one averaged setup signature and 198 stranger voices to learn from; the extreme stranger tail
   sets its bar, so it keeps almost no owner turns.
 - The distance tie-breaker gains 2 points but lets in 6 times as many strangers: a stranger speaking as close to the
   microphone as the owner looks the same. Rejected on safety.
 - The learned weighting gains at most 1.6 points while doubling stranger accepts; not worth shipping a 150 KB transform.
+- More strangers help the personal model (2% -> 30% of owner turns) but it stays far below today's rule and lets in
+  10 to 24 times as many strangers: with one averaged setup signature it still knows too little about the owner.
 - What is left for owner recognition is more and better owner evidence (a second setup recording in the owner's usual
   noisy place, learning across sessions), not a different scoring backend.
+
+## SideKick voice check (November 20, 2026): optional, off by default
+
+Matching the owner's way of saying the same word ("SideKick") instead of free speech, as phone voice unlock does. Only
+for questions that start with "SideKick": an unassigned voice whose "SideKick" scores at least .80 against the saved
+signature (5 setup samples averaged; `com.sidekick.core.WakeVoice`) is treated as the owner, so the answer is spoken
+instead of only shown. Never overrides "someone else"; conversation text is unchanged.
+
+**Not yet measured:** no corpus has strangers saying "SideKick", so neither the stranger rate nor the owner gain is
+known. The .80 bar is deliberately strict (CAM++ short-phrase bar is .60 with a recent anchor). To measure: about 20 of
+the owner's "SideKick" questions and, with their consent, a few other people saying it, on the phone.

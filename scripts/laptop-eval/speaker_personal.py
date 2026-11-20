@@ -105,7 +105,7 @@ def evaluate(lam, learn):
         print(f"   {name:9s} owner {a / n * 100:5.1f}%  strangers accepted {s}")
 
 
-for lam in (.05, .2, .5, .8):
+for lam in ():
     print(f"shrinkage {lam}")
     evaluate(lam, False)
 
@@ -150,7 +150,7 @@ def scores(Cm, group):
 
 
 base = crit(Ps, W.astype(np.float64))
-for lam in (.1, .3, .6):
+for lam in ():
     tot = {"today": [0, 0, 0], "weighted": [0, 0, 0], "either": [0, 0, 0]}
     for k in (0, 1):
         trn, tst = halves[k], halves[1 - k]
@@ -165,5 +165,47 @@ for lam in (.1, .3, .6):
                              ("either", (tbg >= rb) | (twg >= eb), (tbs >= rb) | (tws >= eb))):
             r = tot[name]; r[0] += int(ga.sum()); r[1] += len(ga); r[2] += int(sa.sum())
     print(f"voice weighting, shrinkage {lam}")
+    for name, (a, n, s) in tot.items():
+        print(f"   {name:9s} owner {a / n * 100:5.1f}%  strangers accepted {s}")
+
+
+# 4. Personal voice model against many more strangers: the stranger side is every clip of the people in the other half
+#    (about 900 voices, several thousand clips) instead of the app's 198. Owners in half A are modelled against half B's
+#    voices and measured against strangers in half A (never in their model), and the other way round.
+def big_cohort(group):
+    return np.stack([full[i] for p in group for i in by_clip[p] if full.get(i) is not None]).astype(np.float64)
+
+
+def personal_big(person, lam, coh):
+    mu, Cv = coh.mean(0), np.cov(coh.T)
+    S = (1 - lam) * Cv + lam * np.trace(Cv) / Cv.shape[0] * np.eye(Cv.shape[0])
+    w = np.linalg.solve(S, g["P"][single[person]] - mu)
+    proj = coh @ w
+    return np.minimum.reduceat((W @ w - proj.mean()) / (proj.std() + 1e-9), starts)
+
+
+cohorts = [big_cohort(h) for h in halves]
+print(f"stranger clips per half: {[len(c) for c in cohorts]}")
+for lam in (.01, .05, .2, .5):
+    data = []
+    for k in (0, 1):
+        rows = []
+        for person in halves[k]:
+            gm, sm = masks(person)
+            raw = np.nan_to_num(CRIT[single[person]], nan=-1, posinf=-1, neginf=-1)
+            per = np.where(raw > -1, personal_big(person, lam, cohorts[1 - k]), -99)
+            for m, kind in ((gm, 1), (sm, 0)):
+                rows.append(np.stack([raw[m], per[m], np.full(int(m.sum()), kind)], 1))
+        data.append(np.concatenate(rows))
+    tot = {"today": [0, 0, 0], "personal": [0, 0, 0], "either": [0, 0, 0]}
+    for k in (0, 1):
+        tr, te = data[k], data[1 - k]
+        ts, eg, es = tr[tr[:, 2] == 0], te[te[:, 2] == 1], te[te[:, 2] == 0]
+        rb, pb = ts[:, 0].max() + 1e-6, ts[:, 1].max() + 1e-6
+        eb = ts[ts[:, 0] < rb][:, 1].max() + 1e-6
+        for name, f in (("today", lambda d: d[:, 0] >= rb), ("personal", lambda d: d[:, 1] >= pb),
+                        ("either", lambda d: (d[:, 0] >= rb) | (d[:, 1] >= eb))):
+            r = tot[name]; r[0] += int(f(eg).sum()); r[1] += len(eg); r[2] += int(f(es).sum())
+    print(f"personal model vs about 900 strangers, shrinkage {lam}")
     for name, (a, n, s) in tot.items():
         print(f"   {name:9s} owner {a / n * 100:5.1f}%  strangers accepted {s}")

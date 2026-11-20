@@ -98,6 +98,10 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                 val consentRecord by (application as SidekickApplication).voiceProfile.consent.collectAsState()
                 val consentOnly = intent.getBooleanExtra(CONSENT_ONLY, false)
                 var error by remember { mutableStateOf<String?>(null) }
+                // Which setup the permission request starts: the voice profile or the optional SideKick voice check.
+                var wakeSetup by remember { mutableStateOf(false) }
+                val wakeOn by (application as SidekickApplication).voiceProfile.wakeOn.collectAsState()
+                val wakeSaved by (application as SidekickApplication).voiceProfile.wakeSaved.collectAsState()
                 val auto = language == com.sidekick.core.SpeechLanguage.AUTO
                 // Auto-detect has no single language; the user picks which language profile to record.
                 var chosen by rememberSaveable { mutableStateOf(com.sidekick.core.SpeechLanguage.ENGLISH.code) }
@@ -105,7 +109,7 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                 val active = state.recording || state.processing
                 val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
                     if (grants[Manifest.permission.RECORD_AUDIO] == true && (Build.VERSION.SDK_INT < 33 || grants[Manifest.permission.POST_NOTIFICATIONS] == true)) {
-                        runCatching { startForegroundService(Intent(this@VoiceEnrollmentActivity, ListeningService::class.java).putExtra(ListeningService.ENROLL, true).putExtra(ListeningService.ENROLL_LANGUAGE, target.code).putExtra(ListeningService.ENROLL_SETTING, setting.name)) }
+                        runCatching { startForegroundService(Intent(this@VoiceEnrollmentActivity, ListeningService::class.java).putExtra(ListeningService.ENROLL, true).putExtra(ListeningService.ENROLL_LANGUAGE, target.code).putExtra(ListeningService.ENROLL_SETTING, setting.name).putExtra(ListeningService.ENROLL_WAKE, wakeSetup)) }
                             .onFailure { error = "Open SideKick and try voice setup again." }
                     } else error = "Microphone and notification permissions are needed for setup."
                 }
@@ -160,11 +164,11 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                             com.sidekick.core.SpeechLanguage.RUSSIAN -> "Завтра я встречусь с другом за обедом. Мы поговорим о планах на выходные. В хорошую погоду я люблю гулять и открывать новые места. На этой неделе у меня много дел, но вечером я хочу отдохнуть. Продолжайте естественно рассказывать о своей повседневной жизни, пока настройка не закончится."
                             else -> "Try: Tomorrow I will meet a friend for lunch. We will talk about our plans for the weekend. I enjoy walking outside and finding new places to visit. Keep speaking naturally until setup finishes."
                         })
-                        Text(if (active && state.enrolling) "${state.voiceSamples}/3 voice samples · ${state.seconds}s" else state.note)
+                        Text(if (active && state.enrolling) "${state.voiceSamples}/${if (wakeSetup) com.sidekick.core.WakeVoice.SAMPLES else 3} samples · ${state.seconds}s" else state.note)
                         if (active && state.enrolling) Text(state.note)
                         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                        fun startSetup() {
-                            error = null
+                        fun startSetup(wake: Boolean = false) {
+                            error = null; wakeSetup = wake
                             permission.launch(if (Build.VERSION.SDK_INT >= 33) arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS) else arrayOf(Manifest.permission.RECORD_AUDIO))
                         }
                         val record = consentRecord
@@ -174,6 +178,26 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                         } else {
                             Text("You agreed as ${record.name} on ${dates.format(java.util.Date(record.atEpochMs))}.", style = MaterialTheme.typography.bodySmall)
                             Button(enabled = !active, onClick = { startSetup() }) { Text("Start voice setup") }
+                            HorizontalDivider()
+                            Text("SideKick voice check (optional)", style = MaterialTheme.typography.titleMedium)
+                            Text("Recognises you by how you say “SideKick”, the same word every time, which is easier than recognising free speech. " +
+                                "When a “SideKick, …” question comes from a voice SideKick isn't sure about and your “SideKick” matches, the answer is spoken instead of only shown. " +
+                                "It never overrides a voice SideKick thinks is someone else, and it doesn't change conversation text. " +
+                                "A recording of you saying “SideKick” could fool it.", style = MaterialTheme.typography.bodySmall)
+                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                Switch(wakeOn && wakeSaved, { (application as SidekickApplication).voiceProfile.setWakeOn(it) }, enabled = wakeSaved && !active,
+                                    modifier = Modifier.testTag("wake-check"))
+                                Spacer(Modifier.width(8.dp))
+                                Text(if (!wakeSaved) "Not set up" else if (wakeOn) "On" else "Off")
+                            }
+                            Text("Setup: say a question that starts with “SideKick”, with a short pause after the name, five times, e.g. “SideKick, what's my plan today?”. " +
+                                "Only a voice signature of the name is saved; audio is discarded and nothing is transcribed.", style = MaterialTheme.typography.bodySmall)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(enabled = !active, onClick = { startSetup(wake = true) }, modifier = Modifier.testTag("wake-setup")) {
+                                    Text(if (wakeSaved) "Record “SideKick” again" else "Record “SideKick”")
+                                }
+                                if (wakeSaved) TextButton(enabled = !active, onClick = { (application as SidekickApplication).voiceProfile.deleteWake() }) { Text("Delete") }
+                            }
                         }
                         if (active && state.enrolling) TextButton(onClick = {
                             startService(Intent(this@VoiceEnrollmentActivity, ListeningService::class.java).setAction(ListeningService.CANCEL))
