@@ -394,6 +394,7 @@ class ListeningService : Service() {
         }
         val enrollmentSamples = mutableListOf<FloatArray>()
         val wakeSamples = mutableListOf<FloatArray>()
+        var wakeTries = 0
         val wake = getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SideKick:LiveNotes")
         wake.setReferenceCounted(false)
         try {
@@ -545,7 +546,7 @@ class ListeningService : Service() {
                             // For phone tests and scripts/phone-tests/voice_tuning_report.py: voice scores and the consent decision only;
                             // never words, location, voice labels or names.
                             android.util.Log.i("SidekickVoice", "speaker=$identified kept=$kept rule=${consent.place.recording} biometric=${consent.place.biometric} " +
-                                "notice=${consent.noticeAtMs != null} grouping=${consent.groupingAllowed()} call=${mutableState.value.callActive} · ${attributed.scores}")
+                                "notice=${consent.noticeAtMs != null} grouping=${consent.groupingAllowed()} call=${mutableState.value.callActive} · ${attributed.scores}" + (wakeScore?.let { String.format(java.util.Locale.US, " · sidekick %.2f", it) } ?: ""))
                             if (!kept) {
                                 mutableState.update { it.copy(droppedChunks = it.droppedChunks + 1) }
                                 return@LiveSpeechProcessor false
@@ -554,13 +555,23 @@ class ListeningService : Service() {
                         true
                     }, inspect = { samples ->
                     if (wakeEnrollment) {
-                        if (!discard && wakeSamples.size < com.sidekick.core.WakeVoice.SAMPLES) {
+                        val total = com.sidekick.core.WakeVoice.SAMPLES
+                        if (!discard && wakeSamples.size < total && wakeTries < com.sidekick.core.WakeVoice.MAX_TRIES) {
                             val vector = runCatching { speaker.wakeEmbedding(samples) }.getOrNull()
-                            if (vector == null) mutableState.update { it.copy(note = "Couldn't hear “SideKick” clearly at the start. Say it again, then pause briefly (${wakeSamples.size}/${com.sidekick.core.WakeVoice.SAMPLES}).") }
+                            if (vector == null) mutableState.update { it.copy(note = "Didn't catch “SideKick” clearly. Say it again: “SideKick”, a short pause, then a question (${wakeSamples.size}/$total).") }
                             else {
+                                wakeTries++
                                 wakeSamples += vector
-                                mutableState.update { it.copy(voiceSamples = wakeSamples.size, note = "SideKick voice check: ${wakeSamples.size}/${com.sidekick.core.WakeVoice.SAMPLES} samples") }
-                                if (wakeSamples.size == com.sidekick.core.WakeVoice.SAMPLES) finish = true
+                                // One sample unlike the others is dropped; the good ones are kept.
+                                val odd = com.sidekick.core.WakeVoice.outlier(wakeSamples)
+                                if (odd != null) wakeSamples.removeAt(odd).fill(0f)
+                                when {
+                                    wakeSamples.size == total -> finish = true
+                                    wakeTries >= com.sidekick.core.WakeVoice.MAX_TRIES -> finish = true
+                                    else -> mutableState.update { it.copy(voiceSamples = wakeSamples.size, note =
+                                        (if (odd != null) "One sounded different from the others, so it was left out. " else "Got it. ") +
+                                        "Now say the next one (${wakeSamples.size}/$total).") }
+                                }
                             }
                         }
                         false
@@ -681,7 +692,7 @@ class ListeningService : Service() {
                         mutableState.update { it.copy(note = "Listening · resumed") }; pausedNotification(null)
                         continue
                     }
-                    if (enrollment && SystemClock.elapsedRealtime() - startedClock >= 45_000) { finish = true; break }
+                    if (enrollment && SystemClock.elapsedRealtime() - startedClock >= if (wakeEnrollment) 120_000 else 45_000) { finish = true; break }
                     if (SystemClock.elapsedRealtime() >= renewAt) {
                         wake.acquire(10 * 60_000L)
                         renewAt = SystemClock.elapsedRealtime() + 5 * 60_000L
@@ -776,7 +787,8 @@ class ListeningService : Service() {
                 note = if (wakeEnrollment) {
                     if (wakeSaved) "SideKick voice check is set up and on."
                     else if (wakeSamples.size == com.sidekick.core.WakeVoice.SAMPLES) "Your “SideKick” samples differed too much. Try again in one place, phone still."
-                    else "SideKick voice check setup incomplete. Nothing was saved."
+                    else if (wakeTries >= com.sidekick.core.WakeVoice.MAX_TRIES) "Your “SideKick” samples kept differing. Try again somewhere quiet, phone still, same distance each time. Nothing was saved."
+                    else "SideKick voice check setup stopped. Nothing was saved."
                 } else if (enrollment) {
                     if (enrollmentSamples.size == 3) "Voice setup complete. Your ${profileTarget.label} profile (${enrollmentSetting.label.lowercase()}) is saved."
                     else "Voice setup incomplete. Speak in longer phrases and try again; any previous profile is unchanged."

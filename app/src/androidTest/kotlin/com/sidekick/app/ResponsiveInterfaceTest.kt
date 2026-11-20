@@ -73,6 +73,7 @@ class ResponsiveInterfaceTest {
         compose.onNodeWithTag("compact-status").assertTextEquals("Not listening")
         compose.onNodeWithTag("summary-tab").assertDoesNotExist()
         compose.onNodeWithTag("settings").performClick()
+        compose.onNodeWithTag("settings-page-SCREEN").performScrollTo().performClick()
         compose.onNodeWithTag("home-detailed").performScrollTo().performClick().assertIsSelected()
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("summary-tab").assertIsDisplayed()
@@ -81,12 +82,12 @@ class ResponsiveInterfaceTest {
     }
     @Test fun appearancePersistsAndCanFollowTheSystemAgain() {
         compose.onNodeWithTag("settings").performClick()
-        compose.onNodeWithTag("screen-options").performScrollTo().performClick()
+        compose.onNodeWithTag("settings-page-SCREEN").performScrollTo().performClick()
         compose.onNodeWithTag("appearance-DARK").performClick().assertIsSelected()
         assertEquals(AppearanceMode.DARK, GuidanceSettings(app).appearance.value)
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("settings").performClick()
-        compose.onNodeWithTag("screen-options").performScrollTo().performClick()
+        compose.onNodeWithTag("settings-page-SCREEN").performScrollTo().performClick()
         compose.onNodeWithTag("appearance-DARK").assertIsSelected()
         compose.onNodeWithTag("appearance-SYSTEM").performClick().assertIsSelected()
         assertEquals(AppearanceMode.SYSTEM, GuidanceSettings(app).appearance.value)

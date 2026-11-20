@@ -4,7 +4,8 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 
 ## Unreleased (privacy, consent and location work package)
 
-- Optional SideKick voice check (off by default; Set up my voice): say five "SideKick, ..." questions and SideKick
+- Settings: Screen & text size is its own section, listed first.
+- Optional SideKick voice check (off by default; Settings → Your voice, its own screen): say five "SideKick, ..." questions and SideKick
   recognizes you by how you say its name, so answers to your questions are spoken even when your voice was otherwise
   unclear. Never overrides another person's voice. Its stranger rate is not yet measured (docs/evaluation/SPEAKER_TUNING.md).
   Three other owner-recognition ideas were tested and not adopted (same document).

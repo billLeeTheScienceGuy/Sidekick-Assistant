@@ -671,3 +671,11 @@ up to 59.3% with 2 strangers: none adopted (docs/evaluation/SPEAKER_TUNING.md). 
 voice check (`WakeVoice`, 5 core tests: cut at the pause after the name, five consistent samples, only upgrades an
 unassigned voice). Core 325 tests pass, lint 0 errors, installed on the owner's phone. Not yet tested with real
 "SideKick" recordings, owner's or strangers'.
+
+**T89 SideKick voice check setup, Screen & text size section (November 20).** The owner found setup hard: a phrase
+only counts after about 1.3 s of silence, so quick repeats merged into one sample, and setup stopped at 45 s. Now it has
+its own screen (Settings → Your voice → Set up SideKick voice check) with a large counter and "stay quiet until the
+count goes up", a sample unlike the others is dropped instead of failing all five (`WakeVoice.outlier`, core test), up
+to 10 tries in 2 minutes, and Try again on the same screen. Screen choices moved to their own Settings section, shown
+first. Phone: InterfaceCustomizationTest and ResponsiveInterfaceTest 9 of 9; test copy removed. The voice log shows the
+"SideKick" match score (number only).

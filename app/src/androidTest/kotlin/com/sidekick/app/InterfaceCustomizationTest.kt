@@ -33,7 +33,7 @@ class InterfaceCustomizationTest {
     }
     @Test fun designAndSizeChoicesPersistAndResetWithoutChangingFeatures() {
         compose.onNodeWithTag("settings").performClick()
-        compose.onNodeWithTag("screen-options").performScrollTo().performClick()
+        compose.onNodeWithTag("settings-page-SCREEN").performScrollTo().performClick()
         compose.onNodeWithTag("design-WARM").performScrollTo().performClick()
         compose.onNodeWithTag("text-size-LARGE").performScrollTo().performClick()
         compose.onNodeWithTag("interface-size-LARGE").performScrollTo().performClick()
@@ -42,7 +42,7 @@ class InterfaceCustomizationTest {
         assertEquals(NoteTextSize.LARGE, saved.noteTextSize.value)
         assertEquals(InterfaceSize.LARGE, saved.interfaceSize.value)
         // A new size rebuilds the screen; reopen the screen options if they closed.
-        if (compose.onAllNodesWithTag("manual-notes").fetchSemanticsNodes().isEmpty()) compose.onNodeWithTag("screen-options").performScrollTo().performClick()
+        if (compose.onAllNodesWithTag("manual-notes").fetchSemanticsNodes().isEmpty()) compose.onNodeWithTag("settings-page-SCREEN").performScrollTo().performClick()
         compose.onNodeWithTag("manual-notes").performScrollTo().performClick()
         compose.onNodeWithTag("reset-appearance").performScrollTo().performClick()
         assertEquals(InterfaceDesign.CALM, app.guidance.interfaceDesign.value)
@@ -53,7 +53,7 @@ class InterfaceCustomizationTest {
     }
     @Test fun manualNotesCanBeHiddenWithoutDisablingListeningOrPlanner() {
         compose.onNodeWithTag("settings").performClick()
-        compose.onNodeWithTag("screen-options").performScrollTo().performClick()
+        compose.onNodeWithTag("settings-page-SCREEN").performScrollTo().performClick()
         compose.onNodeWithTag("manual-notes").performScrollTo().performClick()
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("transcript").assertDoesNotExist()
@@ -63,7 +63,7 @@ class InterfaceCustomizationTest {
         compose.onNodeWithTag("planner-tab").performClick()
         compose.onNodeWithTag("manual-add").assertDoesNotExist()
         compose.onNodeWithTag("settings").performClick()
-        compose.onNodeWithTag("screen-options").performScrollTo().performClick()
+        compose.onNodeWithTag("settings-page-SCREEN").performScrollTo().performClick()
         compose.onNodeWithTag("manual-notes").performScrollTo().performClick()
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("manual-add"))
@@ -95,6 +95,7 @@ class InterfaceCustomizationTest {
     }
     @Test fun simpleHomeKeepsEssentialsVisibleAndEverythingElseUnderMore() {
         compose.onNodeWithTag("settings").performClick()
+        compose.onNodeWithTag("settings-page-SCREEN").performScrollTo().performClick()
         compose.onNodeWithTag("home-simple").performScrollTo().performClick()
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("one-screen-home").assertIsDisplayed()
@@ -127,6 +128,7 @@ class InterfaceCustomizationTest {
         assertFalse(GuidanceSettings(app).oneScreenHome.value)
         compose.onNodeWithTag("capture-tab").assertIsDisplayed()
         compose.onNodeWithTag("settings").performClick()
+        compose.onNodeWithTag("settings-page-SCREEN").performScrollTo().performClick()
         compose.onNodeWithTag("home-simple").performScrollTo().performClick()
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("compact-listen").assertIsDisplayed()

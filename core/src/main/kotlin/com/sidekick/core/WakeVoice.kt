@@ -49,16 +49,34 @@ object WakeVoice {
         return FloatArray(WINDOW).also { samples.copyInto(it, 0, start, end) }
     }
 
-    /** The saved signature: [SAMPLES] consistent setup signatures averaged; null if they differ too much. */
+    /** Each sample compared with the average of the others (one odd sample does not spoil the rest). */
+    private fun agreement(unit: List<FloatArray>): List<Float> = unit.indices.map { i ->
+        val others = VoiceMatch.normalized(FloatArray(unit[i].size) { d -> unit.indices.filter { it != i }.sumOf { unit[it][d].toDouble() }.toFloat() })
+        try { VoiceMatch.similarity(unit[i], others) } finally { others.fill(0f) }
+    }
+    const val AGREE = .60f
+
+    /** The saved signature: [SAMPLES] setup signatures that each agree with the rest, averaged; null otherwise. */
     fun template(vectors: List<FloatArray>): FloatArray? {
         if (vectors.size < SAMPLES || vectors.any { it.size != vectors.first().size }) return null
         val unit = vectors.map(VoiceMatch::normalized)
-        val consistent = unit.indices.all { i -> unit.indices.all { j -> i == j || VoiceMatch.similarity(unit[i], unit[j]) >= .60f } }
         return try {
-            if (!consistent) null
+            if (agreement(unit).any { it < AGREE }) null
             else VoiceMatch.normalized(FloatArray(unit.first().size) { d -> unit.sumOf { it[d].toDouble() }.toFloat() })
         } finally { unit.forEach { it.fill(0f) } }
     }
+
+    /** During setup: the sample that agrees least with the others, if it is below the bar (drop it and ask for one more). */
+    fun outlier(vectors: List<FloatArray>): Int? {
+        if (vectors.size < 3 || vectors.any { it.size != vectors.first().size }) return null
+        val unit = vectors.map(VoiceMatch::normalized)
+        return try {
+            val scores = agreement(unit)
+            scores.indices.minByOrNull { scores[it] }?.takeIf { scores[it] < AGREE }
+        } finally { unit.forEach { it.fill(0f) } }
+    }
+    /** Setup gives up after this many accepted samples without five that agree. */
+    const val MAX_TRIES = 10
 
     /** Who asked: only an unassigned voice whose name matches strongly enough becomes the owner. */
     fun asker(base: Speaker, score: Float?): Speaker =

@@ -38,6 +38,12 @@ class WakeVoiceTest {
         assertNull(WakeVoice.template(List(4) { vector(it, .05f) } + listOf(vector(9, 3f))), "one sample unlike the rest")
     }
 
+    @Test fun findsTheOddSampleSoTheRestCanBeKept() {
+        val good = List(4) { vector(it, .05f) }
+        assertNull(WakeVoice.outlier(good))
+        assertEquals(2, WakeVoice.outlier(good.take(2) + listOf(vector(9, 3f)) + good.drop(2)))
+    }
+
     @Test fun onlyUpgradesAnUnassignedVoice() {
         assertEquals(Speaker.USER, WakeVoice.asker(Speaker.UNKNOWN, .85f))
         assertEquals(Speaker.UNKNOWN, WakeVoice.asker(Speaker.UNKNOWN, .79f))

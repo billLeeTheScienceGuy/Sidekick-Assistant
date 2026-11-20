@@ -75,7 +75,17 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                 key(page) { Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         when (page) {
                             null -> {
-                                // Screen choices first: they matter most to people who find the phone hard to read.
+                                QuietLabel("Choose what you want to change.")
+                                settingsPages.forEach { section ->
+                                    OutlinedCard(onClick = { page = section.id }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).testTag("settings-page-${section.id}")) {
+                                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Text(section.title, style = MaterialTheme.typography.titleLarge)
+                                            Text(section.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                }
+                            }
+                            "SCREEN" -> {
                                 Text("Screen", style = MaterialTheme.typography.titleMedium)
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     FilterChip(oneScreen, { settings.setOneScreenHome(true) }, label = { Text("Simple (recommended)") }, modifier = Modifier.heightIn(min = 48.dp).testTag("home-simple"))
@@ -89,42 +99,30 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                                     }
                                 }
                                 QuietLabel("Also follows your phone’s font size.")
-                                SettingsDetails("More screen options", "screen-options") {
-                                    Text("Light or dark", style = MaterialTheme.typography.titleMedium)
-                                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        AppearanceMode.entries.forEach { mode ->
-                                            FilterChip(selected = mode == appearance, onClick = { settings.setAppearance(mode) },
-                                                label = { Text(when (mode) { AppearanceMode.SYSTEM -> "Same as phone"; AppearanceMode.LIGHT -> "Light"; AppearanceMode.DARK -> "Dark" }) },
-                                                modifier = Modifier.heightIn(min = 48.dp).testTag("appearance-${mode.name}"))
-                                        }
-                                    }
-                                    Text("Colors", style = MaterialTheme.typography.titleMedium)
-                                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        InterfaceDesign.entries.forEach { choice ->
-                                            FilterChip(design == choice, { settings.setInterfaceDesign(choice) }, label = { Text(choice.label) }, modifier = Modifier.heightIn(min = 48.dp).testTag("design-${choice.name}"))
-                                        }
-                                    }
-                                    QuietLabel("Calm is teal. Classic is blue. Warm is amber.")
-                                    Text("Buttons & spacing", style = MaterialTheme.typography.titleMedium)
-                                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        InterfaceSize.entries.forEach { choice ->
-                                            FilterChip(interfaceSize == choice, { settings.setInterfaceSize(choice) }, label = { Text(choice.label) }, modifier = Modifier.heightIn(min = 48.dp).testTag("interface-size-${choice.name}"))
-                                        }
-                                    }
-                                    QuietLabel("Text size changes words. Buttons & spacing changes controls.")
-                                    TextButton(onClick = settings::resetAppearance, modifier = Modifier.heightIn(min = 48.dp).testTag("reset-appearance")) { Text("Reset screen choices") }
-                                    SettingsToggle("Type notes", "Show a place to type notes or add plans. You can still change plans when this is off.", manualNotes, settings::setManualNotes, "manual-notes")
-                                }
-                                HorizontalDivider()
-                                QuietLabel("Choose what you want to change.")
-                                settingsPages.forEach { section ->
-                                    OutlinedCard(onClick = { page = section.id }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).testTag("settings-page-${section.id}")) {
-                                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            Text(section.title, style = MaterialTheme.typography.titleLarge)
-                                            Text(section.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
+                                Text("Light or dark", style = MaterialTheme.typography.titleMedium)
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    AppearanceMode.entries.forEach { mode ->
+                                        FilterChip(selected = mode == appearance, onClick = { settings.setAppearance(mode) },
+                                            label = { Text(when (mode) { AppearanceMode.SYSTEM -> "Same as phone"; AppearanceMode.LIGHT -> "Light"; AppearanceMode.DARK -> "Dark" }) },
+                                            modifier = Modifier.heightIn(min = 48.dp).testTag("appearance-${mode.name}"))
                                     }
                                 }
+                                Text("Colors", style = MaterialTheme.typography.titleMedium)
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    InterfaceDesign.entries.forEach { choice ->
+                                        FilterChip(design == choice, { settings.setInterfaceDesign(choice) }, label = { Text(choice.label) }, modifier = Modifier.heightIn(min = 48.dp).testTag("design-${choice.name}"))
+                                    }
+                                }
+                                QuietLabel("Calm is teal. Classic is blue. Warm is amber.")
+                                Text("Buttons & spacing", style = MaterialTheme.typography.titleMedium)
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    InterfaceSize.entries.forEach { choice ->
+                                        FilterChip(interfaceSize == choice, { settings.setInterfaceSize(choice) }, label = { Text(choice.label) }, modifier = Modifier.heightIn(min = 48.dp).testTag("interface-size-${choice.name}"))
+                                    }
+                                }
+                                QuietLabel("Text size changes words. Buttons & spacing changes controls.")
+                                TextButton(onClick = settings::resetAppearance, modifier = Modifier.heightIn(min = 48.dp).testTag("reset-appearance")) { Text("Reset screen choices") }
+                                SettingsToggle("Type notes", "Show a place to type notes or add plans. You can still change plans when this is off.", manualNotes, settings::setManualNotes, "manual-notes")
                             }
                             "LISTENING" -> {
                                 val auto = speechLanguage == com.sidekick.core.SpeechLanguage.AUTO
@@ -208,6 +206,13 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                                 }
                                 Button(enabled = !listening.recording && !listening.processing, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("voice-setup"),
                                     onClick = { context.startActivity(Intent(context, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java)) }) { Text(if (voiceReady) "Update my voice setup" else "Set up my voice") }
+                                val wakeOn by voice.wakeOn.collectAsState()
+                                val wakeSaved by voice.wakeSaved.collectAsState()
+                                SettingsToggle("SideKick voice check", if (wakeSaved) "Optional. Recognizes you by how you say “SideKick”, so answers to your questions are spoken."
+                                    else "Optional. Set it up below: you say “SideKick, …” five times.", wakeOn && wakeSaved, voice::setWakeOn, "wake-check-setting", wakeSaved && !listening.recording && !listening.processing)
+                                OutlinedButton(enabled = !listening.recording && !listening.processing, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("wake-setup-open"),
+                                    onClick = { context.startActivity(Intent(context, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java)
+                                        .putExtra(com.sidekick.app.speaker.VoiceEnrollmentActivity.WAKE_ONLY, true)) }) { Text(if (wakeSaved) "Redo SideKick voice check" else "Set up SideKick voice check") }
                                 SettingsToggle("Recognize my voice", "Recommended. Other people’s plans won’t become yours. Voice matching can be wrong.", voiceEnabled, voice::setEnabled, "voice-matching", voiceReady && !listening.recording && !listening.processing)
                                 HorizontalDivider()
                                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
@@ -313,8 +318,10 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
 }
 
 private data class SettingsSection(val id: String, val title: String, val description: String)
-/** Four plain sections. Page ids are kept from the earlier layout where the content stayed (LISTENING, PLANS, PRIVACY). */
+/** Five plain sections. Page ids are kept from the earlier layout where the content stayed (LISTENING, PLANS, PRIVACY). */
 private val settingsPages = listOf(
+// Screen first: it matters most to people who find the phone hard to read.
+SettingsSection("SCREEN", "Screen & text size", "Simple or detailed home, text size, light or dark, colors and buttons"),
 SettingsSection("LISTENING", "Listening", "Language, speech, listening tips and phone checks"),
 SettingsSection("VOICE", "Your voice", "Set up your voice so SideKick knows which plans are yours"),
 SettingsSection("PLANS", "Reminders & calendar", "Saving plans, reminders, calendar, places and messages"),
