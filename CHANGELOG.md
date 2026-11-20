@@ -4,6 +4,10 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 
 ## Unreleased (privacy, consent and location work package)
 
+- Reliability fixes from a code review: muting the microphone pauses listening instead of stopping it; a phrase the
+  recognizer fails on is retried or skipped without stopping; other errors restart listening (at most 5 times an hour);
+  listening resumes by itself after an app update; reminders ring on time (exact alarms); faster start with large
+  speech packs (docs/evaluation/TEST_HISTORY.md T87).
 - Battery and reliability: listening's own power in silence is about 42 mW, down from 117 mW (speech detector once a
   second on the efficient cores, microphone read once a second, low-power location away from state borders, call
   events instead of polling). A full day of listening used 21% of the battery over 14 hours, SideKick itself about 4%

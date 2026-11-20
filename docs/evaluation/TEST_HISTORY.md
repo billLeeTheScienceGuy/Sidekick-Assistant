@@ -650,3 +650,16 @@ Assessment: acceptable for everyday use on this phone (a full charge would last 
 30.7 degrees C). Not yet measured: a talkative day (recognition runs on every phrase and costs far more than silence),
 older phones or worn batteries, and a day moving around (low-power location barely exercised). "Pause when the phone
 is resting" would bring overnight cost close to zero.
+
+**T87 Code review fixes (November 20).** Eleven problems found by reading the code, plus one found while testing:
+muting the microphone now pauses listening with a note and carries on when unmuted (was: stopped); one phrase the
+recognizer fails on is retried with Faster recognition, then skipped and counted, without stopping listening; any other
+error restarts listening after 5 s, at most 5 times an hour (`ListeningRetry`, core tests), and only problems the owner
+must fix (permission removed, speech pack missing) stop it; reminders use exact alarms; a stuck "SideKick is speaking"
+flag clears after 90 s; plan saving checks cheap fields before parsing dates; speech-pack fingerprints are remembered by
+size and date, so large packs are not re-read on every start; the call-event thread is shut down; place and call checks
+no longer race; pack presence is cached until a pack changes; test switches work only in test builds. Found while
+testing (#12): right after an app update Android refuses to start the microphone from the update notice, and that
+refusal disarmed recovery; recovery now stays armed and resumes when the assistant service reconnects. Phone: after an
+update listening resumed in 1.6 s; muting paused ("SideKick · Paused") and unmuting resumed; another app taking the
+microphone paused and handed back (mic-takeover.sh); full suite 131 of 131; test copies removed. Lint 0 errors.

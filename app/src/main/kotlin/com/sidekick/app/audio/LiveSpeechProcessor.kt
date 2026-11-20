@@ -50,8 +50,9 @@ class LiveSpeechProcessor(
     private val dropped = AtomicInteger()
     /** Phrases dropped because Android reported memory as low while the waiting line was over its limit. */
     val droppedCount: Int get() = dropped.get()
-    /** Nothing is skipped any more; the only loss is a memory-low drop. */
-    val skippedCount: Int get() = dropped.get()
+    private val failed = AtomicInteger()
+    /** Phrases whose recognition failed twice (listening continued). */
+    val failedCount: Int get() = failed.get()
     private val fasterPhrases = AtomicInteger()
     /** Phrases recognized with faster recognition to catch up. */
     val fasterCount: Int get() = fasterPhrases.get()
@@ -77,10 +78,12 @@ class LiveSpeechProcessor(
                 val start = android.os.SystemClock.elapsedRealtime()
                 try {
                     if (!inspect(samples)) { speechContext.clear(); continue }
-                    val parts = partition?.invoke(samples) ?: listOf(SpeakerPart(0, samples.size, null, false))
-                    require(parts.isNotEmpty() && parts.size <= 4 && parts.first().start == 0 && parts.last().end == samples.size &&
-                        parts.all { it.start >= 0 && it.end > it.start && it.end <= samples.size } &&
-                        parts.zipWithNext().all { (a,b) -> a.end == b.start }) { "Invalid speaker partition" }
+                    // A failed or invalid speaker split never stops listening: the phrase is treated as one speaker.
+                    val split = try { partition?.invoke(samples) } catch (e: CancellationException) { throw e }
+                        catch (e: Exception) { android.util.Log.w("SidekickListen", "speaker split failed: ${e.javaClass.simpleName}"); null }
+                    val valid = split != null && split.isNotEmpty() && split.size <= 4 && split.first().start == 0 && split.last().end == samples.size &&
+                        split.all { it.start >= 0 && it.end > it.start && it.end <= samples.size } && split.zipWithNext().all { (a, b) -> a.end == b.start }
+                    val parts = if (valid) split!! else listOf(SpeakerPart(0, samples.size, null, false))
                     for ((index, part) in parts.withIndex()) {
                     currentCoroutineContext().ensureActive()
                     val audio = if (parts.size == 1) samples else samples.copyOfRange(part.start, part.end)
@@ -98,10 +101,19 @@ class LiveSpeechProcessor(
                     val shortBoost = !faster && audio.size < speech.shortBoostLimit() && behind == 0L && parts.size == 1
                     val began = android.os.SystemClock.elapsedRealtime()
                     // A slow phrase is allowed to finish (never skipped); the phrases behind it catch up with faster recognition.
+                    // A recognition error never stops listening: the phrase is tried once more with faster recognition,
+                    // and if that fails too only this phrase is lost (counted, logged without words). The engine wipes
+                    // the audio it is given, so each attempt gets a copy.
                     val heard = try {
-                        if (faster) speech.transcribe(window, 2, true, 0, selectedQuality = com.sidekick.core.SpeechQuality.FAST, shortPhrase = false, voiceKey = voiceKey())
-                        else speech.transcribe(window, 2, true, speech.liveContext(shortBoost), shortPhrase = shortBoost, voiceKey = voiceKey())
-                    } finally { if (window !== samples) window.fill(0f) }
+                        if (faster) speech.transcribe(window.copyOf(), 2, true, 0, selectedQuality = com.sidekick.core.SpeechQuality.FAST, shortPhrase = false, voiceKey = voiceKey())
+                        else speech.transcribe(window.copyOf(), 2, true, speech.liveContext(shortBoost), shortPhrase = shortBoost, voiceKey = voiceKey())
+                    } catch (e: CancellationException) { throw e } catch (e: Exception) {
+                        android.util.Log.w("SidekickListen", "recognition failed: ${e.javaClass.simpleName}: ${e.message}")
+                        if (!faster && fasterAvailable()) try {
+                            speech.transcribe(window.copyOf(), 2, true, 0, selectedQuality = com.sidekick.core.SpeechQuality.FAST, shortPhrase = false, voiceKey = voiceKey())
+                        } catch (e2: CancellationException) { throw e2 } catch (_: Exception) { failed.incrementAndGet(); "" }
+                        else { failed.incrementAndGet(); "" }
+                    } finally { window.fill(0f) }
                     val workMs = android.os.SystemClock.elapsedRealtime() - began
                     policy.measured(workMs, audio.size * 1000L / 16_000)
                     if (workMs > 30_000) android.util.Log.w("SidekickListen", "slow phrase: ${workMs / 1000} s (kept)")

@@ -76,12 +76,24 @@ class ListeningService : Service() {
     @Volatile private var noticePlaying = false
     @Volatile private var answerPlaying = false
     private var answerVoice: android.speech.tts.TextToSpeech? = null
-    private fun speakingNotice(now: Long) = noticePlaying || answerPlaying || now < muteUntil
+    /** When SideKick last started speaking (notice or answer). */
+    @Volatile private var playStartedAt = 0L
+    /**
+     * Microphone input is muted while SideKick speaks. Safety limit: if Android's speech engine never reports that it
+     * finished (90 s for the longest notice), listening is unmuted anyway, so SideKick can never stay deaf.
+     */
+    private fun speakingNotice(now: Long): Boolean {
+        if ((noticePlaying || answerPlaying) && playStartedAt > 0 && now - playStartedAt > 90_000) {
+            android.util.Log.w("SidekickListen", "speech engine never finished: microphone unmuted")
+            noticePlaying = false; answerPlaying = false; playStartedAt = 0
+        }
+        return noticePlaying || answerPlaying || now < muteUntil
+    }
 
     /** Reads an answer aloud; the microphone is muted meanwhile so SideKick never writes down its own voice. */
     private fun speakAnswer(text: String, language: String) {
         answerVoice?.shutdown()
-        answerPlaying = true
+        answerPlaying = true; playStartedAt = SystemClock.elapsedRealtime()
         answerVoice = android.speech.tts.TextToSpeech(this) { status ->
             val tts = answerVoice
             if (status != android.speech.tts.TextToSpeech.SUCCESS || tts == null) { answerPlaying = false; return@TextToSpeech }
@@ -227,7 +239,7 @@ class ListeningService : Service() {
             val tts = noticeVoice
             if (status == android.speech.tts.TextToSpeech.SUCCESS && tts != null) {
                 tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
-                    override fun onStart(id: String?) { noticePlaying = true }
+                    override fun onStart(id: String?) { noticePlaying = true; playStartedAt = SystemClock.elapsedRealtime() }
                     override fun onDone(id: String?) {
                         noticePlaying = false; muteUntil = SystemClock.elapsedRealtime() + 700
                         restore()
@@ -249,7 +261,7 @@ class ListeningService : Service() {
                         mutableState.update { it.copy(note = "Couldn't play the notice. Tell everyone you're taking notes, then tap \"I told everyone\".") }
                     }
                 })
-                noticePlaying = true // mute before audio starts; onDone/onError release it
+                noticePlaying = true; playStartedAt = SystemClock.elapsedRealtime() // mute before audio starts; onDone/onError release it
                 val params = android.os.Bundle().apply { putInt(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_STREAM, stream) }
                 if (tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, params, "sidekick-notice") != android.speech.tts.TextToSpeech.SUCCESS) {
                     noticePlaying = false; restore(); autoAnnouncer.failed()
@@ -302,11 +314,29 @@ class ListeningService : Service() {
             else startForeground(1, notification(true))
             CaptureStatusAlerts.clear(this)
             mutableState.value = ListeningState(processing = true, enrolling = enrollment, note = "Preparing local speech detection…")
-            capture = scope.launch { runSession() }
-        } catch (_: Exception) {
-            CaptureStatusAlerts.stopped(this)
-            app.assistant.disarm("Android could not resume listening. Open SideKick and start again.")
-            mutableState.value = ListeningState(note = "Android could not start listening. Open the app and try again.")
+            capture = scope.launch {
+                // A recoverable error restarts listening 5 s later inside the same service (it keeps its microphone
+                // permission while in the foreground), up to 5 times an hour; otherwise the session ends here.
+                try {
+                    while (runSession() && !finish && !discard) {
+                        mutableState.update { it.copy(processing = true, note = "Restarting listening after a problem…") }
+                        delay(retry.delayMs)
+                        if (finish || discard) break // Finish or Stop pressed while waiting
+                    }
+                } finally { stopSelf() }
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("SidekickListen", "could not start${if (recovering) " (resume)" else ""}: ${e.javaClass.simpleName}")
+            if (recovering) {
+                // Android refused the microphone for a resume started in the background (right after an update or a
+                // restart, before SideKick's assistant service is connected again). Recovery stays enabled: that
+                // connection tries again and is allowed.
+                mutableState.value = ListeningState(note = "Waiting to resume listening…")
+            } else {
+                CaptureStatusAlerts.stopped(this)
+                app.assistant.disarm("Android could not start listening. Open SideKick and start again.")
+                mutableState.value = ListeningState(note = "Android could not start listening. Open the app and try again.")
+            }
             stopSelf()
         }
         return if (!enrollment && app.assistant.armed) START_STICKY else START_NOT_STICKY
@@ -330,8 +360,12 @@ class ListeningService : Service() {
             .addAction(Notification.Action.Builder(null, if (app.guidance.handsOffMode.value && !enrollment) "Stop & clear text" else "Discard session", cancel).build()).build()
     }
 
+    private val retry = com.sidekick.core.ListeningRetry()
+
+    /** Runs one listening session. Returns true when it ended with an error that should be retried. */
     @Suppress("MissingPermission")
-    private suspend fun runSession() {
+    private suspend fun runSession(): Boolean {
+        var retryWanted = false
         var recorder: AudioRecord? = null
         var processor: LiveSpeechProcessor? = null
         val raw = ShortArray(16_384) // up to 1 s per read; fed to the detector in quarter-second slices
@@ -377,12 +411,16 @@ class ListeningService : Service() {
                 // The latest located place; a phone call overrides it with the strictest rule until the call ends.
                 var located = consent.place
                 var inCall = false
+                // The location and call watchers run on different threads: one lock keeps "in a call" and "where" consistent.
+                val placeLock = Any()
                 // Location, settings and call watchers end with the session (they would otherwise keep this scope open).
                 val watchers = mutableListOf<Job>()
                 var follower: Job? = null
                 fun applyPlace(place: com.sidekick.core.RecordingJurisdiction.Place) {
-                    located = place
-                    if (!inCall) consent.moveTo(place)
+                    synchronized(placeLock) {
+                        located = place
+                        if (!inCall) consent.moveTo(place)
+                    }
                     refreshConsent()
                 }
                 if (!enrollment) {
@@ -403,19 +441,22 @@ class ListeningService : Service() {
                     watchers += launch {
                         // Phone calls: the other person may be in another state.
                         val manager = getSystemService(AudioManager::class.java)
-                        val callLock = Any()
-                        fun checkCall() = synchronized(callLock) {
-                            val calling = manager.mode == AudioManager.MODE_IN_CALL || manager.mode == AudioManager.MODE_IN_COMMUNICATION
-                            if (calling != inCall) {
-                                inCall = calling
-                                if (calling) consent.callStarted() else consent.moveTo(located)
-                                mutableState.update { it.copy(callActive = calling) }
-                                refreshConsent()
+                        fun checkCall() {
+                            val changed = synchronized(placeLock) {
+                                val calling = manager.mode == AudioManager.MODE_IN_CALL || manager.mode == AudioManager.MODE_IN_COMMUNICATION
+                                if (calling == inCall) null else {
+                                    inCall = calling
+                                    if (calling) consent.callStarted() else consent.moveTo(located)
+                                    calling
+                                }
                             }
+                            if (changed != null) { mutableState.update { it.copy(callActive = changed) }; refreshConsent() }
                         }
-                        // Android 12+: told the moment a call starts or ends, instead of asking every second.
-                        val modeListener = if (Build.VERSION.SDK_INT >= 31) AudioManager.OnModeChangedListener { checkCall() }.also {
-                            runCatching { manager.addOnModeChangedListener(java.util.concurrent.Executors.newSingleThreadExecutor(), it) }
+                        // Android 12+: told the moment a call starts or ends, instead of asking every second. The helper
+                        // thread is shut down with the session.
+                        val callEvents = if (Build.VERSION.SDK_INT >= 31) java.util.concurrent.Executors.newSingleThreadExecutor() else null
+                        val modeListener = if (Build.VERSION.SDK_INT >= 31 && callEvents != null) AudioManager.OnModeChangedListener { checkCall() }.also {
+                            runCatching { manager.addOnModeChangedListener(callEvents, it) }
                         } else null
                         try {
                             while (isActive) {
@@ -432,6 +473,7 @@ class ListeningService : Service() {
                             }
                         } finally {
                             if (modeListener != null && Build.VERSION.SDK_INT >= 31) runCatching { manager.removeOnModeChangedListener(modeListener) }
+                            callEvents?.shutdown()
                         }
                     }
                 }
@@ -575,14 +617,18 @@ class ListeningService : Service() {
                 val power = getSystemService(android.os.PowerManager::class.java)
                 var privacyCheckAt = 0L
                 val handback = com.sidekick.core.MicHandback()
+                var mutedPause = false
                 var renewAt = SystemClock.elapsedRealtime() + 5 * 60_000L
                 // Optional "pause when resting": screen on, unlock or carrying motion count as activity and resume.
                 // Test switches (phone tests only, never shown): the old capture loop for battery comparisons, and a
                 // short resting window so the pause can be tested in minutes.
+                // Only the test copies (.benchmark, .compacttest) read them; the normal app always uses the defaults.
+                val testBuild = packageName.endsWith(".benchmark") || packageName.endsWith(".compacttest")
                 val switches = getSharedPreferences("test-switches", MODE_PRIVATE)
-                val legacy = switches.getBoolean("legacy_capture", false)
-                pipeline.quietGate = !legacy; pipeline.batchVad = !legacy; pipeline.lowPriority = !legacy && switches.getBoolean("background_priority", true)
-                val rest = com.sidekick.core.RestingPause(SystemClock.elapsedRealtime(), switches.getLong("rest_quiet_ms", 30 * 60_000L))
+                val legacy = testBuild && switches.getBoolean("legacy_capture", false)
+                pipeline.quietGate = !legacy; pipeline.batchVad = !legacy
+                pipeline.lowPriority = !legacy && (!testBuild || switches.getBoolean("background_priority", true))
+                val rest = com.sidekick.core.RestingPause(SystemClock.elapsedRealtime(), if (testBuild) switches.getLong("rest_quiet_ms", 30 * 60_000L) else 30 * 60_000L)
                 val woke = java.util.concurrent.atomic.AtomicBoolean(false)
                 val wakeReceiver = object : android.content.BroadcastReceiver() {
                     override fun onReceive(c: android.content.Context?, i: Intent?) { woke.set(true) }
@@ -626,10 +672,19 @@ class ListeningService : Service() {
                         // microphone only delivers silence, so at most 2 s of silence is read before stopping.
                         privacyCheckAt = SystemClock.elapsedRealtime() + if (legacy) 250 else 2_000
                         check(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) { "Microphone access was removed. Listening stopped." }
-                        check(!audioManager.isMicrophoneMute) { "The microphone is muted. Listening stopped; unmute it and start again." }
+                        // Muted microphone (Android also sets this when you press mute during a call): pause, with no time
+                        // limit, and carry on when it is unmuted. Muted audio is silence, so nothing is heard meanwhile.
+                        val muted = audioManager.isMicrophoneMute
+                        if (muted != mutedPause) {
+                            mutedPause = muted
+                            if (muted) {
+                                mutableState.update { it.copy(note = "Paused · the microphone is muted (for example during a call). SideKick carries on when it's unmuted.", level = 0f, speechActive = false) }
+                                pausedNotification("The microphone is muted. SideKick carries on when it's unmuted.")
+                            } else { mutableState.update { it.copy(note = "Listening · the microphone is back") }; pausedNotification(null) }
+                        }
                         // Another app took the microphone (a call, a recorder, the camera): wait and carry on when it is
                         // free; stop only if it stays taken for 10 minutes. Silenced audio is silence, so nothing is heard.
-                        val silenced = Build.VERSION.SDK_INT >= 29 && audio.activeRecordingConfiguration?.isClientSilenced == true
+                        val silenced = !muted && Build.VERSION.SDK_INT >= 29 && audio.activeRecordingConfiguration?.isClientSilenced == true
                         when (handback.update(silenced, SystemClock.elapsedRealtime())) {
                             com.sidekick.core.MicHandback.State.TAKEN -> if (!mutableState.value.note.startsWith("Paused · another app")) {
                                 mutableState.update { it.copy(note = "Paused · another app is using the microphone. SideKick carries on when it's free.", level = 0f, speechActive = false) }
@@ -705,11 +760,14 @@ class ListeningService : Service() {
             throw e
         } catch (e: Exception) {
             // The stop reason only (our own message, never words or audio), so an interruption can be diagnosed later.
-            android.util.Log.w("SidekickListen", "listening stopped: ${e.javaClass.simpleName}: ${e.message}")
-            CaptureStatusAlerts.stopped(this)
-            if (!enrollment) app.assistant.disarm("Listening paused after an error. Start again when ready.")
-            mutableState.update { it.copy(recording = false, processing = false, level = 0f,
-                note = e.message ?: "Listening failed. Review the text captured so far, then try again.") }
+            retryWanted = !enrollment && !discard && !finish && retry.allow(e.message, SystemClock.elapsedRealtime())
+            android.util.Log.w("SidekickListen", "listening ${if (retryWanted) "restarting after" else "stopped"}: ${e.javaClass.simpleName}: ${e.message}")
+            if (!retryWanted) {
+                CaptureStatusAlerts.stopped(this)
+                if (!enrollment) app.assistant.disarm("Listening paused after an error. Start again when ready.")
+            }
+            mutableState.update { it.copy(recording = false, processing = retryWanted, level = 0f,
+                note = if (retryWanted) "Restarting listening after a problem…" else e.message ?: "Listening failed. Review the text captured so far, then try again.") }
         } finally {
             runCatching { recorder?.stop() }; recorder?.release()
             // Learning across sessions: only after a normal session (not voice setup, not discarded).
@@ -723,8 +781,8 @@ class ListeningService : Service() {
                 // The session's notice records go with the session's data.
                 sessionId?.let { id -> runCatching { kotlinx.coroutines.runBlocking { app.database.noticeRecords().deleteSession(id) } } }
             }
-            stopSelf()
         }
+        return retryWanted
     }
 
     override fun onTimeout(startId: Int) { CaptureStatusAlerts.stopped(this); app.assistant.disarm("Android stopped listening"); capture?.cancel(); stopSelf() }

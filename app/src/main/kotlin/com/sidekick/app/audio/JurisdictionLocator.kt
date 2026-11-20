@@ -71,7 +71,8 @@ object JurisdictionLocator {
     suspend fun follow(context: Context, onPlace: (RecordingJurisdiction.Place) -> Unit) {
         var precise = true
         // Test switch (phone battery comparison only): the old behaviour, precise location everywhere.
-        val legacy = context.getSharedPreferences("test-switches", Context.MODE_PRIVATE).getBoolean("legacy_capture", false)
+        val legacy = (context.packageName.endsWith(".benchmark") || context.packageName.endsWith(".compacttest")) &&
+            context.getSharedPreferences("test-switches", Context.MODE_PRIVATE).getBoolean("legacy_capture", false)
         fun nearBorder(location: Location): Boolean {
             if (legacy) return true
             val d = RecordingJurisdiction.nearestBorderMeters(location.latitude, location.longitude, FAR_BORDER_METERS)

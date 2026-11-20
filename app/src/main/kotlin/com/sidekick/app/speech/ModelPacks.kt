@@ -33,7 +33,7 @@ object ModelPacks {
     /** Files on the phone, whether or not the pack is in use. */
     fun installed(context: Context, pack: String): Boolean = catalog(context).filter { it.pack == pack }.let { rows -> rows.isNotEmpty() && rows.all { present(context, it.name) } }
     /** Part of this app build itself (test builds): can be turned off but not removed. */
-    fun bundled(context: Context, pack: String): Boolean = catalog(context).filter { it.pack == pack }.all { context.assets.list("models").orEmpty().contains(it.name) }
+    fun bundled(context: Context, pack: String): Boolean = catalog(context).filter { it.pack == pack }.all { assetModel(context, it.name) }
     /** Deletes a downloaded pack's files (not ones built into the app). Returns the bytes freed. */
     suspend fun remove(context: Context, pack: String): Long = gate.withLock { SpeechEngine.modelMaintenance { withContext(Dispatchers.IO) {
         var freed = 0L
@@ -47,12 +47,23 @@ object ModelPacks {
         if (asset != null && !inUse(context, asset.pack)) return false
         return present(context, name)
     }
+    /** Presence of each file, remembered until a pack is added, removed or switched (revision changes). */
+    @Volatile private var presentCache: Pair<Int, MutableMap<String, Boolean>> = -1 to java.util.concurrent.ConcurrentHashMap()
+    @Volatile private var assetModels: Set<String>? = null
+    /** Models built into this app (the list never changes while the app runs, so it is read once). */
+    private fun assetModel(context: Context, name: String): Boolean =
+        (assetModels ?: context.assets.list("models").orEmpty().toSet().also { assetModels = it }).contains(name)
     private fun present(context: Context, name: String): Boolean {
+        val rev = revision.value
+        val cache = presentCache.let { (r, map) -> if (r == rev) map else java.util.concurrent.ConcurrentHashMap<String, Boolean>().also { presentCache = rev to it } }
+        return cache.getOrPut(name) { presentNow(context, name) }
+    }
+    private fun presentNow(context: Context, name: String): Boolean {
         val asset = catalog(context).find { it.name == name }
         val old = File(context.noBackupFilesDir, name)
         if (old.isFile && (asset == null || old.length() == asset.bytes)) return true
         if (asset != null && store(context).file(asset).let { it.isFile && it.length() == asset.bytes }) return true
-        return context.assets.list("models").orEmpty().contains(name)
+        return assetModel(context, name)
     }
     fun required(language: SpeechLanguage, quality: SpeechQuality): Set<String> = LanguageReadiness.required(language, quality)
     fun installedPacks(context: Context): Set<String> = labels.keys.filter { installed(context, it) }.toSet()
@@ -69,10 +80,15 @@ object ModelPacks {
         revision.value++; id
     } } }
     fun ensure(context: Context, name: String, expected: String): File {
+        // Fingerprinting a 240-366 MB file takes seconds: a file already checked is remembered by path, size and
+        // modification time (only this app can write these private files), so it is read again only when it changed.
+        val verified = context.getSharedPreferences("verified-models", Context.MODE_PRIVATE)
         fun hash(file: File): String {
+            val key = "${file.absolutePath}|${file.length()}|${file.lastModified()}"
+            verified.getString(file.absolutePath, null)?.let { if (it.substringBeforeLast('|') == key) return it.substringAfterLast('|') }
             val digest = MessageDigest.getInstance("SHA-256")
             file.inputStream().use { stream -> val b = ByteArray(131072); while (true) { val n = stream.read(b); if (n < 0) break; digest.update(b, 0, n) } }
-            return digest.digest().joinToString("") { "%02x".format(it) }
+            return digest.digest().joinToString("") { "%02x".format(it) }.also { verified.edit().putString(file.absolutePath, "$key|$it").apply() }
         }
         val old = File(context.noBackupFilesDir, name)
         if (old.isFile && hash(old) == expected) return old
@@ -81,7 +97,7 @@ object ModelPacks {
         } }
         val temporary = File(context.noBackupFilesDir, "$name.install")
         try {
-            check(context.assets.list("models").orEmpty().contains(name)) { "Missing speech model. Import its model pack in Get started or Settings, or choose English Fast." }
+            check(assetModel(context, name)) { "Missing speech model. Import its model pack in Get started or Settings, or choose English Fast." }
             try { context.assets.open("models/$name").use { input -> temporary.outputStream().use(input::copyTo) } }
             catch (_: java.io.FileNotFoundException) { error("Missing speech model. Import its model pack in Get started or Settings, or choose English Fast.") }
             check(hash(temporary) == expected) { "Speech model checksum mismatch." }

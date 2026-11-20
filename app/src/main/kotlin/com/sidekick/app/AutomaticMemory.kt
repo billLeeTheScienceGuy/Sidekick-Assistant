@@ -161,11 +161,17 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                     val dateRefinements = mutableSetOf<String>()
                     val matches = dao.all().filter { it.state in setOf("ACCEPTED", "CANCELLED") }.filter {
                         val sameOrigin = channel(candidate.sourceKey) == channel(it.sourceKey) && !com.sidekick.core.VoiceSource.distinctPeople(candidate.sourceKey, it.sourceKey)
-                        val baselineStart = com.sidekick.core.ActivityTiming.extract(com.sidekick.core.Transcript(it.evidence.substringBefore('\n'), Instant.ofEpochMilli(it.capturedAt), ZoneId.of(it.zoneId), com.sidekick.core.Speaker.OTHER, true), informationalOnly = true).singleOrNull()?.activityStartAt?.toEpochMilli()
-                        val inferredDate = it.activityStartAt == baselineStart && com.sidekick.core.ActivityTiming.extract(
-                            com.sidekick.core.Transcript(it.evidence, Instant.ofEpochMilli(it.capturedAt), ZoneId.of(it.zoneId), com.sidekick.core.Speaker.OTHER, true), true).singleOrNull()?.needsReview?.contains("Date inferred") == true
-                        val refinesDate = it.sourceKey == candidate.sourceKey && it.capturedAt == candidate.capturedAt && inferredDate &&
-                            !candidate.reviewNote.contains("Date inferred") && it.informational == candidate.informational && dao.change(it.id) != null
+                        // Re-parsing a saved plan's text is only needed for one from the same moment and source: the cheap
+                        // checks come first, so the parse runs for almost no saved plans (same result as before).
+                        val baselineStart by lazy {
+                            com.sidekick.core.ActivityTiming.extract(com.sidekick.core.Transcript(it.evidence.substringBefore('\n'), Instant.ofEpochMilli(it.capturedAt), ZoneId.of(it.zoneId), com.sidekick.core.Speaker.OTHER, true), informationalOnly = true).singleOrNull()?.activityStartAt?.toEpochMilli()
+                        }
+                        fun inferredDate(): Boolean {
+                            return it.activityStartAt == baselineStart && com.sidekick.core.ActivityTiming.extract(
+                                com.sidekick.core.Transcript(it.evidence, Instant.ofEpochMilli(it.capturedAt), ZoneId.of(it.zoneId), com.sidekick.core.Speaker.OTHER, true), true).singleOrNull()?.needsReview?.contains("Date inferred") == true
+                        }
+                        val refinesDate = it.sourceKey == candidate.sourceKey && it.capturedAt == candidate.capturedAt &&
+                            it.informational == candidate.informational && !candidate.reviewNote.contains("Date inferred") && inferredDate() && dao.change(it.id) != null
                         if (refinesDate) dateRefinements += it.id
                         sameOrigin && opening(it.evidence) == opening(candidate.evidence) &&
                             (it.activityStartAt == candidate.activityStartAt || baselineStart == candidate.activityStartAt ||
