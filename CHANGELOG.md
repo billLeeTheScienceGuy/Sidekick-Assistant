@@ -4,6 +4,12 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 
 ## Unreleased (privacy, consent and location work package)
 
+- Battery and reliability: listening's own power in silence is about 42 mW, down from 117 mW (speech detector once a
+  second on the efficient cores, microphone read once a second, low-power location away from state borders, call
+  events instead of polling). A full day of listening used 21% of the battery over 14 hours, SideKick itself about 4%
+  (docs/evaluation/TEST_HISTORY.md T81, T86). Listening no longer stops when busy (a waiting line sized by free memory,
+  faster recognition to catch up, nothing skipped), pauses while another app uses the microphone and carries on
+  afterwards, and logs any stop reason. Optional "Pause when the phone is resting", suggested once after 3 hours.
 - Korean: a lone hesitation sound the recognizer writes as its own word ("회의가 어 있어요") is dropped between Korean
   words; "어" at the start of a sentence ("yeah") is kept. Fixes the last failing phone test (124 of 124).
 - Voice matching: the quiet-room bar now depends on how long and how clean the speech is (.58-.65): owner turns

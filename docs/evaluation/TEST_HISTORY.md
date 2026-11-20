@@ -646,3 +646,7 @@ per-app figure for SideKick (1,561 mAh) is a fixed-table estimate larger than th
 is not used; the power-meter tests (T81) put listening's own share at about 41-44 mW, roughly 11 mA, about 160 mAh or
 4% of the battery over this day. Projected: about 32% of the battery per 24 hours of always-on listening in a quiet
 day like this one, of which SideKick about 6%.
+Assessment: acceptable for everyday use on this phone (a full charge would last about three quiet days; peak
+30.7 degrees C). Not yet measured: a talkative day (recognition runs on every phrase and costs far more than silence),
+older phones or worn batteries, and a day moving around (low-power location barely exercised). "Pause when the phone
+is resting" would bring overnight cost close to zero.
