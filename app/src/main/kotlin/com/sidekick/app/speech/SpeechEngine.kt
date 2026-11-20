@@ -52,6 +52,8 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
         private set
     @Volatile var lastRetryDiagnostic: String? = null
         private set
+    /** Faster recognition can run for the current language (its files are installed and switched on). */
+    fun fasterAvailable(): Boolean = runCatching { ModelPacks.missing(context, language(), SpeechQuality.FAST).isEmpty() }.getOrDefault(false)
     fun shortBoostLimit(): Int = if (language() in setOf(SpeechLanguage.AUTO, SpeechLanguage.FRENCH, SpeechLanguage.GERMAN, SpeechLanguage.RUSSIAN)) 128_000 else 48_000
     fun liveContext(shortPhrase: Boolean): Int = quality().liveContext(language(), shortPhrase)
 

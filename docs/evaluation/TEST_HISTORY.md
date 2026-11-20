@@ -625,3 +625,15 @@ SideKick listened, a temporary test app took the microphone for 12 s. The owner'
 switched to "SideKick · Paused" within 2 s, back to "SideKick · Listening" with the microphone unsilenced within 2 s of
 the other app letting go, and listening never stopped. The test copy was removed afterwards; every phone-test script now
 removes all test copies when it ends (`remove-test-copies.sh`). The notification also shows the resting pause.
+
+**T85 Listening stopped during the battery day; nothing is skipped now (November 19).** The phone log showed listening
+ended at 14:35 with SideKick's own interruption alert after a burst of speech: the recognizer's waiting line held only 2
+phrases, and since the speech detector runs on 1 s pieces it can hand over several at once, so the line overflowed and
+"Transcription fell behind" stopped listening (a regression from T80). Now (`BacklogPolicy`, 3 core tests): waiting
+speech is kept as 16-bit audio (about 2 MB per minute) in a line sized at a quarter of the phone's free memory (at least
+32 MB); when the measured recognizer speed predicts more than a minute of waiting (30 s when the phone is hot), phrases
+use Faster recognition until the wait is under 15 s; a slow phrase is allowed to finish; the oldest audio is dropped
+only if Android reports memory as low while the line is over its limit, and the screen says so. Stop reasons are now
+logged (no words or audio). Phone: BusyRecognizerTest (20 back-to-back copies of a clip, faster than real time):
+nothing dropped, all copies transcribed. AutomaticMemoryTest's date case failed only at night (8 pm today already past);
+it now uses tomorrow. Full suite 130 of 131 before that fix; both classes pass after it (21 tests).

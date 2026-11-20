@@ -455,7 +455,12 @@ class ListeningService : Service() {
                     if (owner) mutableState.update { it.copy(userVoiceChunks = it.userVoiceChunks + 1, unknownVoiceChunks = (it.unknownVoiceChunks - 1).coerceAtLeast(0)) }
                     // Saved plans are processed with the next chunk's text (or at session end).
                 }
-                val pipeline = LiveSpeechProcessor(app.speech, onBoundary = { continuation = it && !changedVoice }, contextKey = { if (identified == Speaker.USER) voiceTrack else null }, voiceKey = { voiceTrack },
+                val activityManager = getSystemService(android.app.ActivityManager::class.java)
+                val pipeline = LiveSpeechProcessor(app.speech,
+                    memory = { android.app.ActivityManager.MemoryInfo().also { activityManager.getMemoryInfo(it) }.let { it.availMem to it.lowMemory } },
+                    thermal = { if (Build.VERSION.SDK_INT >= 29) getSystemService(android.os.PowerManager::class.java).currentThermalStatus else 0 },
+                    fasterAvailable = { app.speech.fasterAvailable() },
+                    onBoundary ={ continuation = it && !changedVoice }, contextKey = { if (identified == Speaker.USER) voiceTrack else null }, voiceKey = { voiceTrack },
                     partition = { samples ->
                         val parts = if (enrollment) listOf(com.sidekick.core.SpeakerPart(0, samples.size, null, false)) else turns.partition(samples)
                         ensureActive()
@@ -543,6 +548,7 @@ class ListeningService : Service() {
                 check(finish || audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "Microphone did not start." }
                 mutableState.update { it.copy(recording = !finish, processing = false, note = "Listening · waiting for speech") }
                 var filled = 0
+                var reportedDrops = 0
                 var target = 4096
                 var blockStart = 0L
                 var blockMuted = false
@@ -655,6 +661,15 @@ class ListeningService : Service() {
                         if (legacy || power.isInteractive || detected != mutableState.value.speechActive)
                             mutableState.update { it.copy(level = lastLevel, speechActive = detected, seconds = ((SystemClock.elapsedRealtime() - startedClock) / 1000).toInt()) }
                     }
+                    // Tell the user while SideKick is catching up, or if audio ever had to be dropped (memory low).
+                    val backlogNote = when {
+                        pipeline.droppedCount > reportedDrops -> { reportedDrops = pipeline.droppedCount
+                            "Phone memory was low: ${pipeline.droppedCount} older phrases could not be kept. Listening continues." }
+                        pipeline.catchingUp && !mutableState.value.note.startsWith("Catching up") ->
+                            "Catching up · faster recognition for a moment (${pipeline.waitingSeconds} s of speech waiting)"
+                        else -> null
+                    }
+                    if (backlogNote != null) mutableState.update { it.copy(note = backlogNote) }
                     if (legacy) delay(10) else if (read <= 0) delay(20) // new: only when the microphone delivered nothing
                 }
                 } finally {
@@ -683,11 +698,14 @@ class ListeningService : Service() {
                     else "Voice setup incomplete. Speak in longer phrases and try again; any previous profile is unchanged."
                 } else if (it.chunks == 0) "No speech detected. Try speaking closer to the microphone." else if (app.guidance.handsOffMode.value) app.automation.status.value else "Session finished. Review and approve commitments below.") }
         } catch (e: CancellationException) {
+            if (!discard && !finish) android.util.Log.w("SidekickListen", "listening cancelled by Android or the app")
             if (!discard && !finish) CaptureStatusAlerts.stopped(this)
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
                 note = if (discard) "Session discarded" else "Listening interrupted. Review text captured so far.") }
             throw e
         } catch (e: Exception) {
+            // The stop reason only (our own message, never words or audio), so an interruption can be diagnosed later.
+            android.util.Log.w("SidekickListen", "listening stopped: ${e.javaClass.simpleName}: ${e.message}")
             CaptureStatusAlerts.stopped(this)
             if (!enrollment) app.assistant.disarm("Listening paused after an error. Start again when ready.")
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,

@@ -35,7 +35,8 @@ class AutomaticMemoryTest {
         assertTrue(db.commitments().get(alex.id)!!.informational)
     } }
     @Test fun laterExplicitDateRefinesInferredDateOnSameSavedEvent() = runBlocking { fixture { _, memory, db, _, auto ->
-        val now = Instant.now().atZone(zone).toLocalDate().atTime(12, 0).atZone(zone).toInstant()
+        // Tomorrow at noon, so "8pm" is still ahead whenever the test runs (at night, 8 pm today has already passed).
+        val now = Instant.now().atZone(zone).toLocalDate().plusDays(1).atTime(12, 0).atZone(zone).toInstant()
         memory.appendAttributedLive("There's a party at 8pm.", now, zone, Speaker.UNKNOWN, false); auto.process()
         val original = db.commitments().all().single()
         memory.appendAttributedLive("Tomorrow.", now.plusSeconds(5), zone, Speaker.UNKNOWN, false); auto.process()
