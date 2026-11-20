@@ -18,6 +18,24 @@ class PlanQuestionTest {
         PlanQuestion.Plan("치과 예약", at(20, 15)),
         PlanQuestion.Plan("Mia's party", at(18, 20), informational = true))
 
+    @Test fun everyExampleShownOnThePhoneIsUnderstood() {
+        // The kinds in order: today, tomorrow, this week, what's next, when is a plan.
+        for (code in listOf("en", "ko", "zh", "ar", "ru", "fr", "de")) {
+            val kinds = PlanQuestion.examples(code).map { text ->
+                for (allowed in listOf(setOf(code), setOf("en", "ko", "zh", "ar", "ru", "fr", "de"))) {
+                    val q = PlanQuestion.parse(text, allowed)
+                    assertTrue(q != null && q.language == code, "$code example not understood with $allowed: $text -> $q")
+                }
+                when (val q = PlanQuestion.parse(text, setOf(code))!!) {
+                    is PlanQuestion.Day -> if (q.days == 7) "week" else if (q.offsetDays == 1) "tomorrow" else "today"
+                    is PlanQuestion.Next -> "next"
+                    is PlanQuestion.Find -> "find"
+                }
+            }
+            assertEquals(listOf("today", "tomorrow", "week", "next", "find"), kinds, code)
+        }
+    }
+
     @Test fun onlyQuestionsAddressedToSideKickCount() {
         // The same words said to another person in a conversation are not questions to the app.
         assertNull(PlanQuestion.parse("What's the plan today?"))

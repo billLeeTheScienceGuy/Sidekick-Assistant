@@ -68,6 +68,24 @@ object PlanQuestion {
         return score.maxByOrNull { it.value }?.takeIf { it.value > 0 }?.key ?: candidates.firstOrNull { it == "en" } ?: candidates.firstOrNull()
     }
 
+    /**
+     * Questions to read off the screen, per language ([code]): today, tomorrow, this week, what's next, when is a plan.
+     * Each one is checked by PlanQuestionTest to be understood. Unknown codes get English.
+     */
+    fun examples(code: String): List<String> = EXAMPLES[code] ?: EXAMPLES.getValue("en")
+    private val EXAMPLES = mapOf(
+        "en" to listOf("SideKick, what's my plan today?", "SideKick, what do I have tomorrow?", "SideKick, what's on this week?",
+            "SideKick, what's next?", "SideKick, when is my dentist appointment?"),
+        "ko" to listOf("사이드킥, 오늘 일정 뭐야?", "사이드킥, 내일 약속 있어?", "사이드킥, 이번 주 일정 알려줘", "사이드킥, 다음 일정 뭐야?", "사이드킥, 치과 언제야?"),
+        "zh" to listOf("SideKick，我今天有什么安排？", "SideKick，明天有什么安排？", "SideKick，这周有什么安排？", "SideKick，接下来是什么？", "SideKick，我的牙医预约是什么时候？"),
+        "ar" to listOf("سايدكيك، ما خطتي اليوم؟", "سايدكيك، ماذا لدي غدًا؟", "سايدكيك، ما برنامجي هذا الأسبوع؟", "سايدكيك، ما الموعد التالي؟", "سايدكيك، متى موعد طبيب الأسنان؟"),
+        "ru" to listOf("Сайдкик, что у меня сегодня?", "Сайдкик, что у меня завтра?", "Сайдкик, какие планы на этой неделе?", "Сайдкик, что дальше?", "Сайдкик, когда у меня стоматолог?"),
+        "fr" to listOf("SideKick, qu'est-ce que j'ai aujourd'hui ?", "SideKick, qu'est-ce que j'ai demain ?", "SideKick, quel est mon programme cette semaine ?",
+            "SideKick, c'est quoi la suite ?", "SideKick, quand est mon rendez-vous chez le dentiste ?"),
+        "de" to listOf("SideKick, was habe ich heute vor?", "SideKick, was habe ich morgen vor?", "SideKick, welche Termine habe ich diese Woche?",
+            "SideKick, was ist als Nächstes?", "SideKick, wann ist mein Zahnarzttermin?"),
+    )
+
     fun parse(text: String, allowed: Set<String> = setOf("en", "ko", "zh", "ar", "ru", "fr", "de")): Question? {
         // The name may be written in any script ("SideKick，我…"); the words after it decide the language.
         val rest = LANGS.firstNotNullOfOrNull { l -> l.wake.find(text)?.groupValues?.get(1)?.trim() } ?: return null

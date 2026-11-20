@@ -190,6 +190,10 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                                 QuietLabel("Needs SideKick as your default assistant. Restarts listening you already started. Tapping Stop turns this off until you start again. Android force-stop or removed permissions can prevent it. Voice setup never restarts itself.")
                                 Text(recoveryStatus)
                                 HorizontalDivider()
+                                SettingsDetails("What you can ask SideKick", "ask-examples") {
+                                    val detectNow by settings.detectLanguages.collectAsState()
+                                    AskExamples(askLanguages(speechLanguage, detectNow))
+                                }
                                 var checks by remember { mutableStateOf(false) }
                                 TextButton(onClick = { checks = !checks }, modifier = Modifier.heightIn(min = 48.dp).testTag("phone-checks")) { Text(if (checks) "Hide phone checks" else "Check phone setup") }
                                 if (checks) SetupStatus(settings)
@@ -351,4 +355,23 @@ internal fun SettingsDetails(label: String, tag: String? = null, content: @Compo
     var expanded by androidx.compose.runtime.saveable.rememberSaveable(label) { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }, modifier = Modifier.heightIn(min = 48.dp).let { if (tag != null) it.testTag(tag) else it }) { Text(if (expanded) "Hide details" else label) }
     if (expanded) Column(verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
+}
+
+/** Languages whose example questions to show: the chosen one, or Auto-detect's languages (English first). */
+internal fun askLanguages(language: com.sidekick.core.SpeechLanguage, detect: Set<com.sidekick.core.SpeechLanguage>): List<String> =
+    if (language != com.sidekick.core.SpeechLanguage.AUTO) listOf(language.code)
+    else detect.map { it.code }.sortedBy { if (it == "en") 0 else 1 }
+
+/** Questions to read off the screen (each one is checked to be understood: PlanQuestionTest). */
+@Composable
+internal fun AskExamples(codes: List<String>, numbered: Boolean = false) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("ask-list")) {
+        if (!numbered) QuietLabel("Start with “SideKick”, then ask about your saved plans. SideKick answers from your plans.")
+        codes.forEach { code ->
+            if (codes.size > 1) Text(com.sidekick.core.SpeechLanguage.fromCode(code).label, style = MaterialTheme.typography.titleSmall)
+            com.sidekick.core.PlanQuestion.examples(code).forEachIndexed { i, q ->
+                Text((if (numbered) "${i + 1}. " else "• ") + q, style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+    }
 }

@@ -151,9 +151,10 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                             Card(Modifier.fillMaxWidth()) {
                                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Text("How to record", style = MaterialTheme.typography.titleMedium)
-                                    Text("1. Say “SideKick”, pause for a moment, then a short question. For example: “SideKick… what's my plan today?”")
-                                    Text("2. Then stay quiet until the count below goes up (about 2 seconds).")
-                                    Text("3. Repeat until it reaches 5. Use your normal voice and distance, in a quiet place.")
+                                    Text("Read these out one at a time. After each one, stay quiet until the count goes up (about 2 seconds). " +
+                                        "Pause briefly after “SideKick”. Normal voice and distance, in a quiet place.")
+                                    val detectNow by (application as SidekickApplication).guidance.detectLanguages.collectAsState()
+                                    com.sidekick.app.AskExamples(listOf(com.sidekick.app.askLanguages(language, detectNow).first()), numbered = true)
                                 }
                             }
                             if (active && state.enrolling) {
