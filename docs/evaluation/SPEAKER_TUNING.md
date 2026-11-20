@@ -191,3 +191,26 @@ taken for the owner. The earlier confidence statement ("fewer than about 1 in 13
   strangers on the training half" the raw score keeps 57.7% of owner turns (1 stranger turn of about 6 million on the
   held-out half); the calibrated score keeps 0.2%. A linear calibration improves the average case but its extreme tail
   is set by a few strangers, so it does not help at the near-zero operating point this app needs. Not adopted.
+
+## Owner-recognition ideas tested (November 20, 2026): none adopted
+
+Script: `scripts/laptop-eval/speaker_personal.py` (same split as the learned calibration: bars set at zero strangers
+on one half of the 962 owners, measured on the other half, then swapped; the 17 same-person pairs left out). Today's
+rule on this split: owner 57.7% of turns, 1 stranger turn of about 12 million.
+
+| Idea | Owner turns | Strangers accepted |
+| --- | --- | --- |
+| Today's rule | 57.7% | 1 |
+| Personal voice model (per-owner direction against the app's 198 stranger voices), alone | 2.0-5.2% | 1-10 |
+| Personal voice model as a second way in | 57.7-57.8% | 2-11 |
+| Distance tie-breaker (close, clean speech may pass a lower bar) | 59.8% | 6 |
+| Learned voice weighting (WCCN from 480 people's own clips), alone | 50.5-57.1% | 2 |
+| Learned voice weighting as a second way in | 59.1-59.3% | 2 |
+
+- The personal model has one averaged setup signature and 198 stranger voices to learn from; the extreme stranger tail
+  sets its bar, so it keeps almost no owner turns.
+- The distance tie-breaker gains 2 points but lets in 6 times as many strangers: a stranger speaking as close to the
+  microphone as the owner looks the same. Rejected on safety.
+- The learned weighting gains at most 1.6 points while doubling stranger accepts; not worth shipping a 150 KB transform.
+- What is left for owner recognition is more and better owner evidence (a second setup recording in the owner's usual
+  noisy place, learning across sessions), not a different scoring backend.
