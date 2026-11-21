@@ -48,7 +48,7 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
     val sharing by settings.sharedMessages.collectAsState()
     var filter by remember { mutableStateOf("") }
     val apps = remember(page, messages) {
-        if (page != "CONNECTIONS" || !messages) emptyList() else
+        if (page != "PLANS" || !messages) emptyList() else
         context.packageManager.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)
         .filter { it.activityInfo.packageName != context.packageName }
         .map { it.activityInfo.packageName to it.loadLabel(context.packageManager).toString() }
@@ -67,9 +67,9 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
         Surface(Modifier.safeDrawingPadding().imePadding().widthIn(max = 720.dp).fillMaxWidth().fillMaxHeight(0.95f), shape = MaterialTheme.shapes.large) {
             Column {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    if (page != null) TextButton(onClick = { page = null }, modifier = Modifier.testTag("settings-back")) { Text("Back") }
-                    Text(settingsPages.firstOrNull { it.id == page }?.title?.substringBefore(" &") ?: "Settings", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                    TextButton(onClick = onClose) { Text("Close") }
+                    if (page != null) TextButton(onClick = { page = null }, modifier = Modifier.heightIn(min = 48.dp).testTag("settings-back")) { Text("Back") }
+                    Text(settingsPages.firstOrNull { it.id == page }?.title ?: "Settings", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    TextButton(onClick = onClose, modifier = Modifier.heightIn(min = 48.dp)) { Text("Close") }
                 }
                 HorizontalDivider()
                 key(page) { Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -77,58 +77,52 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                             null -> {
                                 QuietLabel("Choose what you want to change.")
                                 settingsPages.forEach { section ->
-                                    OutlinedCard(onClick = { page = section.id }, modifier = Modifier.fillMaxWidth().testTag("settings-page-${section.id}")) {
+                                    OutlinedCard(onClick = { page = section.id }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).testTag("settings-page-${section.id}")) {
                                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            Text(section.title, style = MaterialTheme.typography.titleMedium)
-                                            QuietLabel(section.description)
+                                            Text(section.title, style = MaterialTheme.typography.titleLarge)
+                                            Text(section.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
                                 }
                             }
-                            "DISPLAY" -> {
-                                Text("Appearance", style = MaterialTheme.typography.titleMedium)
+                            "SCREEN" -> {
+                                Text("Screen", style = MaterialTheme.typography.titleMedium)
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    AppearanceMode.entries.forEach { mode ->
-                                        FilterChip(selected = mode == appearance, onClick = { settings.setAppearance(mode) },
-                                        label = { Text(mode.name.lowercase().replaceFirstChar { it.uppercase() }) }, modifier = Modifier.testTag("appearance-${mode.name}"))
-                                    }
+                                    FilterChip(oneScreen, { settings.setOneScreenHome(true) }, label = { Text("Simple (recommended)") }, modifier = Modifier.heightIn(min = 48.dp).testTag("home-simple"))
+                                    FilterChip(!oneScreen, { settings.setOneScreenHome(false) }, label = { Text("Detailed") }, modifier = Modifier.heightIn(min = 48.dp).testTag("home-detailed"))
                                 }
-                                Text("Design", style = MaterialTheme.typography.titleMedium)
-                                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    InterfaceDesign.entries.forEach { choice ->
-                                        FilterChip(design == choice, { settings.setInterfaceDesign(choice) }, label = { Text(choice.label) }, modifier = Modifier.testTag("design-${choice.name}"))
-                                    }
-                                }
-                                QuietLabel("Calm is teal. Classic is blue. Warm is amber.")
+                                QuietLabel("Simple shows a large Start button and your next plans. Detailed shows every tool.")
                                 Text("Text size", style = MaterialTheme.typography.titleMedium)
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     NoteTextSize.entries.forEach { choice ->
-                                        FilterChip(textSize == choice, { settings.setNoteTextSize(choice) }, label = { Text(choice.label) }, modifier = Modifier.testTag("text-size-${choice.name}"))
+                                        FilterChip(textSize == choice, { settings.setNoteTextSize(choice) }, label = { Text(choice.label) }, modifier = Modifier.heightIn(min = 48.dp).testTag("text-size-${choice.name}"))
                                     }
                                 }
+                                QuietLabel("Also follows your phone’s font size.")
+                                Text("Light or dark", style = MaterialTheme.typography.titleMedium)
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    AppearanceMode.entries.forEach { mode ->
+                                        FilterChip(selected = mode == appearance, onClick = { settings.setAppearance(mode) },
+                                            label = { Text(when (mode) { AppearanceMode.SYSTEM -> "Same as phone"; AppearanceMode.LIGHT -> "Light"; AppearanceMode.DARK -> "Dark" }) },
+                                            modifier = Modifier.heightIn(min = 48.dp).testTag("appearance-${mode.name}"))
+                                    }
+                                }
+                                Text("Colors", style = MaterialTheme.typography.titleMedium)
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    InterfaceDesign.entries.forEach { choice ->
+                                        FilterChip(design == choice, { settings.setInterfaceDesign(choice) }, label = { Text(choice.label) }, modifier = Modifier.heightIn(min = 48.dp).testTag("design-${choice.name}"))
+                                    }
+                                }
+                                QuietLabel("Calm is teal. Classic is blue. Warm is amber.")
                                 Text("Buttons & spacing", style = MaterialTheme.typography.titleMedium)
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     InterfaceSize.entries.forEach { choice ->
-                                        FilterChip(interfaceSize == choice, { settings.setInterfaceSize(choice) }, label = { Text(choice.label) }, modifier = Modifier.testTag("interface-size-${choice.name}"))
+                                        FilterChip(interfaceSize == choice, { settings.setInterfaceSize(choice) }, label = { Text(choice.label) }, modifier = Modifier.heightIn(min = 48.dp).testTag("interface-size-${choice.name}"))
                                     }
                                 }
-                                QuietLabel("Text size changes words. Buttons & spacing changes controls. Both follow your phone settings.")
-                                TextButton(onClick = settings::resetAppearance, modifier = Modifier.testTag("reset-appearance")) { Text("Reset appearance") }
-                                HorizontalDivider()
-                                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                    Text("Type notes", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                                    Switch(manualNotes, settings::setManualNotes, modifier = Modifier.testTag("manual-notes").controlLabel("Type notes"))
-                                }
-                                QuietLabel("Show a place to type notes or add plans. You can still edit plans when this is off.")
-                                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                    Text("Home layout", style = MaterialTheme.typography.titleMedium)
-                                }
-                                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    FilterChip(oneScreen, { settings.setOneScreenHome(true) }, label = { Text("Simple") }, modifier = Modifier.testTag("home-simple"))
-                                    FilterChip(!oneScreen, { settings.setOneScreenHome(false) }, label = { Text("Detailed") }, modifier = Modifier.testTag("home-detailed"))
-                                }
-                                QuietLabel("Simple shows listening and your next plan. Detailed adds text and tools.")
-                                HorizontalDivider()
+                                QuietLabel("Text size changes words. Buttons & spacing changes controls.")
+                                TextButton(onClick = settings::resetAppearance, modifier = Modifier.heightIn(min = 48.dp).testTag("reset-appearance")) { Text("Reset screen choices") }
+                                SettingsToggle("Type notes", "Show a place to type notes or add plans. You can still change plans when this is off.", manualNotes, settings::setManualNotes, "manual-notes")
                             }
                             "LISTENING" -> {
                                 val auto = speechLanguage == com.sidekick.core.SpeechLanguage.AUTO
@@ -136,148 +130,185 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
                                     settings.setAutomaticLanguage(it)
                                     voice.selectLanguage(settings.speechLanguage.value)
                                 }, "auto-language", !listening.recording && !listening.processing)
-                                if (auto) QuietLabel("Works across conversations. Short or mixed-language phrases can be wrong.")
+                                if (auto) {
+                                    QuietLabel("Short phrases may be detected wrong.")
+                                    val detect by settings.detectLanguages.collectAsState()
+                                    Text("Languages to detect", style = MaterialTheme.typography.titleSmall)
+                                    QuietLabel("Fewer languages, fewer mistakes.")
+                                    com.sidekick.core.SpeechLanguage.entries.filter { it != com.sidekick.core.SpeechLanguage.AUTO }.forEach { language ->
+                                        Row(Modifier.heightIn(min = 48.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                            Checkbox(language in detect, { on -> settings.setDetectLanguages(if (on) detect + language else detect - language) },
+                                                enabled = !listening.recording && !listening.processing && !(language in detect && detect.size == 1),
+                                                modifier = Modifier.testTag("detect-${language.code}").controlLabel("Detect ${language.label}"))
+                                            Text(language.label, Modifier.padding(start = 8.dp))
+                                        }
+                                    }
+                                }
                                 else {
                                     var languageMenu by remember { mutableStateOf(false) }
                                     Box {
-                                        OutlinedButton(onClick = { languageMenu = true }, enabled = !listening.recording && !listening.processing, modifier = Modifier.testTag("language-choice")) { Text(speechLanguage.label) }
+                                        OutlinedButton(onClick = { languageMenu = true }, enabled = !listening.recording && !listening.processing, modifier = Modifier.heightIn(min = 48.dp).testTag("language-choice")) { Text(speechLanguage.label) }
                                         DropdownMenu(expanded = languageMenu, onDismissRequest = { languageMenu = false }) {
                                             com.sidekick.core.SpeechLanguage.entries.filter { it != com.sidekick.core.SpeechLanguage.AUTO }.forEach { language ->
-                                                DropdownMenuItem(text = { Text(language.label) }, onClick = {
+                                                val st = remember(languageMenu, speechQuality) { com.sidekick.app.speech.ModelPacks.status(context, language, speechQuality) }
+                                                DropdownMenuItem(text = { Text(language.label + when {
+                                                    st.ready -> " · ready"
+                                                    st.download.isEmpty() -> " · turn on files"
+                                                    else -> " · needs ${(st.downloadBytes + 500_000) / 1_000_000} MB" + if (st.readyInFaster) " (works in Faster)" else ""
+                                                }) }, onClick = {
                                                     settings.setSpeechLanguage(language); voice.selectLanguage(language); languageMenu = false
                                                 }, modifier = Modifier.testTag("speech-language-${language.code}"))
                                             }
                                         }
                                     }
                                 }
-                                if (listening.recording || listening.processing) QuietLabel("Finish listening before changing the language.")
+                                if (listening.recording || listening.processing) QuietLabel("Stop listening before changing the language.")
+                                val pauseResting by settings.pauseWhenResting.collectAsState()
+                                SettingsToggle("Pause when the phone is resting", "Off by default. Saves battery: after 30 quiet minutes with the phone untouched " +
+                                    "(no speech, screen off, not carried) the microphone turns off. Picking it up, turning on the screen or unlocking resumes. " +
+                                    "Talk that starts while it stays untouched is missed until then.", pauseResting, settings::setPauseWhenResting, "pause-when-resting")
                                 val skipIntro by settings.skipListeningIntro.collectAsState()
-                                SettingsToggle("Show listening tips", "Show tips before you start listening.", !skipIntro, { settings.setSkipListeningIntro(!it) }, "start-reminder")
+                                SettingsToggle("Show listening tips", "A short reminder before you start.", !skipIntro, { settings.setSkipListeningIntro(!it) }, "start-reminder")
                                 HorizontalDivider()
-                                Text("My voice", style = MaterialTheme.typography.titleMedium)
+                                Text("Speech recognition", style = MaterialTheme.typography.titleMedium)
+                                com.sidekick.core.SpeechQuality.entries.forEach { quality ->
+                                    Row(Modifier.heightIn(min = 48.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                        RadioButton(speechQuality == quality, { settings.setSpeechQuality(quality) }, enabled = !listening.recording && !listening.processing, modifier = Modifier.controlLabel("Speech quality: ${quality.label}"))
+                                        Text(speechQualityName(quality), Modifier.weight(1f))
+                                    }
+                                }
+                                QuietLabel("Recommended works with every language. Faster uses less battery. Larger may be slower and isn’t always more accurate. Speech stays on this phone.")
+                                ModelPackSection(initiallyExpanded = false)
+                                HorizontalDivider()
+                                Text("Keep listening after a restart", style = MaterialTheme.typography.titleMedium)
+                                Text(if (assistantSelected) "SideKick is your default assistant" else "SideKick is not your default assistant", modifier = Modifier.testTag("assistant-role-status"))
+                                TextButton(onClick = { assistantPicker.launch(assistant.picker()) }, modifier = Modifier.heightIn(min = 48.dp).testTag("assistant-picker")) { Text("Choose default assistant") }
+                                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                    Switch(recoveryEnabled, assistant::setEnabled, modifier = Modifier.testTag("assistant-recovery").controlLabel("Resume listening after a restart"))
+                                    Text("Resume listening after a restart", Modifier.padding(start = 8.dp))
+                                }
+                                QuietLabel("Needs SideKick as your default assistant. Restarts listening you already started. Tapping Stop turns this off until you start again.")
+                                Text(recoveryStatus)
+                                HorizontalDivider()
+                                SettingsDetails("What you can ask SideKick", "ask-examples") {
+                                    val detectNow by settings.detectLanguages.collectAsState()
+                                    AskExamples(askLanguages(speechLanguage, detectNow))
+                                }
+                                var checks by remember { mutableStateOf(false) }
+                                TextButton(onClick = { checks = !checks }, modifier = Modifier.heightIn(min = 48.dp).testTag("phone-checks")) { Text(if (checks) "Hide phone checks" else "Check phone setup") }
+                                if (checks) SetupStatus(settings)
+                            }
+                            "VOICE" -> {
                                 val enrolledVoices by voice.enrolled.collectAsState()
-                                QuietLabel(if (voiceReady) "Your voice is set up: ${enrolledVoices.keys.joinToString(", ") { it.label }}." else "Set up your voice so SideKick can recognize your plans.")
-                                SettingsToggle("Recognize my voice", "Other people’s plans won’t become your commitments. Voice matching can be wrong.", voiceEnabled, voice::setEnabled, "voice-matching", voiceReady && !listening.recording && !listening.processing)
-                                TextButton(enabled = !listening.recording && !listening.processing, onClick = { context.startActivity(Intent(context, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java)) }) { Text(if (voiceReady) "Update my voice profiles" else "Set up my voice") }
+                                Text(if (voiceReady) "Your voice is set up: ${enrolledVoices.keys.joinToString(", ") { it.label }}." else "Set up your voice so SideKick knows which plans are yours.",
+                                    style = MaterialTheme.typography.bodyLarge)
+                                val voiceConsentNeeded by voice.consentNeeded.collectAsState()
+                                if (voiceConsentNeeded) {
+                                    Text("Voice consent needed. Voice matching is off until you agree.", color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("voice-consent-needed"))
+                                    TextButton(onClick = { context.startActivity(Intent(context, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java)
+                                        .putExtra(com.sidekick.app.speaker.VoiceEnrollmentActivity.CONSENT_ONLY, true)) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Review voice consent") }
+                                }
+                                Button(enabled = !listening.recording && !listening.processing, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("voice-setup"),
+                                    onClick = { context.startActivity(Intent(context, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java)) }) { Text(if (voiceReady) "Update my voice setup" else "Set up my voice") }
+                                val wakeOn by voice.wakeOn.collectAsState()
+                                val wakeSaved by voice.wakeSaved.collectAsState()
+                                SettingsToggle("SideKick voice check", if (wakeSaved) "Recognizes you by how you say “SideKick”."
+                                    else "Not set up yet.", wakeOn && wakeSaved, voice::setWakeOn, "wake-check-setting", wakeSaved && !listening.recording && !listening.processing)
+                                OutlinedButton(enabled = !listening.recording && !listening.processing, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("wake-setup-open"),
+                                    onClick = { context.startActivity(Intent(context, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java)
+                                        .putExtra(com.sidekick.app.speaker.VoiceEnrollmentActivity.WAKE_ONLY, true)) }) { Text(if (wakeSaved) "Redo SideKick voice check" else "Set up SideKick voice check") }
+                                SettingsToggle("Recognize my voice", "Recommended. Keeps other people’s plans from becoming yours. Can be wrong.", voiceEnabled, voice::setEnabled, "voice-matching", voiceReady && !listening.recording && !listening.processing)
+                                HorizontalDivider()
+                                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                    Switch(diarization, settings::setDiarization, enabled = !listening.recording && !listening.processing,
+                                    modifier = Modifier.testTag("diarization-setting").controlLabel("Tell different voices apart"))
+                                    Text("Tell different voices apart", Modifier.padding(start = 8.dp))
+                                }
+                                QuietLabel("Recommended. Labels reset when listening stops and don’t identify people or prove consent. Unclear voices stay unknown. Off saves battery.")
+                                SettingsDetails("About voice matching") {
+                                    Text(if (voiceReady) "Voice ready · ${speechLanguage.label}" else "No voice setup for ${speechLanguage.label}. Set up your voice to recognize your own plans.")
+                                    QuietLabel("Saved per language. Auto-detect checks all of them.")
+                                    QuietLabel("Short phrases often stay unknown. Matching can be wrong and doesn’t prove consent.")
+                                    Text("Voice matching method", style = MaterialTheme.typography.titleSmall)
+                                    com.sidekick.app.speaker.SpeakerModel.entries.filter { it.offered }.forEach { candidate ->
+                                        Row(Modifier.heightIn(min = 48.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                            RadioButton(speakerModel == candidate, { voice.selectModel(candidate) }, enabled = !listening.recording && !listening.processing, modifier = Modifier.testTag("speaker-model-${candidate.name}").controlLabel("Voice matching method: ${candidate.label}"))
+                                            Text(candidate.label, Modifier.padding(start = 8.dp))
+                                        }
+                                    }
+                                    QuietLabel("Each method needs its own voice setup. Your previous setup is kept.")
+                                    Text(if (speakerModel == com.sidekick.app.speaker.SpeakerModel.CAMPPLUS) "Voice model: 3D-Speaker CAM++ Chinese/English advanced, Apache 2.0. Runtime: sherpa-onnx, Apache 2.0." else "Voice model: WeSpeaker VoxCeleb ResNet34-LM, CC BY 4.0. Runtime: sherpa-onnx, Apache 2.0.", style = MaterialTheme.typography.bodySmall)
+                                    TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(if (speakerModel == com.sidekick.app.speaker.SpeakerModel.CAMPPLUS) "https://modelscope.cn/models/iic/speech_campplus_sv_zh_en_16k-common_advanced" else "https://huggingface.co/Wespeaker/wespeaker-voxceleb-resnet34-LM"))) }) { Text("Details & license") }
+                                }
+                                SettingsDetails("Names you often mention") {
+                                    val spokenNames by settings.spokenNames.collectAsState()
+                                    QuietLabel("One per line: the name, then how it sounds in Korean, e.g. “Sarah 세라”. Needs the Korean names speech file.")
+                                    androidx.compose.material3.OutlinedTextField(value = spokenNames, onValueChange = settings::setSpokenNames, minLines = 3,
+                                        label = { Text("Names") }, modifier = Modifier.fillMaxWidth().testTag("spoken-names"))
+                                }
+                                HorizontalDivider()
+                                TextButton(enabled = !listening.recording && !listening.processing, onClick = { deleteVoice = true }, modifier = Modifier.heightIn(min = 48.dp).testTag("delete-voice")) { Text("Delete my voice setup") }
                             }
                             "PLANS" -> {
-                                SettingsToggle("Save plans automatically", "Save plans and updates without asking. Undo in notifications. Off: review before saving.", handsOff, settings::setHandsOff, "hands-off")
+                                SettingsToggle("Save plans automatically", "Recommended. Saves without asking; you can undo. Off: you check each plan.", handsOff, settings::setHandsOff, "hands-off")
                                 HorizontalDivider()
                                 Text("If a plan has no end time:")
-                                Row {
+                                Row(Modifier.heightIn(min = 48.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                     RadioButton(mode == GuidanceMode.PASSIVE, { settings.setMode(GuidanceMode.PASSIVE) }, modifier = Modifier.testTag("mode-passive").controlLabel("Leave it unknown"))
-                                    Text("Leave it unknown", Modifier.padding(start = 8.dp, top = 12.dp))
+                                    Text("Leave it unknown (recommended)", Modifier.padding(start = 8.dp))
                                 }
-                                Row {
-                                    RadioButton(mode == GuidanceMode.ASK, { settings.setMode(GuidanceMode.ASK) }, modifier = Modifier.testTag("mode-ask").controlLabel("Ask when I review it"))
-                                    Text("Ask when I review it", Modifier.padding(start = 8.dp, top = 12.dp))
+                                Row(Modifier.heightIn(min = 48.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                    RadioButton(mode == GuidanceMode.ASK, { settings.setMode(GuidanceMode.ASK) }, modifier = Modifier.testTag("mode-ask").controlLabel("Ask when I check it"))
+                                    Text("Ask when I check it", Modifier.padding(start = 8.dp))
                                 }
-                                Row {
+                                Row(Modifier.heightIn(min = 48.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                     Checkbox(informational, settings::setIncludeInformational, modifier = Modifier.testTag("include-informational").controlLabel("Keep plans I’m not attending"))
-                                    Text("Keep plans I’m not attending", Modifier.padding(start = 8.dp, top = 12.dp))
+                                    Text("Keep plans I’m not attending", Modifier.padding(start = 8.dp))
                                 }
-                                QuietLabel("These plans don’t block your calendar. You can mark them as your own later.")
+                                QuietLabel("They don’t block your calendar.")
                                 HorizontalDivider()
+                                val readAloud by settings.readRemindersAloud.collectAsState()
+                                SettingsToggle("Read reminders aloud", "The phone also says reminders out loud.", readAloud, settings::setReadRemindersAloud, "read-reminders-aloud")
+                                TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)) },
+                                    modifier = Modifier.heightIn(min = 48.dp)) { Text("Reminder alerts") }
                                 CalendarSyncSection()
-                                TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)) }) { Text("Reminder alerts") }
-                            }
-                            "CONNECTIONS" -> {
+                                HorizontalDivider()
                                 Text("Places", style = MaterialTheme.typography.titleMedium)
-                                SettingsToggle("Find addresses", "Sends the place and city or nearby location to Android’s address service. You confirm before saving. Tap a place to open Maps.", automatic, settings::setAutomaticPlaces, "automatic-places")
-                                Row {
+                                SettingsToggle("Find addresses", "Sends the place name and city or rough location to Android’s address service. You confirm first.", automatic, settings::setAutomaticPlaces, "automatic-places")
+                                Row(Modifier.heightIn(min = 48.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                     RadioButton(placeContext == PlaceContext.CITY, { settings.setPlaceContext(PlaceContext.CITY) }, modifier = Modifier.controlLabel("Use a city I choose"))
-                                    Text("Use a city I choose", Modifier.padding(start = 8.dp, top = 12.dp))
+                                    Text("Use a city I choose", Modifier.padding(start = 8.dp))
                                 }
                                 OutlinedTextField(city, settings::setCity, label = { Text("City or region") }, placeholder = { Text("For example, Madison, Wisconsin") }, modifier = Modifier.testTag("place-city"))
-                                Row {
+                                Row(Modifier.heightIn(min = 48.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                     RadioButton(placeContext == PlaceContext.PHONE, {
                                         if (context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) settings.setPlaceContext(PlaceContext.PHONE)
                                         else permission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
                                     }, modifier = Modifier.controlLabel("Use my nearby location"))
-                                    Text("Use my nearby location", Modifier.padding(start = 8.dp, top = 12.dp))
+                                    Text("Use my nearby location", Modifier.padding(start = 8.dp))
                                 }
-                                QuietLabel("Location is checked only when finding an address. No continuous tracking. Your chosen city is used if location is unavailable.")
+                                QuietLabel("Only used when finding an address. No tracking. Your city is used if location is unavailable.")
                                 HorizontalDivider()
                                 Text("Messages", style = MaterialTheme.typography.titleMedium)
                                 SettingsToggle("Read text I share", "Find plans in text shared from another app.", sharing, settings::setSharedMessages, "shared-messages")
-                                SettingsToggle("Read new message notifications", "Reads new previews from apps you choose, not message history. Senders’ plans aren’t your promises.", messages, settings::setMessageNotifications, "message-scanning")
+                                SettingsToggle("Read new message notifications", "Reads new previews from apps you choose, not message history. Others’ plans aren’t treated as yours.", messages, settings::setMessageNotifications, "message-scanning")
                                 QuietLabel("Text is temporary, except quotes kept in saved plans.")
-                                TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }) { Text("Allow notification access") }
+                                TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Allow notification access") }
                                 if (messages) {
                                     OutlinedTextField(filter, { filter = it }, label = { Text("Find a messaging app") })
                                     apps.filter { it.second.contains(filter, true) }.forEach { (name, label) ->
-                                        Row {
+                                        Row(Modifier.heightIn(min = 48.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                             Checkbox(name in selectedApps, { settings.setMessageApp(name, it) }, modifier = Modifier.controlLabel("Read notifications from $label"))
-                                            Text(label, Modifier.padding(start = 8.dp, top = 12.dp))
+                                            Text(label, Modifier.padding(start = 8.dp))
                                         }
                                     }
                                     if (selectedApps.isEmpty()) Text("Choose an app to start reading messages.")
                                 }
                             }
                             "PRIVACY" -> {
+                                ConsentRulesSection(settings)
                                 MemoryPrivacySection()
                                 PrivacyGuidanceSection(settings)
-                            }
-                            "ADVANCED" -> {
-                                ModelPackSection(initiallyExpanded = false)
-                                Text("Recognition quality", style = MaterialTheme.typography.titleMedium)
-                                com.sidekick.core.SpeechQuality.entries.forEach { quality ->
-                                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                        RadioButton(speechQuality == quality, { settings.setSpeechQuality(quality) }, enabled = !listening.recording && !listening.processing, modifier = Modifier.controlLabel("Speech quality: ${quality.label}"))
-                                        Text(speechQualityName(quality), Modifier.weight(1f))
-                                    }
-                                }
-                                QuietLabel("Recommended works with all supported languages. Faster uses less processing. Larger model may be slower and won’t always be more accurate. Speech stays on this phone.")
-                                HorizontalDivider()
-                                Text("Default assistant", style = MaterialTheme.typography.titleMedium)
-                                Text(if (assistantSelected) "SideKick is your default assistant" else "SideKick is not your default assistant", modifier = Modifier.testTag("assistant-role-status"))
-                                TextButton(onClick = { assistantPicker.launch(assistant.picker()) }, modifier = Modifier.testTag("assistant-picker")) { Text("Choose default assistant") }
-                                Row {
-                                    Switch(recoveryEnabled, assistant::setEnabled, modifier = Modifier.testTag("assistant-recovery").controlLabel("Resume listening after a restart"))
-                                    Text("Resume listening after a restart", Modifier.padding(start = 8.dp, top = 12.dp))
-                                }
-                                QuietLabel("Requires SideKick as your default assistant. Restarts a session you already started. Stop turns recovery off for that session. Android force-stop or removed permissions can prevent recovery. Voice setup never restarts itself.")
-                                Text(recoveryStatus)
-                                HorizontalDivider()
-                                Text("Speaker options", style = MaterialTheme.typography.titleMedium)
-                                Row {
-                                    Switch(diarization, settings::setDiarization, enabled = !listening.recording && !listening.processing,
-                                    modifier = Modifier.testTag("diarization-setting").controlLabel("Label different speakers"))
-                                    Text("Label different speakers", Modifier.padding(start = 8.dp, top = 12.dp))
-                                }
-                                QuietLabel("Labels speakers on this phone. Labels reset each session and don’t identify people or prove consent. Unclear or overlapping voices stay unknown. Turn off to reduce processing.")
-                                com.sidekick.app.speaker.SpeakerModel.entries.forEach { candidate ->
-                                    Row {
-                                        RadioButton(speakerModel == candidate, { voice.selectModel(candidate) }, enabled = !listening.recording && !listening.processing, modifier = Modifier.testTag("speaker-model-${candidate.name}").controlLabel("Voice model: ${candidate.label}"))
-                                        Text(candidate.label, Modifier.padding(start = 8.dp, top = 12.dp))
-                                    }
-                                }
-                                SettingsDetails("About voice matching") {
-                                    QuietLabel("Each voice model needs its own setup. Your previous setup is kept.")
-                                    Text(if (voiceReady) "Voice ready · ${speechLanguage.label}" else "No voice setup for ${speechLanguage.label}. Set up your voice to recognize your own plans.")
-                                    QuietLabel("Voice setup is saved separately for each language. Auto-detect checks all your enrolled language profiles. Start with a full sentence to help matching.")
-                                    Row {
-                                        Checkbox(voiceEnabled, voice::setEnabled, enabled = voiceReady && !listening.recording && !listening.processing, modifier = Modifier.controlLabel("Recognize my voice"))
-                                        Text("Recognize my voice", Modifier.padding(start = 8.dp, top = 12.dp))
-                                    }
-                                    QuietLabel("Other voices stay as information. Brief phrases need a recent strong match; otherwise the speaker stays unknown. Matching can be wrong and does not prove consent.")
-                                    Text(if (speakerModel == com.sidekick.app.speaker.SpeakerModel.CAMPPLUS) "Voice model: 3D-Speaker CAM++ Chinese/English advanced, Apache 2.0. Runtime: sherpa-onnx, Apache 2.0." else "Voice model: WeSpeaker VoxCeleb ResNet34-LM, CC BY 4.0. Runtime: sherpa-onnx, Apache 2.0.", style = MaterialTheme.typography.bodySmall)
-                                    TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(if (speakerModel == com.sidekick.app.speaker.SpeakerModel.CAMPPLUS) "https://modelscope.cn/models/iic/speech_campplus_sv_zh_en_16k-common_advanced" else "https://huggingface.co/Wespeaker/wespeaker-voxceleb-resnet34-LM"))) }) { Text("Model details & license") }
-                                }
-                                TextButton(enabled = !listening.recording && !listening.processing, onClick = {
-                                    context.startActivity(Intent(context, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java))
-                                }) { Text(if (voiceReady) "Update my voice profiles" else "Set up my voice") }
-                                TextButton(enabled = !listening.recording && !listening.processing, onClick = { deleteVoice = true }) { Text("Delete my voice setup") }
-                                SettingsDetails("Names you often mention") {
-                                    val spokenNames by settings.spokenNames.collectAsState()
-                                    QuietLabel("One per line: the name, then how it sounds in Korean, e.g. “Sarah 세라”. When you say it in Korean speech, SideKick writes the name. Needs the “Korean names & time check” speech file. Stays on this phone.")
-                                    androidx.compose.material3.OutlinedTextField(value = spokenNames, onValueChange = settings::setSpokenNames, minLines = 3,
-                                        label = { Text("Names") }, modifier = Modifier.fillMaxWidth().testTag("spoken-names"))
-                                }
-                                HorizontalDivider()
-                                var checks by remember { mutableStateOf(false) }
-                                TextButton(onClick = { checks = !checks }, modifier = Modifier.testTag("phone-checks")) { Text(if (checks) "Hide phone checks" else "Check phone setup") }
-                                if (checks) SetupStatus(settings)
                             }
                         }
                     } }
@@ -285,24 +316,25 @@ internal fun AppSettingsDialog(settings: GuidanceSettings, onClose: () -> Unit) 
         }
     }
     if (deleteVoice) AlertDialog(onDismissRequest = { deleteVoice = false }, title = { Text("Delete voice setup?") },
-    text = { Text("Deletes your voice setup for every language and model. Saved plans stay. You can set up your voice again.") },
+    text = { Text("Deletes your voice setup for all languages. Your plans stay.") },
     confirmButton = { TextButton(onClick = { voice.delete(); deleteVoice = false }) { Text("Delete") } },
     dismissButton = { TextButton(onClick = { deleteVoice = false }) { Text("Cancel") } })
 }
 
 private data class SettingsSection(val id: String, val title: String, val description: String)
+/** Five plain sections. Page ids are kept from the earlier layout where the content stayed (LISTENING, PLANS, PRIVACY). */
 private val settingsPages = listOf(
-SettingsSection("DISPLAY", "Display", "Home layout, text size and colors"),
-SettingsSection("LISTENING", "Listening", "Language, my voice and listening tips"),
-SettingsSection("PLANS", "Plans & reminders", "Saving plans, end times and calendar"),
-SettingsSection("CONNECTIONS", "Messages & places", "Messages, location and maps"),
-SettingsSection("PRIVACY", "Privacy & saved data", "Saved plans, copies and privacy"),
-SettingsSection("ADVANCED", "Advanced & help", "Speech options and phone checks")
+// Screen first: it matters most to people who find the phone hard to read.
+SettingsSection("SCREEN", "Screen & text size", "Home layout, text size, colors"),
+SettingsSection("LISTENING", "Listening", "Language, speech, battery"),
+SettingsSection("VOICE", "Your voice", "So SideKick knows which plans are yours"),
+SettingsSection("PLANS", "Reminders & calendar", "Saving, reminders, calendar, places, messages"),
+SettingsSection("PRIVACY", "Privacy", "Recording rules, saved data, region")
 )
 
 @Composable
 internal fun SettingsToggle(title: String, summary: String, checked: Boolean, onChange: (Boolean) -> Unit, tag: String, enabled: Boolean = true) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         Column(Modifier.weight(1f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             QuietLabel(summary)
@@ -314,12 +346,32 @@ internal fun SettingsToggle(title: String, summary: String, checked: Boolean, on
 internal fun speechQualityName(quality: com.sidekick.core.SpeechQuality): String = when (quality) {
     com.sidekick.core.SpeechQuality.ADAPTIVE -> "Recommended"
     com.sidekick.core.SpeechQuality.FAST -> "Faster"
-    com.sidekick.core.SpeechQuality.ACCURATE -> "Larger model"
+    com.sidekick.core.SpeechQuality.ACCURATE -> "Larger"
 }
 
 @Composable
-internal fun SettingsDetails(label: String, content: @Composable ColumnScope.() -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Hide details" else label) }
+internal fun SettingsDetails(label: String, tag: String? = null, content: @Composable ColumnScope.() -> Unit) {
+    // Survives the screen being rebuilt (for example after a bigger text or button size is chosen inside it).
+    var expanded by androidx.compose.runtime.saveable.rememberSaveable(label) { mutableStateOf(false) }
+    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.heightIn(min = 48.dp).let { if (tag != null) it.testTag(tag) else it }) { Text(if (expanded) "Hide details" else label) }
     if (expanded) Column(verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
+}
+
+/** Languages whose example questions to show: the chosen one, or Auto-detect's languages (English first). */
+internal fun askLanguages(language: com.sidekick.core.SpeechLanguage, detect: Set<com.sidekick.core.SpeechLanguage>): List<String> =
+    if (language != com.sidekick.core.SpeechLanguage.AUTO) listOf(language.code)
+    else detect.map { it.code }.sortedBy { if (it == "en") 0 else 1 }
+
+/** Questions to read off the screen (each one is checked to be understood: PlanQuestionTest). */
+@Composable
+internal fun AskExamples(codes: List<String>, numbered: Boolean = false) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("ask-list")) {
+        if (!numbered) QuietLabel("Start with “SideKick”. Answers come from your saved plans.")
+        codes.forEach { code ->
+            if (codes.size > 1) Text(com.sidekick.core.SpeechLanguage.fromCode(code).label, style = MaterialTheme.typography.titleSmall)
+            com.sidekick.core.PlanQuestion.examples(code).forEachIndexed { i, q ->
+                Text((if (numbered) "${i + 1}. " else "• ") + q, style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+    }
 }

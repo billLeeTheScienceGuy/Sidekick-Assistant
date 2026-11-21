@@ -59,7 +59,9 @@ class AssistantControl(private val context: Context) {
             context.startForegroundService(Intent(context, ListeningService::class.java).setAction(ListeningService.RESUME))
             statusValue.value = "Resuming your enabled listening session"; true
         } catch (_: RuntimeException) {
-            disarm("Android blocked recovery. Open SideKick and start listening again."); false
+            // Right after an update or restart Android may refuse until SideKick's assistant service is connected
+            // again; that connection (SidekickVoiceService.onReady) tries again, so recovery stays enabled.
+            statusValue.value = "Waiting to resume listening"; false
         }
     }
     fun roleRemoved() {

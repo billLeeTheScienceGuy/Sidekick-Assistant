@@ -9,7 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /** Recent live text and unapproved proposals exist only in this process's memory. */
-data class LiveSpeakerTurn(val at: Instant, val label: String, val speaker: Speaker, val text: String)
+/** [voiceKey] is set only for grouped voices that may be named for this session; it never leaves memory. */
+data class LiveSpeakerTurn(val at: Instant, val label: String, val speaker: Speaker, val text: String, val voiceKey: String? = null)
 
 class TemporaryMemory(private val includeInformational: () -> Boolean = { true }) {
     private val mutableText = MutableStateFlow("")
@@ -18,6 +19,28 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
     val speakerTurns = mutableSpeakerTurns.asStateFlow()
     private val mutableDrafts = MutableStateFlow<List<CommitmentEntity>>(emptyList())
     val drafts = mutableDrafts.asStateFlow()
+    /** Session-only naming memory: who the owner addressed, the latest named invitation. Memory only. */
+    private val naming = SessionNaming()
+    private val mutableNameSuggestion = MutableStateFlow<SessionNaming.Suggestion?>(null)
+    /** "<Name>?" chip for a grouped voice; applied only when the owner taps it. */
+    val nameSuggestion = mutableNameSuggestion.asStateFlow()
+    @Synchronized fun dismissNameSuggestion() { mutableNameSuggestion.value = null }
+    /** A voice was named (or renamed) for this session: relabel its recent turns on screen. */
+    @Synchronized fun voiceNamed(key: String, name: String?, anonymous: String) {
+        mutableNameSuggestion.value = mutableNameSuggestion.value?.takeIf { it.voiceKey != key }
+        mutableSpeakerTurns.value = mutableSpeakerTurns.value.map { if (it.voiceKey == key) it.copy(label = name ?: anonymous) else it }
+    }
+    /** forgetOthers(): drop every voice name, suggestion and naming context; on-screen labels lose their names too. */
+    @Synchronized fun forgetVoiceNames() {
+        naming.clear(); mutableNameSuggestion.value = null
+        mutableSpeakerTurns.value = mutableSpeakerTurns.value.map { if (it.voiceKey != null) it.copy(label = "Unassigned voice", voiceKey = null) else it }
+    }
+    private fun invitationProposal(text: String, clock: String, at: Instant, zone: ZoneId, title: String, informational: Boolean,
+        source: String, note: String): ProposedCommitment? =
+        VoiceInvitations.propose(clock, at, zone)?.let { found ->
+            found.copy(title = title.take(500), evidence = text.trim().take(500), informational = informational, sourceKey = source,
+                needsReview = note + if (found.needsReview.startsWith("Time read as")) " " + found.needsReview.substringBefore(". ") + "." else "")
+        }
     data class PendingChange(val change: EventChange, val at: Instant, val zone: ZoneId, val source: String, val speaker: Speaker)
     private val changes = ArrayDeque<PendingChange>()
     private val seenChanges = linkedMapOf<String, String>()
@@ -110,8 +133,8 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
     private fun offerTimeChoice(heard: String, choices: List<String>, at: Instant, zone: ZoneId, speaker: Speaker) {
         val likely = choices.firstOrNull() ?: return
         val input = Transcript(likely, at, zone, speaker, true)
-        val proposals = if (speaker == Speaker.USER) ActivityTiming.merge(input, pipeline.process(input))
-            else ActivityTiming.extract(input.copy(speaker = Speaker.OTHER), informationalOnly = true)
+        val proposals = if (speaker == Speaker.USER) HandsOffPlans.complete(input, ActivityTiming.merge(input, pipeline.process(input)))
+            else AnalysisContext.others(input)
         val heardClock = KoreanClockRepair.clockOf(heard) ?: return
         val options = choices.mapNotNull { KoreanClockRepair.clockOf(it) }
         addProposals(proposals.map { it.copy(sourceKey = "confirm:${heard.lowercase().hashCode()}",
@@ -121,10 +144,17 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
 
     /** Reset reference context on speaker changes; unknown voices never create personal promises. */
     @Synchronized fun appendAttributedLive(text: String, capturedAt: Instant, zone: ZoneId, speaker: Speaker, continuation: Boolean = true,
-        speakerTrack: String? = null, speakerLabel: String = speaker.name, recognitionReliable: Boolean = true, timeChoices: List<String> = emptyList()) {
+        speakerTrack: String? = null, speakerLabel: String = speaker.name, recognitionReliable: Boolean = true, timeChoices: List<String> = emptyList(),
+        /** Session-only name of a grouped voice (memory only). */ speakerName: String? = null,
+        /** The voice was grouped (allowed by ConsentGate.groupingAllowed), so it may be named for this session. */ grouped: Boolean = false) {
         if (text.isBlank()) return
         require(speakerTrack == null || VoiceSource.track("voice:0:$speakerTrack:${speaker.name}") == speakerTrack)
-        mutableSpeakerTurns.value = (mutableSpeakerTurns.value + LiveSpeakerTurn(capturedAt, speakerLabel.take(80), speaker, text.take(500))).takeLast(12)
+        val nameable = grouped && speaker != Speaker.USER && speakerTrack != null && !speakerTrack.contains("_unassigned")
+        mutableSpeakerTurns.value = (mutableSpeakerTurns.value + LiveSpeakerTurn(capturedAt, speakerLabel.take(80), speaker, text.take(500),
+            speakerTrack.takeIf { nameable })).takeLast(12)
+        // A different grouped voice answering a just-addressed name gets a suggestion; then this phrase may address someone.
+        if (nameable) naming.voiceSpoke(speakerTrack!!, speakerName, capturedAt)?.let { mutableNameSuggestion.value = it }
+        naming.spoke(text, if (speaker == Speaker.USER) "owner" else speakerTrack, capturedAt)
         if (!recognitionReliable) {
             // Keep the heard text, but never schedule/update from conflicting acoustic readings.
             mutableText.value = LiveText.append(mutableText.value, text, !continuation).takeLast(6000)
@@ -157,11 +187,38 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         lastVoiceAt = capturedAt
         voiceContext = LiveText.append(voiceContext, fresh.text, !continuation).takeLast(if (speakerTrack == null) 6000 else 1500)
         val input = Transcript(voiceContext, voiceAt, zone, speaker, true)
-        val proposals = if (speaker == Speaker.USER) ActivityTiming.merge(input, pipeline.process(input))
-            else ActivityTiming.extract(input.copy(speaker = Speaker.OTHER), informationalOnly = true)
-        val attributed = proposals.map { it.copy(sourceKey = sourceKey(),
+        val proposals = if (speaker == Speaker.USER) HandsOffPlans.complete(input, ActivityTiming.merge(input, pipeline.process(input)))
+            else AnalysisContext.others(input)
+        var attributed = proposals.map { it.copy(sourceKey = sourceKey(),
             needsReview = (if (speaker == Speaker.USER) "Likely your voice; verify attribution. " else if (speaker == Speaker.OTHER) "Another voice; attendance unconfirmed. " else "Speaker unassigned; attendance unconfirmed. ") + it.needsReview) }
-        addProposals(attributed, capturedAt)
+        val extra = mutableListOf<ProposedCommitment>()
+        if (speaker != Speaker.USER) VoiceInvitations.invitation(fresh.text)?.let { clock ->
+            // Another speaker's dated invitation: information only, never a reminder.
+            if (speakerName != null && speakerTrack != null) naming.invited(speakerTrack, speakerName, clock, capturedAt)
+            if (attributed.none { it.activityStartAt != null }) {
+                val who = speakerName ?: speakerLabel.takeIf { grouped && it.startsWith("Voice ") } ?: "Another voice"
+                invitationProposal(fresh.text, clock, capturedAt, zone, VoiceInvitations.otherTitle(who, clock), true, sourceKey(),
+                    "Another voice's invitation; attendance unconfirmed. Activity times are suggestions from speech; review them.")?.let(extra::add)
+            }
+        }
+        if (speaker == Speaker.USER) {
+            val replyClock = VoiceInvitations.ownerReply(fresh.text)
+            val repliedTo = replyClock?.let { naming.recentNamedVoice(capturedAt) }
+            if (replyClock != null && repliedTo != null) {
+                val title = VoiceInvitations.ownerTitle(repliedTo, replyClock)
+                val dated = attributed.any { it.activityStartAt != null }
+                attributed = attributed.map { if (it.activityStartAt != null) it.copy(title = title) else it }
+                if (!dated) invitationProposal(fresh.text, replyClock, capturedAt, zone, title, false, sourceKey(),
+                    "Likely your voice; verify attribution. Activity times are suggestions from speech; review them.")?.let(extra::add)
+            }
+            naming.accepted(fresh.text, capturedAt)?.let { invitation ->
+                // A short "sure" is weak evidence: the owner event waits in Review, never saved automatically.
+                invitationProposal(fresh.text, invitation.clock, invitation.at, zone, VoiceInvitations.ownerTitle(invitation.name, invitation.clock), false,
+                    "review:accept:${invitation.voiceKey.hashCode()}:${invitation.at.toEpochMilli()}",
+                    "You said \u201c${fresh.text.trim().take(40)}\u201d after ${invitation.name}'s invitation. Check before accepting.")?.let(extra::add)
+            }
+        }
+        addProposals(attributed + extra, capturedAt)
         if (ActivityTiming.looksLikeActivity(text)) {
             val activity = attributed.filter { it.activityStartAt != null }.singleOrNull()
             val candidates = mutableDrafts.value + reviewed.values.mapNotNull { it.saved }
@@ -192,14 +249,19 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
 
     @Synchronized fun propose(input: Transcript, source: String? = null): Int {
         val prepared = prepareChanges(input, source ?: "typed")
-        return addProposals(ActivityTiming.merge(prepared, pipeline.process(prepared)).map { it.copy(sourceKey = source) }, input.capturedAt)
+        return addProposals(HandsOffPlans.complete(prepared, ActivityTiming.merge(prepared, pipeline.process(prepared))).map { it.copy(sourceKey = source) }, input.capturedAt)
     }
 
     @Synchronized fun addProposals(proposals: List<ProposedCommitment>, observedAt: Instant? = null): Int {
-        val incoming = proposals.filter { !it.informational || includeInformational() }.map {
+        val incoming = proposals.filter { !it.informational || includeInformational() }.map(HandsOffPlans::withDefaults).map {
+            // A conflict (hedge, two times) waits in Review; "review:" keeps it out of hands-off saving.
+            val conflict = it.conflict
+            val note = if (conflict != null) "$conflict ${it.needsReview}".trim()
+                else listOf(it.needsReview.trim(), PlanNotes.describe(it.assumptions, it.notes)).filter(String::isNotBlank).joinToString(" ")
             CommitmentEntity(UUID.randomUUID().toString(), it.title, it.evidence, it.capturedAt.toEpochMilli(),
-                it.zoneId.id, it.needsReview, activityStartAt = it.activityStartAt?.toEpochMilli(), activityEndAt = it.activityEndAt?.toEpochMilli(),
-                informational = it.informational, placeName = it.placeName, placeAddress = it.placeAddress, sourceKey = it.sourceKey)
+                it.zoneId.id, note, dueAt = it.reminderAt?.toEpochMilli(), activityStartAt = it.activityStartAt?.toEpochMilli(), activityEndAt = it.activityEndAt?.toEpochMilli(),
+                informational = it.informational, placeName = it.placeName, placeAddress = it.placeAddress,
+                sourceKey = if (conflict != null) "review:conflict:" + (it.sourceKey ?: "typed") else it.sourceKey)
         }.distinctBy(::key)
         val drafts = mutableDrafts.value.toMutableList()
         var added = 0
@@ -318,7 +380,29 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         updateTargets.filterValues { it == id }.keys.toList().forEach(::remove)
     }
     private fun trimReviewed() { while (reviewed.size > 400) reviewed.remove(reviewed.keys.first()) }
-    @Synchronized fun clearText() { mutableText.value = ""; mutableSpeakerTurns.value = emptyList(); voiceContext = ""; voiceTrack = null; voiceContexts.clear(); voiceCommandTarget = null; correctionContext = null; changes.clear(); seenChanges.clear(); liveChanges.clear(); observations.clear() }
+    /** Review items whose plan has already ended clear themselves; manual drafts stay until edited. */
+    @Synchronized fun pruneStale(now: Long): Int {
+        val stale = mutableDrafts.value.filter { it.evidence != "Manually added" && (HandsOffPlans.stale(it.activityStartAt, it.activityEndAt, it.dueAt, now) ||
+            // Undated conflicts ("maybe dinner Friday") cannot pass a date of their own: they expire after a week.
+            (it.sourceKey?.startsWith("review:conflict:") == true && it.activityStartAt == null && now - it.capturedAt > 7 * 86_400_000L)) }
+        stale.forEach { dismiss(it.id) }
+        return stale.size
+    }
+    /**
+     * Another voice (or a message) said a saved plan is cancelled. The plan stays as it is; a Review item asks the
+     * owner, and accepting it cancels the plan (with Undo). One pending item per plan.
+     */
+    @Synchronized fun addCancelReview(target: CommitmentEntity, heard: String, at: Instant): Boolean {
+        val source = "review:cancel:${target.id}"
+        if (mutableDrafts.value.any { it.sourceKey == source } || mutableDrafts.value.size >= 200) return false
+        val item = target.copy(id = UUID.randomUUID().toString(), state = "PROPOSED", title = "Cancel: ${target.title}".take(500),
+            evidence = heard.trim().take(500), capturedAt = at.toEpochMilli(), dueAt = null, deliveredAt = null, sourceKey = source,
+            reviewNote = "Another voice said this is cancelled: “${heard.trim().take(120)}”. Your saved plan is unchanged. Accept to cancel it (Undo available), or Dismiss to keep it.")
+        mutableDrafts.value = mutableDrafts.value + item
+        updateTargets[item.id] = target.id
+        return true
+    }
+    @Synchronized fun clearText() { naming.clear(); mutableNameSuggestion.value = null; mutableText.value = ""; mutableSpeakerTurns.value = emptyList(); voiceContext = ""; voiceTrack = null; voiceContexts.clear(); voiceCommandTarget = null; correctionContext = null; changes.clear(); seenChanges.clear(); liveChanges.clear(); observations.clear() }
     @Synchronized fun beginSession() { clearText(); voiceContext = ""; voiceTurn = 0; reviewed.clear(); sessionBaseline = mutableDrafts.value.map { it.id }.toSet() }
     @Synchronized fun discardSession() {
         clearText()

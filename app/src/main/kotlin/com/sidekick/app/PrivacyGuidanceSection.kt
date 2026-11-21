@@ -53,7 +53,7 @@ internal fun PrivacyGuidanceSection(settings: GuidanceSettings) {
     val guidance = PrivacyRegions.guidance(region)
     Text(guidance.label, style = MaterialTheme.typography.titleMedium)
     Text(if (phone != null) "Using your nearby region. Refresh after 24 hours."
-        else "Using the city and state you chose, if recognized. A city name alone may be unclear.")
+        else "Using the city and state you chose.")
     Text(guidance.note)
     Row {
         Switch(usePhone, { enabled ->
@@ -63,7 +63,7 @@ internal fun PrivacyGuidanceSection(settings: GuidanceSettings) {
         }, enabled = !busy, modifier = Modifier.testTag("privacy-phone-region").controlLabel("Use my nearby region"))
         Text("Use my nearby region", Modifier.weight(1f))
     }
-    Text("Refresh may send approximate location to Android’s address service. Only country, state and check time stay on this phone for up to 24 hours. No location history or background tracking. Turning this off clears the saved region.")
+    Text("Refresh may send your rough location to Android’s address service. Only country and state are kept, for 24 hours. No tracking.")
     if (usePhone) TextButton(onClick = { if (permitted) refresh() else permission.launch(Manifest.permission.ACCESS_COARSE_LOCATION) }, enabled = !busy,
         modifier = Modifier.testTag("privacy-refresh-region")) { Text(if (busy) "Finding region…" else "Refresh my region") }
     note?.let { Text(it) }

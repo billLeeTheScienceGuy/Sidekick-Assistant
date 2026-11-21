@@ -40,7 +40,6 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         message.value = if (container.automation.undo(id, token)) "Automatic change undone"
             else "This change was already undone or edited."
     }
-    val smartReady = container.intent.ready
     val guidance = container.guidance.mode
     fun setGuidance(mode: GuidanceMode) = container.guidance.setMode(mode)
     val message = MutableStateFlow("Record your voice or type your own words.")
@@ -51,17 +50,6 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     private var analysisSource: String? = null
     val editError = MutableStateFlow<String?>(null)
     private var importJob: Job? = null
-
-    fun importIntentModel(uri: Uri) {
-        if (busy.value) return
-        busy.value = true; message.value = "Verifying and installing the local Qwen model…"
-        importJob = viewModelScope.launch {
-            try { container.intent.importModel(uri); message.value = "Qwen installed. Find commitments now uses local smart analysis." }
-            catch (e: CancellationException) { message.value = "Model import cancelled."; throw e }
-            catch (e: Exception) { message.value = e.message ?: "Model import failed." }
-            finally { busy.value = false }
-        }
-    }
 
     fun importWav(uri: Uri) {
         if (busy.value) return
@@ -106,7 +94,7 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         transcript.value = text
     }
     fun copyLiveText() {
-        setTranscript(liveText.value.takeLast(if (smartReady.value) 4000 else 6000), Instant.now())
+        setTranscript(liveText.value.takeLast(6000), Instant.now())
         analysisSource = "voice:copied"
     }
     fun clearTranscript() { transcript.value = ""; analysisSource = null; container.temporary.clearText() }
@@ -114,25 +102,17 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     fun analyze() {
         if (busy.value) return
         val origin = analysisSource
-        container.risk.inspect(transcript.value)
+        container.risk.inspectMessage(transcript.value)
         val input = container.temporary.prepareChanges(Transcript(transcript.value.trim(), capturedAt, capturedZone, Speaker.USER, true), origin ?: "typed")
         busy.value = true
         importJob = viewModelScope.launch {
             try {
-                val count = if (input.text.isBlank()) 0 else if (smartReady.value) {
-                    val proposals = withTimeout(90_000) { container.intent.extract(input) }
-                    container.temporary.addProposals(proposals.map { it.copy(sourceKey = origin) })
-                } else withContext(Dispatchers.Default) { container.temporary.propose(input, origin) }
+                val count = if (input.text.isBlank()) 0 else withContext(Dispatchers.Default) { container.temporary.propose(input, origin) }
                 container.automation.process()
                 message.value = if (container.guidance.handsOffMode.value) container.automation.status.value
                     else if (count > 0) "$count temporary proposal(s) ready for review. Approve to save."
                     else "No new validated commitment found. Review existing proposals or add one manually."
-                container.intent.notice.value?.let { message.value += " " + it }
-            } catch (_: TimeoutCancellationException) {
-                container.temporary.propose(input, origin); container.automation.process()
-                message.value = "Smart analysis timed out. Used local rules; some plans may be missed."
-            }
-            catch (e: CancellationException) { message.value = "Analysis cancelled."; throw e }
+            } catch (e: CancellationException) { message.value = "Analysis cancelled."; throw e }
             catch (e: Exception) { message.value = e.message ?: "Could not analyze. Try a shorter note." }
             finally { busy.value = false }
         }
@@ -145,7 +125,7 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         if (!container.guidance.sharedMessages.value) { message.value = "Shared-message analysis is disabled in Settings."; return@mutate }
         container.risk.inspect(text)
         val input = container.temporary.prepareChanges(Transcript(text.take(6000), Instant.now(), ZoneId.systemDefault(), Speaker.OTHER, true), "shared")
-        val proposals = withContext(Dispatchers.Default) { ActivityTiming.extract(input, informationalOnly = true) }
+        val proposals = withContext(Dispatchers.Default) { AnalysisContext.others(input) }
             .map { it.copy(sourceKey = "shared", needsReview = "Shared message: attendance is unconfirmed. " + it.needsReview) }
         val count = container.temporary.addProposals(proposals)
         container.automation.process()
@@ -161,6 +141,14 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
                 val start = if (activityStart.isBlank()) null else TimeResolver.parseEditor(activityStart, ZoneId.of(zoneId)).toEpochMilli()
                 val end = if (activityEnd.isBlank()) null else TimeResolver.parseEditor(activityEnd, ZoneId.of(zoneId)).toEpochMilli()
                 val target = container.temporary.updateTarget(id) ?: id
+                if (proposal?.sourceKey?.startsWith("review:cancel:") == true) {
+                    // Accepting another voice's cancellation cancels the saved plan (journaled, with Undo).
+                    val saved = dao.get(target)?.takeIf { it.state == "ACCEPTED" } ?: error("This plan was already changed.")
+                    container.reminders.changeEvent(saved, null, true)
+                    container.temporary.remove(id)
+                    onSaved()
+                    return@launch
+                }
                 val targetDraft = container.temporary.drafts.value.find { it.id == target && it.id != id }
                 val source = if (targetDraft != null) proposal?.copy(id = target) else proposal
                 container.reminders.save(target, title, due, zoneId, source, start, end, informational, placeName, placeAddress)
@@ -173,7 +161,7 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     fun dismiss(id: String) = mutate { container.temporary.dismiss(id); container.reminders.mark(id, "DISMISSED") }
     fun done(id: String) = mutate { container.reminders.mark(id, "DONE"); container.temporary.retire(id) }
     fun delete(id: String) = mutate { container.temporary.dismiss(id); container.reminders.delete(id); container.temporary.retire(id) }
-    fun deleteAll() = mutate { container.messageInbox.clear(); container.temporary.discard(); container.reminders.deleteAll() }
+    fun deleteAll() = mutate { container.messageInbox.clear(); container.temporary.discard(); container.reminders.deleteAll(); container.database.noticeRecords().deleteAll(); container.guidance.clearLearnedNames() }
     fun reopen() { editError.value = null }
     fun notificationPermissionChanged() { viewModelScope.launch { runCatching { container.reminders.restore() } } }
     private fun mutate(action: suspend () -> Unit) {

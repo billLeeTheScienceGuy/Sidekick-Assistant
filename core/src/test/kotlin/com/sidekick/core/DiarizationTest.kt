@@ -29,10 +29,10 @@ class DiarizationTest {
         assertNotEquals(first.key, second.key)
         assertEquals(first, tracker.observe(vector(.99f, .01f), 1000))
         assertNull(tracker.observe(vector(1f, 1f), 1000))
-        val fresh = tracker.observe(vector(1f, 0f), 901_001)!!
+        val fresh = tracker.observe(vector(1f, 0f), 1000 + SessionVoices.KEEP_MS + 1)!!
         assertNotEquals(first.key, fresh.key)
         tracker.clear()
-        assertNotEquals(fresh.key, tracker.observe(vector(1f, 0f), 901_002)!!.key)
+        assertNotEquals(fresh.key, tracker.observe(vector(1f, 0f), 1000 + SessionVoices.KEEP_MS + 2)!!.key)
     }
     @Test fun `anonymous tracker is bounded and sources cannot alias old untracked voices`() {
         val tracker = SessionVoices("bounded")

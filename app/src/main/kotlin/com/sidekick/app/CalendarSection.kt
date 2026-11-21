@@ -28,14 +28,14 @@ internal fun CalendarSection(start: String, end: String, zone: ZoneId, informati
     }
     if (askAboutEnd && end.isBlank() && !acknowledgedUnknown)
         Text("When do you think this will last till?", style = MaterialTheme.typography.titleMedium)
-    Text("Activity times are optional and separate from reminders. Start or end can stay unknown; a calendar overlap check needs both.")
+    Text("Optional, separate from reminders. Checking your calendar needs both times.")
     DateTimeChoice("Activity start", start, zone, "activity-start", onChange = onStart)
     DateTimeChoice("Activity end", end, zone, "activity-end", onChange = onEnd)
     TextButton(onClick = { onEnd(""); acknowledgedUnknown = true }) { Text("I don’t know") }
     TextButton(onClick = { onStart(""); onEnd("") }) { Text("Clear activity time") }
     if (informational) Text("Information-only event: overlaps do not block your calendar.")
     else {
-        Text("Check visible calendars stored on this phone. Read access is optional; no calendar events are changed or copied into saved memory.")
+        Text("Checks calendars on this phone. Nothing in them is changed or copied.")
         key(start, end, zone) { CalendarQuery(start, end, zone, memoryId) }
     }
 }
@@ -81,7 +81,7 @@ private fun CalendarQuery(start: String, end: String, zone: ZoneId, memoryId: St
             checked.clashes.take(10).forEach { event ->
                 Text("${event.title} · ${if (event.allDay) "All day" else "${TimeResolver.format(Instant.ofEpochMilli(event.start), zone)} – ${TimeResolver.format(Instant.ofEpochMilli(event.end), zone)}"}")
             }
-            Text("Includes recurring and all-day events; ignores free, cancelled and declined events. Calendars may be out of sync. Recheck after calendar changes. Saving does not reserve this time.", style = MaterialTheme.typography.bodySmall)
+            Text("Ignores free, cancelled and declined events. Saving doesn’t reserve this time.", style = MaterialTheme.typography.bodySmall)
         }
         null -> Text("Calendar not checked for these times.", style = MaterialTheme.typography.bodySmall)
     }

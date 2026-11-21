@@ -34,7 +34,40 @@ class GuidanceSettings(context: Context) {
     private val spokenNamesValue = MutableStateFlow(preferences.getString("spoken_names", "").orEmpty())
     val spokenNames = spokenNamesValue.asStateFlow()
     fun setSpokenNames(value: String) { val v = value.take(2000); preferences.edit().putString("spoken_names", v).apply(); spokenNamesValue.value = v }
-    private val oneScreenValue = MutableStateFlow(preferences.getBoolean("one_screen_home", false))
+    /** Optional: pause listening (microphone off) after 30 quiet minutes with the phone untouched; resumes on use or carrying. */
+    private val pauseRestingValue = MutableStateFlow(preferences.getBoolean("pause_when_resting", false))
+    val pauseWhenResting = pauseRestingValue.asStateFlow()
+    fun setPauseWhenResting(value: Boolean) { preferences.edit().putBoolean("pause_when_resting", value).apply(); pauseRestingValue.value = value }
+    /** The one-time "pause when resting" suggestion was answered (Turn on or Not now). */
+    private val restingTipValue = MutableStateFlow(preferences.getBoolean("resting_tip_done", false))
+    val restingTipDone = restingTipValue.asStateFlow()
+    fun setRestingTipDone() { preferences.edit().putBoolean("resting_tip_done", true).apply(); restingTipValue.value = true }
+    /** Shows the suggestion again (phone tests). */
+    internal fun resetRestingTip() { preferences.edit().putBoolean("resting_tip_done", false).apply(); restingTipValue.value = false }
+    /** Optional mode: reminders are also read aloud when they arrive. */
+    private val readAloudValue = MutableStateFlow(preferences.getBoolean("read_reminders_aloud", false))
+    val readRemindersAloud = readAloudValue.asStateFlow()
+    fun setReadRemindersAloud(value: Boolean) { preferences.edit().putBoolean("read_reminders_aloud", value).apply(); readAloudValue.value = value }
+    /** Add Korean names from saved plans (not ones waiting in Review) to [learnedNames] automatically. Off: typed names only. */
+    private val learnNamesValue = MutableStateFlow(preferences.getBoolean("learn_names", true))
+    val learnNames = learnNamesValue.asStateFlow()
+    fun setLearnNames(value: Boolean) { preferences.edit().putBoolean("learn_names", value).apply(); learnNamesValue.value = value }
+    /** Keep learned names after their plan is past or deleted. Off: only names in plans that still exist. */
+    private val keepNamesValue = MutableStateFlow(preferences.getBoolean("keep_learned_names", true))
+    val keepLearnedNames = keepNamesValue.asStateFlow()
+    fun setKeepLearnedNames(value: Boolean) { preferences.edit().putBoolean("keep_learned_names", value).apply(); keepNamesValue.value = value }
+    /** Names learned from saved plans, on this phone only. Cleared by "Delete all". */
+    private val learnedNamesValue = MutableStateFlow(preferences.getString("learned_names", "").orEmpty().split('\n').filter { it.isNotBlank() }.toSet())
+    val learnedNames = learnedNamesValue.asStateFlow()
+    @Synchronized fun setLearnedNames(value: Set<String>) {
+        val v = value.take(100).toSet()
+        if (v == learnedNamesValue.value) return
+        preferences.edit().putString("learned_names", v.joinToString("\n")).apply(); learnedNamesValue.value = v
+    }
+    fun forgetLearnedName(name: String) = setLearnedNames(learnedNamesValue.value - name)
+    fun clearLearnedNames() = setLearnedNames(emptySet())
+    /** Simple home (large Start/Stop button, next plans; Today / Plans / More) is the default. Detailed stays in Settings. */
+    private val oneScreenValue = MutableStateFlow(preferences.getBoolean("one_screen_home", true))
     val oneScreenHome = oneScreenValue.asStateFlow()
     fun setOneScreenHome(value: Boolean) { preferences.edit().putBoolean("one_screen_home", value).apply(); oneScreenValue.value = value }
     fun resetAppearance() {
@@ -74,6 +107,25 @@ class GuidanceSettings(context: Context) {
     private val diarizationValue = MutableStateFlow(preferences.getBoolean("diarization", true))
     val diarization = diarizationValue.asStateFlow()
     fun setDiarization(value: Boolean) { preferences.edit().putBoolean("diarization", value).apply(); diarizationValue.value = value }
+    /** "Treat every place as the strictest state": no location requests; all-party + no voice grouping everywhere. */
+    private val strictestValue = MutableStateFlow(preferences.getBoolean("strictest_everywhere", false))
+    val strictestEverywhere = strictestValue.asStateFlow()
+    fun setStrictestEverywhere(value: Boolean) { preferences.edit().putBoolean("strictest_everywhere", value).apply(); strictestValue.value = value }
+    /** "Include the voice-analysis line in every state": notice required before voice grouping everywhere. */
+    private val voiceLineValue = MutableStateFlow(preferences.getBoolean("voice_line_everywhere", false))
+    val voiceLineEverywhere = voiceLineValue.asStateFlow()
+    fun setVoiceLineEverywhere(value: Boolean) { preferences.edit().putBoolean("voice_line_everywhere", value).apply(); voiceLineValue.value = value }
+    /** Show Announce / "I told everyone" during every session, not only when a notice is needed. */
+    private val alwaysAnnounceValue = MutableStateFlow(preferences.getBoolean("always_show_announce", true))
+    val alwaysShowAnnounce = alwaysAnnounceValue.asStateFlow()
+    fun setAlwaysShowAnnounce(value: Boolean) { preferences.edit().putBoolean("always_show_announce", value).apply(); alwaysAnnounceValue.value = value }
+    /** Play the notice automatically when a new conversation starts (off by default). */
+    private val autoAnnounceValue = MutableStateFlow(preferences.getBoolean("auto_announce", false))
+    val autoAnnounce = autoAnnounceValue.asStateFlow()
+    fun setAutoAnnounce(value: Boolean) { preferences.edit().putBoolean("auto_announce", value).apply(); autoAnnounceValue.value = value }
+    /** The precise-location request is shown once. */
+    val preciseLocationAsked: Boolean get() = preferences.getBoolean("precise_location_asked", false)
+    fun markPreciseLocationAsked() { preferences.edit().putBoolean("precise_location_asked", true).apply() }
     private val retentionValue = MutableStateFlow(preferences.getInt("retention_days", 0).takeIf { it in com.sidekick.core.MemoryRetention.choices } ?: 0)
     val retentionDays = retentionValue.asStateFlow()
     private val riskValue = MutableStateFlow(preferences.getBoolean("risk_advisories", true))
@@ -86,6 +138,16 @@ class GuidanceSettings(context: Context) {
     private val handsOff = MutableStateFlow(preferences.getBoolean("hands_off", !context.packageName.endsWith(".benchmark")))
     val handsOffMode = handsOff.asStateFlow()
     fun setHandsOff(value: Boolean) { preferences.edit().putBoolean("hands_off", value).apply(); handsOff.value = value }
+    /** Languages Auto-detect may choose (all by default). Fewer languages: fewer wrong-language guesses on short phrases. */
+    private val detectValue = MutableStateFlow(preferences.getString("detect_languages", null)?.split(',')
+        ?.mapNotNull { code -> com.sidekick.core.SpeechLanguage.entries.firstOrNull { it.code == code && it != com.sidekick.core.SpeechLanguage.AUTO } }
+        ?.toSet()?.takeIf { it.isNotEmpty() } ?: com.sidekick.core.SpeechLanguage.entries.filter { it != com.sidekick.core.SpeechLanguage.AUTO }.toSet())
+    val detectLanguages = detectValue.asStateFlow()
+    fun setDetectLanguages(value: Set<com.sidekick.core.SpeechLanguage>) {
+        val v = value.filter { it != com.sidekick.core.SpeechLanguage.AUTO }.toSet()
+        if (v.isEmpty()) return // at least one language stays on
+        preferences.edit().putString("detect_languages", v.joinToString(",") { it.code }).apply(); detectValue.value = v
+    }
     private val languageValue = MutableStateFlow(com.sidekick.core.SpeechLanguage.fromCode(preferences.getString("speech_language", "en")))
     val speechLanguage = languageValue.asStateFlow()
     private val qualityValue = MutableStateFlow(preferences.getString("speech_quality", null)?.let(com.sidekick.core.SpeechQuality::fromName)
@@ -113,6 +175,10 @@ class GuidanceSettings(context: Context) {
     private val skipIntroValue = MutableStateFlow(preferences.getBoolean("skip_listening_intro", false))
     val skipListeningIntro = skipIntroValue.asStateFlow()
     fun setSkipListeningIntro(value: Boolean) { preferences.edit().putBoolean("skip_listening_intro", value).apply(); skipIntroValue.value = value }
+    /** True once the owner has asked SideKick a question: the "Try saying" hint is then no longer shown. */
+    private val askedValue = MutableStateFlow(preferences.getBoolean("asked_question", false))
+    val askedQuestion = askedValue.asStateFlow()
+    fun setAskedQuestion() { if (!askedValue.value) { preferences.edit().putBoolean("asked_question", true).apply(); askedValue.value = true } }
     private val current = MutableStateFlow(if (preferences.getBoolean("ask_end_time", false)) GuidanceMode.ASK else GuidanceMode.PASSIVE)
     val mode = current.asStateFlow()
     private val includeEvents = MutableStateFlow(preferences.getBoolean("include_informational", true))

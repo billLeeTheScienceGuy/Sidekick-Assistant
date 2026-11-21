@@ -59,7 +59,7 @@ class MessageInbox(private val settings: GuidanceSettings, private val temporary
             context.text = LiveText.append(context.text, ordinary.text, utteranceBreak = true).takeLast(6000)
             onRisk(context.text)
             val source = Transcript(context.text, context.capturedAt, ZoneId.systemDefault(), Speaker.OTHER, true)
-            val proposals = ActivityTiming.extract(source, informationalOnly = true).map {
+            val proposals = AnalysisContext.others(source).map {
                 it.copy(sourceKey = key, needsReview = "Incoming message: sender attendance does not imply yours. " + it.needsReview)
             }
             temporary.addProposals(proposals, messageAt)

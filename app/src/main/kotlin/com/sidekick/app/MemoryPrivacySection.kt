@@ -46,8 +46,31 @@ internal fun MemoryPrivacySection() {
         Switch(riskEnabled, app.guidance::setRiskAdvisories, modifier = Modifier.testTag("risk-advisories-setting").controlLabel("Scam warnings"))
         Text("Scam warnings", Modifier.padding(start = 8.dp))
     }
-    QuietLabel("Checks common scam phrases in English on this phone. Can miss scams. Alerts don’t save conversation text.")
-    QuietLabel("Audio and full conversations aren’t saved. Saved plans may include source quotes. Deleting a plan also deletes its Undo history.")
+    QuietLabel("Warns about common scam signs in conversations, your side of calls, and messages, in all 7 languages. Ask “SideKick, is this a scam?”. Can miss scams.")
+    QuietLabel("No audio or full conversations are saved. Plans may keep short quotes.")
+    val learnNames by app.guidance.learnNames.collectAsState()
+    val keepNames by app.guidance.keepLearnedNames.collectAsState()
+    val learned by app.guidance.learnedNames.collectAsState()
+    Text("Names", style = MaterialTheme.typography.titleSmall)
+    Row {
+        Switch(learnNames, app.guidance::setLearnNames, modifier = Modifier.testTag("learn-names").controlLabel("Learn names from my plans"))
+        Text("Learn names from my plans", Modifier.padding(start = 8.dp))
+    }
+    QuietLabel("Korean names in your saved plans help SideKick spell them right. Off: only the names you type under Your voice.")
+    Row {
+        Switch(keepNames, app.guidance::setKeepLearnedNames, enabled = learnNames, modifier = Modifier.testTag("keep-learned-names").controlLabel("Keep names after a plan is deleted"))
+        Text("Keep names after a plan is deleted", Modifier.padding(start = 8.dp))
+    }
+    if (learned.isEmpty()) QuietLabel("No names learned yet.")
+    else {
+        QuietLabel("Learned from your plans, on this phone only. Tap a name to remove it.")
+        learned.sorted().chunked(3).forEach { row ->
+            Row { row.forEach { name ->
+                TextButton(onClick = { app.guidance.forgetLearnedName(name) }, modifier = Modifier.testTag("learned-name").controlLabel("Remove $name")) { Text("$name ✕") }
+            } }
+        }
+        TextButton(onClick = app.guidance::clearLearnedNames, modifier = Modifier.testTag("clear-learned-names")) { Text("Clear learned names") }
+    }
     Box {
         TextButton(onClick = { menu = true }, modifier = Modifier.testTag("retention-choice")) {
             Text(if (days == 0) "Keep saved plans: keep until I delete" else "Keep saved plans: $days days")
@@ -61,12 +84,12 @@ internal fun MemoryPrivacySection() {
             }
         }
     }
-    QuietLabel("Cleanup runs while the app runs. Future plans, accepted plans without dates, and pending reminders stay.")
+    QuietLabel("Future plans, undated plans and pending reminders are kept.")
     Row {
         Checkbox(excerpts, { excerpts = it }, enabled = !working, modifier = Modifier.testTag("export-excerpts").controlLabel("Include source quotes"))
         Text("Include source quotes", Modifier.padding(start = 8.dp))
     }
-    QuietLabel("Export saves a copy of your plans, not full conversations, audio, voice setup, sender IDs or Undo history. The folder you choose may sync online.")
+    QuietLabel("Saves your plans only: no conversations, audio or voice data. The folder you pick may sync online.")
     TextButton(enabled = !working, onClick = {
         exportingExcerpts = excerpts
         export.launch("SideKick-events-${java.time.LocalDate.now()}.json")
@@ -75,7 +98,7 @@ internal fun MemoryPrivacySection() {
     if (result.isNotBlank()) Text(result)
     if (pendingDays != null) AlertDialog(onDismissRequest = { pendingDays = null },
         title = { Text("Enable automatic cleanup?") },
-        text = { Text("Permanently deletes old eligible plans and their quotes after $pendingDays days. Future plans, accepted plans without dates, and pending reminders stay. You can’t undo this. Save a copy first if needed.") },
+        text = { Text("Permanently deletes old plans and their quotes after $pendingDays days. Future plans, undated plans and pending reminders are kept. Can’t be undone.") },
         confirmButton = { TextButton(onClick = { app.guidance.setRetentionDays(pendingDays!!); pendingDays = null }) { Text("Enable cleanup") } },
         dismissButton = { TextButton(onClick = { pendingDays = null }) { Text("Cancel") } })
 }

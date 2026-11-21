@@ -10,7 +10,11 @@ import com.sidekick.core.SpeechQuality
 
 class SpeechEngine(private val context: Context, private val language: () -> SpeechLanguage = { SpeechLanguage.ENGLISH }, private val quality: () -> SpeechQuality = { SpeechQuality.FAST },
     /** The user's name list ("Sarah 세라", one per line), see NameSplice. */
-    private val spokenNames: () -> String = { "" }) {
+    private val spokenNames: () -> String = { "" },
+    /** Korean names found in saved plans (NameCorrection.namesIn), held in memory only. */
+    private val planNames: () -> Collection<String> = { emptyList() },
+    /** Languages Auto-detect may choose (Settings); all by default. */
+    private val detectLanguages: () -> Set<SpeechLanguage> = { SpeechLanguage.entries.filter { it != SpeechLanguage.AUTO }.toSet() }) {
     private val koreanNames = TransducerSpeechEngine(context, TransducerSpeechEngine.KOREAN)
     private var namesText: String? = null
     private var namesParsed = emptyList<com.sidekick.core.NameSplice.Name>()
@@ -22,8 +26,11 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
         return File(context.noBackupFilesDir, "names-hotwords.txt").takeIf { namesParsed.isNotEmpty() && it.isFile }
     }
     /** Korean phrase: names from the user's list, heard by the Korean model with the list, replace SenseVoice's guesses. */
-    private suspend fun withNames(text: String, samples: FloatArray, threads: Int, retain: Boolean): String {
-        val hotwords = namesHotwords() ?: return text
+    private suspend fun withNames(heard: String, samples: FloatArray, threads: Int, retain: Boolean): String {
+        val hotwords = namesHotwords()
+        // Near-miss spellings of known names ("에슐리랑" -> "애슐리랑"), only before a particle used for people.
+        val text = com.sidekick.core.NameCorrection.correct(heard, namesParsed.flatMap { it.forms } + planNames())
+        if (hotwords == null) return text
         if (!koreanNames.available()) return com.sidekick.core.NameSplice.normalize(text, namesParsed)
         currentCoroutineContext().ensureActive()
         val listed = try { koreanNames.transcribe(samples, threads, retain, hotwords) } catch (e: CancellationException) { throw e } catch (_: Exception) { return text }
@@ -45,6 +52,8 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
         private set
     @Volatile var lastRetryDiagnostic: String? = null
         private set
+    /** Faster recognition can run for the current language (its files are installed and switched on). */
+    fun fasterAvailable(): Boolean = runCatching { ModelPacks.missing(context, language(), SpeechQuality.FAST).isEmpty() }.getOrDefault(false)
     fun shortBoostLimit(): Int = if (language() in setOf(SpeechLanguage.AUTO, SpeechLanguage.FRENCH, SpeechLanguage.GERMAN, SpeechLanguage.RUSSIAN)) 128_000 else 48_000
     fun liveContext(shortPhrase: Boolean): Int = quality().liveContext(language(), shortPhrase)
 
@@ -56,6 +65,27 @@ class SpeechEngine(private val context: Context, private val language: () -> Spe
         shortPhrase: Boolean = samples.size < if (selectedLanguage in setOf(SpeechLanguage.AUTO, SpeechLanguage.FRENCH, SpeechLanguage.GERMAN, SpeechLanguage.RUSSIAN)) 128_000 else 48_000,
         /** Live voice track (Auto-detect remembers each voice's language); null for one-off audio. */
         voiceKey: String? = null,
+    ): String {
+        if (selectedLanguage != SpeechLanguage.AUTO) return transcribeOnce(samples, threads, retainModel, audioContext, selectedLanguage, selectedQuality, beamSize, shortPhrase, voiceKey)
+        // Auto-detect limited to the languages turned on: one language means no guessing; a reading in a language that
+        // is off is read again in an allowed one.
+        val allowed = detectLanguages()
+        com.sidekick.core.DetectLanguages.single(allowed)?.let { only ->
+            return transcribeOnce(samples, threads, retainModel, audioContext, only, selectedQuality, beamSize, shortPhrase, null)
+        }
+        val first = transcribeOnce(samples, threads, retainModel, audioContext, selectedLanguage, selectedQuality, beamSize, shortPhrase, voiceKey)
+        val again = com.sidekick.core.DetectLanguages.fallback(first, allowed) ?: return first
+        val backend = lastBackend
+        return try {
+            transcribeOnce(samples, threads, retainModel, audioContext, again, selectedQuality, beamSize, shortPhrase, null).also {
+                lastBackend = "${lastBackend ?: again.code} · ${again.code} (heard a language that is off, after $backend)"
+            }
+        } catch (e: CancellationException) { throw e } catch (_: Exception) { first }
+    }
+
+    private suspend fun transcribeOnce(
+        samples: FloatArray, threads: Int, retainModel: Boolean, audioContext: Int,
+        selectedLanguage: SpeechLanguage, selectedQuality: SpeechQuality, beamSize: Int, shortPhrase: Boolean, voiceKey: String?,
     ): String = try {
         gate.withLock {
             lastUncertain = false

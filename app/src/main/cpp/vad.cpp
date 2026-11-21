@@ -33,7 +33,7 @@ Java_com_sidekick_app_speech_NativeVad_probabilities(JNIEnv *env, jobject, jfloa
     std::lock_guard<std::mutex> lock(vad_mutex);
     try {
         const int size = env->GetArrayLength(pcm);
-        if (!detector || size < 512 || size > 16384) { vad_error(env); return nullptr; }
+        if (!detector || size < 512 || size > 32768) { vad_error(env); return nullptr; }
         std::vector<float> audio(size);
         struct Wipe { std::vector<float> &v; ~Wipe() { std::fill(v.begin(), v.end(), 0.f); } } wipe{audio};
         env->GetFloatArrayRegion(pcm, 0, size, audio.data());

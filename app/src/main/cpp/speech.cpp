@@ -87,7 +87,15 @@ Java_com_sidekick_app_speech_NativeSpeech_transcribe(JNIEnv *env, jobject, jstri
         p.print_timestamps = false;
         p.print_special = false;
         p.no_timestamps = true;
-        p.temperature_inc = 0.0f;
+        // Loop guard: a reading that repeats itself (low token entropy) is decoded again once with a little
+        // randomness, which usually breaks the loop. The low-confidence retry stays off, so ordinary phrases are
+        // decoded exactly once, as before. Output is also capped at 32 tokens per second of audio, well above fast
+        // Korean or Chinese speech (Hangul can take 2-3 tokens a syllable), so only loops reach it.
+        p.temperature_inc = 0.4f;
+        p.greedy.best_of = 1;
+        p.entropy_thold = 2.4f;
+        p.logprob_thold = -1.0e9f;
+        p.max_tokens = 48 + static_cast<int>(count / 500);
         p.abort_callback = abort_inference;
         const int status = whisper_full(context, p, samples.data(), count);
         std::fill(samples.begin(), samples.end(), 0.0f);

@@ -25,7 +25,7 @@ class AccuracyEvaluationTest {
                 Gold(v[0], instant(v[1]), instant(v[2]), v[3] == "P", v[4].takeUnless { it == "-" }, v[5] == "yes")
             }
             val source = Transcript(p[4], captured, zone, Speaker.valueOf(p[3]), true)
-            val actual = if (source.speaker == Speaker.USER) AnalysisContext.local(source) else ActivityTiming.extract(source.copy(speaker = Speaker.OTHER), true)
+            val actual = if (source.speaker == Speaker.USER) AnalysisContext.local(source) else AnalysisContext.others(source)
             val remaining = actual.toMutableList(); val issues = mutableListOf<String>()
             var tp = 0; var timed = 0; var times = 0; var owners = 0; var places = 0; var placeRight = 0; var falseAlerts = 0; var wrongAlertTimes = 0; var missingAlerts = 0
             fun time(a: ProposedCommitment) = a.activityStartAt ?: TimeResolver.suggest(a.evidence, captured, zone)

@@ -17,15 +17,18 @@ class SummaryScreenTest {
         val app = compose.activity.application as SidekickApplication
         assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         val previous = app.guidance.handsOffMode.value
+        val simpleHome = app.guidance.oneScreenHome.value
         val prefix = "summary-fixture-"; val now = Instant.now(); val zone = ZoneId.systemDefault()
         val plan = CommitmentEntity(prefix + "plan", "Summary fixture plan", "Synthetic", now.toEpochMilli(), zone.id, "Fixture",
             state = "ACCEPTED", activityStartAt = now.toEpochMilli(), informational = false)
         val info = plan.copy(id = prefix + "info", title = "Summary fixture information", informational = true)
         try {
-            app.guidance.setHandsOff(false); app.temporary.discard()
+            app.guidance.setHandsOff(false); app.guidance.setOneScreenHome(true); app.temporary.discard()
             runBlocking { app.database.commitments().insertAll(listOf(plan, info)) }
             app.temporary.appendAttributedLive("There's a workshop tomorrow at 8pm.", now, zone, Speaker.UNKNOWN, false)
-            compose.onNodeWithTag("summary-tab").performClick()
+            // Simple layout: the summary is under More.
+            compose.onNodeWithTag("more-tab").performClick()
+            compose.onNodeWithTag("more-summary").performScrollTo().performClick()
             compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("summary-${plan.id}"))
             compose.onNodeWithTag("summary-${plan.id}").assertExists()
             compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("summary-${info.id}"))
@@ -44,7 +47,7 @@ class SummaryScreenTest {
             compose.waitUntil(5000) { runBlocking { app.database.commitments().get(plan.id)?.title == "Summary edited plan" } }
             compose.onNodeWithText("Summary edited plan").assertExists()
         } finally {
-            app.temporary.discard(); app.guidance.setHandsOff(previous)
+            app.temporary.discard(); app.guidance.setHandsOff(previous); app.guidance.setOneScreenHome(simpleHome)
             runBlocking { listOf(plan.id, info.id).forEach { app.reminders.delete(it) } }
         }
     }

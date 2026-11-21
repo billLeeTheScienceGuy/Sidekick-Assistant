@@ -29,7 +29,8 @@ internal class SenseVoiceEngine(private val context: Context) {
             return try {
                 stream.acceptWaveform(samples, 16000); engine.decode(stream)
                 val result = engine.getResult(stream)
-                result.text.replace(Regex("<\\|[^|>]+\\|>"), "").trim() to result.lang.removePrefix("<|").removeSuffix("|>")
+                // A lone hesitation sound ("어") between Korean words is not part of what was said.
+                com.sidekick.core.KoreanFillers.strip(result.text.replace(Regex("<\\|[^|>]+\\|>"), "").trim()) to result.lang.removePrefix("<|").removeSuffix("|>")
             } finally { stream.release() }
         } finally { if (!retain) release() }
     }

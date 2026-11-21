@@ -45,7 +45,7 @@ flowchart TD
 - Message context is bounded and separated by conversation; duplicate/grouped
   notifications are handled chronologically. No message-history database exists.
 - Daily summaries derive from saved events. Temporary highlights are source
-  excerpts; optional Qwen assists manual analysis and is not the live planner.
+  excerpts. Typed notes and live speech use the same rules; the optional Qwen model was removed in November 2026 (see guides/INTENT_MODEL.md).
 - Normal APK includes English Fast, VAD and speaker models. Optional packs use
   trusted filenames, lengths, SHA-256 and staged atomic replacement. Failed
   imports preserve the old valid pack. Device model storage is not Android backup.

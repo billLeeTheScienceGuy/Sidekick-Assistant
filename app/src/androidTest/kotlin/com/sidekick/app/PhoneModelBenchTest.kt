@@ -24,6 +24,12 @@ class PhoneModelBenchTest {
     private fun offline(model: OfflineModelConfig) = OfflineRecognizer(config = OfflineRecognizerConfig(modelConfig = model)).let { r ->
         Engine { x, _ -> val s = r.createStream(); try { s.acceptWaveform(x, 16000); r.decode(s); r.getResult(s).text.replace(Regex("<\\|[^|>]+\\|>"), "").trim() } finally { s.release() } }
     }
+    /** Languages each candidate supports (others run on every clip). */
+    private val supported = mapOf(
+        "canary" to setOf("en", "de", "fr"), "fc20k" to setOf("en", "de", "fr", "ru"), "parakeet3" to setOf("en", "de", "fr", "ru"),
+        "parakeet110" to setOf("en"), "gigaam3" to setOf("ru"), "zipko" to setOf("ko"), "moonar" to setOf("ar"), "moonko" to setOf("ko"),
+        "moonen" to setOf("en"), "firered2" to setOf("zh", "en"), "funnano" to setOf("zh", "en", "ko"),
+        "cohere" to setOf("en", "fr", "de", "zh", "ko", "ar"))
     private fun pad(x: FloatArray) = FloatArray(x.size + 16000).also { x.copyInto(it, 8000) }
 
     private fun engine(id: String, root: File, app: File, threads: Int): Engine {
@@ -50,6 +56,9 @@ class PhoneModelBenchTest {
             "lid" -> c("sherpa-onnx-whisper-tiny").let { d ->
                 val lid = SpokenLanguageIdentification(config = SpokenLanguageIdentificationConfig(SpokenLanguageIdentificationWhisperConfig(find(d, ".*encoder.*\\.onnx"), find(d, ".*decoder.*\\.onnx"), -1), threads))
                 Engine { x, _ -> val s = lid.createStream(); try { s.acceptWaveform(x, 16000); lid.compute(s) } finally { s.release() } } }
+            "cohere" -> c("sherpa-onnx-cohere-transcribe-14-lang-int8-2026-04-01").let { d -> val byLanguage = mutableMapOf<String, Engine>()
+                Engine { x, l -> byLanguage.getOrPut(l) { offline(OfflineModelConfig(cohereTranscribe = OfflineCohereTranscribeModelConfig(
+                    find(d, "encoder.*\\.onnx"), find(d, "decoder.*\\.onnx"), l, true, true), tokens = find(d, "tokens.txt"), numThreads = threads)) }.run(x, l) } }
             else -> error("unknown model $id")
         }
     }
@@ -70,11 +79,13 @@ class PhoneModelBenchTest {
                 val engine = runCatching { engine(id, File(context.filesDir, "cand"), context.noBackupFilesDir, threads) }
                 val loadMs = android.os.SystemClock.elapsedRealtime() - loadStart
                 for (row in rows) {
+                    if (supported[id]?.contains(row[1]) == false) continue // a model is only run on its own languages
                     val samples = WavAudio.decode(File(set, row[0]).readBytes())
                     val start = android.os.SystemClock.elapsedRealtime()
                     val text = engine.fold({ e -> runCatching { e.run(samples, row[1]) }.getOrElse { "ERROR: $it" } }, { "ERROR: $it" })
                     out.put(JSONObject().put("file", row[0]).put("language", row[1]).put("mode", id).put("audioMs", row[2].toLong())
                         .put("elapsedMs", android.os.SystemClock.elapsedRealtime() - start).put("loadMs", loadMs).put("reference", row[3]).put("recognized", text))
+                    File(set, "bench-$id.json").writeText(out.toString(1)) // partial results survive a crash
                 }
                 File(set, "bench-$id.json").writeText(out.toString(1))
                 System.gc()

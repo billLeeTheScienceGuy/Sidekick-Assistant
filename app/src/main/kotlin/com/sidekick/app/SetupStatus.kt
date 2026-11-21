@@ -64,7 +64,7 @@ internal fun SetupStatus(settings: GuidanceSettings) {
             try {
                 val due = reminders.scheduleCheck()
                 val time = java.time.Instant.ofEpochMilli(due).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm z"))
-                reminderResult = "Test reminder set for $time. Close Settings and lock the phone. Android may delay delivery; Undo in Planner removes the check."
+                reminderResult = "Test reminder set for $time. Lock the phone and wait. Android may delay it."
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) { reminderResult = "Could not schedule the check. Enable reminder notifications and try again." }
             finally { schedulingReminder = false }

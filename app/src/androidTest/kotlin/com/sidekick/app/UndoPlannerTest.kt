@@ -23,11 +23,13 @@ class UndoPlannerTest {
         if (android.os.Build.VERSION.SDK_INT >= 33) i.uiAutomation.grantRuntimePermission(app.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
         val id = com.sidekick.app.reminders.ReminderCoordinator.CHECK_ID
         var scenario: ActivityScenario<MainActivity>? = null
+        val simpleHome = app.guidance.oneScreenHome.value
         try {
+            app.guidance.setOneScreenHome(true)
             runBlocking { app.reminders.delete(id) }
             scenario = ActivityScenario.launch(Intent(app, MainActivity::class.java))
             compose.onNodeWithTag("settings").performClick()
-            compose.onNodeWithTag("settings-page-ADVANCED").performScrollTo().performClick()
+            compose.onNodeWithTag("settings-page-LISTENING").performScrollTo().performClick()
             compose.onNodeWithTag("phone-checks").performScrollTo().performClick()
             compose.onNodeWithTag("reminder-alert-details").performScrollTo().assertExists()
             compose.onNodeWithTag("test-reminder").performScrollTo().performClick()
@@ -38,11 +40,13 @@ class UndoPlannerTest {
             assertTrue(item.dueAt!! > System.currentTimeMillis() + 60_000)
             assertNotNull(runBlocking { app.database.commitments().change(id) })
             compose.onNodeWithText("Close").performClick()
+            // Simple Today: the plan card has its own visible Undo button (the planner keeps one too).
+            compose.onNodeWithTag("today-undo-$id").performScrollTo().assertIsDisplayed()
             compose.onNodeWithTag("planner-tab").performClick()
             compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("undo-$id"))
             compose.onNodeWithTag("undo-$id").performClick()
             compose.waitUntil(5000) { runBlocking { app.database.commitments().get(id) == null } }
-        } finally { scenario?.close(); runBlocking { app.reminders.delete(id) } }
+        } finally { scenario?.close(); runBlocking { app.reminders.delete(id) }; app.guidance.setOneScreenHome(simpleHome) }
     }
     @Test fun dismissedNotificationDoesNotRemovePlannerUndo() {
         val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as SidekickApplication

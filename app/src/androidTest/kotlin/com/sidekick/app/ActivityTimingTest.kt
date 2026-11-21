@@ -24,16 +24,8 @@ class ActivityTimingTest {
             assertEquals(initial.id, memory.drafts.value.single().id)
             assertEquals(Instant.parse("2026-10-25T05:00:00Z").toEpochMilli(), memory.drafts.value.single().activityEndAt)
             assertTrue(database.commitments().all().isEmpty())
-            val folder = java.io.File(context.cacheDir, "language-no-model-${java.util.UUID.randomUUID()}").apply { mkdirs() }
-            try {
-                val isolated = object : android.content.ContextWrapper(context) {
-                    override fun getNoBackupFilesDir(): java.io.File = folder
-                }
-                val engine = com.sidekick.app.intent.IntentEngine(isolated)
-                assertFalse(engine.ready.value)
-                val typed = engine.extract(com.sidekick.core.Transcript("Morgen ist eine Party um 20 Uhr. Sie endet um Mitternacht.", now, zone, com.sidekick.core.Speaker.USER, true))
-                assertEquals(Instant.parse("2026-10-25T05:00:00Z"), typed.single().activityEndAt)
-            } finally { folder.delete() }
+            val typed = com.sidekick.core.AnalysisContext.local(com.sidekick.core.Transcript("Morgen ist eine Party um 20 Uhr. Sie endet um Mitternacht.", now, zone, com.sidekick.core.Speaker.USER, true))
+            assertEquals(Instant.parse("2026-10-25T05:00:00Z"), typed.single().activityEndAt)
             val other = com.sidekick.core.Transcript("我明天晚上八点去参加派对。午夜结束。", now, zone, com.sidekick.core.Speaker.OTHER, true)
             val incoming = com.sidekick.core.ActivityTiming.extract(other, informationalOnly = true)
             assertTrue(incoming.single().informational)

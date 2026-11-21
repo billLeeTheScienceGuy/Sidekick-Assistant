@@ -1,0 +1,7 @@
+cohort-campplus.bin: stranger cohort for owner-voice score normalization (SideKick).
+198 CAM++ voice signatures (192 floats each, little-endian; header: int count, int dimension).
+No audio. Computed from 33 people in LibriSpeech test-other (6 readings each), by
+scripts/laptop-eval/speaker-queue.sh with campplus-advanced.onnx.
+
+LibriSpeech ASR corpus, V. Panayotov, G. Chen, D. Povey, S. Khudanpur (2015),
+https://www.openslr.org/12/ , licensed CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).

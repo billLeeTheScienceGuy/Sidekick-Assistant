@@ -66,7 +66,11 @@ class ReminderCoordinator(private val context: Context, private val dao: Commitm
             informational = informational ?: source.informational,
             placeName = (placeName ?: source.placeName)?.trim()?.ifBlank { null },
             placeAddress = (placeAddress ?: source.placeAddress)?.trim()?.ifBlank { null },
-            deliveredAt = null, reviewNote = (if (automatic) "Saved automatically. " else "") + if (dueAt == null) "Saved without a reminder." else "Reminder requested. Android may delay delivery to save battery.")
+            deliveredAt = null, reviewNote = listOf(if (automatic) "Saved automatically." else "",
+                // Hands-off assumptions stay visible on automatic saves; a manual save confirms the plan as edited.
+                if (automatic) proposal?.reviewNote?.let(com.sidekick.core.PlanNotes::carry).orEmpty() else "",
+                if (dueAt == null) "Saved without a reminder." else "Reminder requested. Android may delay delivery to save battery.")
+                .filter(String::isNotBlank).joinToString(" "))
         val change = if (automatic) AutomaticChange(id, java.util.UUID.randomUUID().toString(), old?.let(MemorySnapshot::encode), MemorySnapshot.encode(updated), System.currentTimeMillis()) else null
         old?.let(::cancel)
         try { dao.write(updated, old != null, change); arm(updated); clearUndo(id) }
@@ -83,10 +87,14 @@ class ReminderCoordinator(private val context: Context, private val dao: Commitm
         val old = dao.get(expected.id)?.takeIf { it == expected && it.state == "ACCEPTED" } ?: return@withLock false
         if (!cancellation) require(start != null && start > System.currentTimeMillis())
         require(!archiveDuplicate || (cancellation && old.informational))
-        val duration = old.activityEndAt?.let { end -> old.activityStartAt?.let { end - it } }
-        val due = if (cancellation) null else old.dueAt?.let { due ->
+        // An all-day plan moved to a stated clock time is no longer all day: its assumption and day-long end go.
+        val nowTimed = !cancellation && com.sidekick.core.PlanNotes.isAllDay(old.reviewNote) &&
+            java.time.Instant.ofEpochMilli(start!!).atZone(java.time.ZoneId.of(old.zoneId)).toLocalTime() != java.time.LocalTime.MIDNIGHT
+        val duration = if (nowTimed) null else old.activityEndAt?.let { end -> old.activityStartAt?.let { end - it } }
+        val due = if (cancellation) null else if (nowTimed) old.dueAt?.let { start } else old.dueAt?.let { due ->
             old.activityStartAt?.let { (start!! - (it - due)).takeIf { value -> value > System.currentTimeMillis() } }
         }
+        val kept = if (nowTimed) old.copy(reviewNote = com.sidekick.core.PlanNotes.sentences(old.reviewNote).filterNot { it.startsWith("Assumed:") }.joinToString(" ")) else old
         val updated = old.copy(title = if (cancellation) old.title else if (com.sidekick.core.LocalizedActivities.hasEvent(old.title)) com.sidekick.core.LocalizedActivities.eventName(old.title) ?: old.title else old.title.replace(
             Regex("\\s+(?:(?:at|on)\\b|" + com.sidekick.core.EnglishDates.pattern.pattern + ").*", RegexOption.IGNORE_CASE), "").trim().ifBlank { old.title },
             state = if (archiveDuplicate) "DISMISSED" else if (cancellation) "CANCELLED" else "ACCEPTED",
@@ -94,8 +102,8 @@ class ReminderCoordinator(private val context: Context, private val dao: Commitm
             activityEndAt = if (cancellation) old.activityEndAt else duration?.let { start!! + it },
             dueAt = due, deliveredAt = null,
             reviewNote = if (archiveDuplicate) "Duplicate announcement archived; your personal event remains active. Undo is available in the notification."
-                else if (cancellation) "Cancelled automatically. Reminder removed. Undo is available in the notification."
-                else "Rescheduled automatically. Known duration and reminder lead time retained.")
+                else if (cancellation) carried(old, "Cancelled automatically. Reminder removed. Undo is available in the notification.")
+                else carried(kept, "Rescheduled automatically. Known duration and reminder lead time retained."))
         if (old.state == updated.state && old.activityStartAt == updated.activityStartAt) return@withLock false
         val previousChange = dao.change(old.id)
         val journal = AutomaticChange(old.id, java.util.UUID.randomUUID().toString(), MemorySnapshot.encode(old), MemorySnapshot.encode(updated), System.currentTimeMillis())
@@ -151,10 +159,21 @@ class ReminderCoordinator(private val context: Context, private val dao: Commitm
         manager.notify(item.id, 10, Notification.Builder(context, CHANNEL)
             .setCategory(Notification.CATEGORY_REMINDER)
             .setSmallIcon(android.R.drawable.ic_popup_reminder).setContentTitle("SideKick reminder")
-            .setContentText(item.title).setStyle(Notification.BigTextStyle().bigText(item.title))
+            .setContentText(text(item)).setStyle(Notification.BigTextStyle().bigText(text(item)))
             .setVisibility(Notification.VISIBILITY_PRIVATE).setContentIntent(open).setOnlyAlertOnce(true).setAutoCancel(true).build())
-        dao.update(item.copy(deliveredAt = System.currentTimeMillis(), reviewNote = "Reminder delivered."))
+        // Optional mode (Settings > Plans): the reminder is also read aloud.
+        if ((context.applicationContext as? com.sidekick.app.SidekickApplication)?.guidance?.readRemindersAloud?.value == true)
+            ReminderVoice.speak(context, "Reminder: ${text(item)}")
+        val now = System.currentTimeMillis()
+        // A second default reminder (medical: 1 hour before) re-arms instead of marking the item delivered.
+        val follow = com.sidekick.core.PlanNotes.followUp(item.reviewNote, item.activityStartAt, now)
+        if (follow != null) item.copy(dueAt = follow.first, reviewNote = follow.second).also { dao.update(it); arm(it) }
+        else dao.update(item.copy(deliveredAt = now, reviewNote = listOf(com.sidekick.core.PlanNotes.carry(item.reviewNote), "Reminder delivered.").filter(String::isNotBlank).joinToString(" ")))
     }
+    private fun text(item: CommitmentEntity) =
+        if (item.reviewNote.contains("leave for the airport")) "Leave for the airport · ${item.title}" else item.title
+    private fun carried(item: CommitmentEntity, sentence: String) =
+        listOf(sentence, com.sidekick.core.PlanNotes.carry(item.reviewNote)).filter(String::isNotBlank).joinToString(" ")
 
     companion object { const val CHANNEL = "commitments"; const val DELIVER = "com.sidekick.REMIND"; const val CHECK_ID = "sidekick-reminder-check" }
 }
