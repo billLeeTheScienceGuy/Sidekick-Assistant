@@ -25,9 +25,7 @@ internal fun RestingTip(listening: ListeningState) {
     OutlinedCard(Modifier.fillMaxWidth().testTag("resting-tip")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Save battery overnight?", style = MaterialTheme.typography.titleMedium)
-            Text("SideKick has been listening for 3 hours. It can turn the microphone off after 30 quiet minutes while the phone " +
-                "rests untouched, and turn it back on when you pick the phone up or unlock it. Talk that starts while it stays " +
-                "untouched is missed until then.", style = MaterialTheme.typography.bodyMedium)
+            Text("After 30 quiet minutes untouched, SideKick can turn the mic off until you pick up the phone. Speech before then is missed.", style = MaterialTheme.typography.bodyMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { app.guidance.setPauseWhenResting(true); app.guidance.setRestingTipDone() },
                     modifier = Modifier.heightIn(min = 48.dp).testTag("resting-tip-on")) { Text("Turn on") }

@@ -17,8 +17,8 @@ internal fun RiskSection() {
     val alerts by risk.alerts.collectAsState()
     if (alerts.isNotEmpty()) Card(Modifier.fillMaxWidth().testTag("risk-advisories")) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Pause & verify", style = MaterialTheme.typography.titleMedium)
-            Text("Local English warning-sign rules can miss risks or flag legitimate requests. These advisories do not identify a person as a scammer.")
+            Text("Pause & check", style = MaterialTheme.typography.titleMedium)
+            QuietLabel("Based on common warning signs. Can be wrong; it doesn’t mean anyone is a scammer.")
             alerts.forEach { alert ->
                 Text(alert.title, style = MaterialTheme.typography.titleSmall)
                 Text(alert.explanation)

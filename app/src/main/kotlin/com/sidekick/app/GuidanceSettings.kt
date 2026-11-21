@@ -175,6 +175,10 @@ class GuidanceSettings(context: Context) {
     private val skipIntroValue = MutableStateFlow(preferences.getBoolean("skip_listening_intro", false))
     val skipListeningIntro = skipIntroValue.asStateFlow()
     fun setSkipListeningIntro(value: Boolean) { preferences.edit().putBoolean("skip_listening_intro", value).apply(); skipIntroValue.value = value }
+    /** True once the owner has asked SideKick a question: the "Try saying" hint is then no longer shown. */
+    private val askedValue = MutableStateFlow(preferences.getBoolean("asked_question", false))
+    val askedQuestion = askedValue.asStateFlow()
+    fun setAskedQuestion() { if (!askedValue.value) { preferences.edit().putBoolean("asked_question", true).apply(); askedValue.value = true } }
     private val current = MutableStateFlow(if (preferences.getBoolean("ask_end_time", false)) GuidanceMode.ASK else GuidanceMode.PASSIVE)
     val mode = current.asStateFlow()
     private val includeEvents = MutableStateFlow(preferences.getBoolean("include_informational", true))

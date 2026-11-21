@@ -4,6 +4,13 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 
 ## Unreleased (privacy, consent and location work package)
 
+- Scam warnings, much wider: about 20 kinds of warning sign (impersonation, family emergency, prize and job fees,
+  investment, overpayment, gift cards, crypto, cash couriers, codes, remote access, "safe" accounts...) in all 7 languages,
+  scored together over the last 10 minutes ("Be careful" or "Stop now" with one plain step); "Stop now" vibrates.
+  Texts and shared text are checked on their own, including lookalike and throwaway links (no lookup online). During a
+  call SideKick hears only your side, so it also recognizes you repeating the request; a summary follows the call. Ask
+  "SideKick, is this a scam?". Tested on 40 scam scripts and 28 everyday lines, plus a held-out set (TEST_HISTORY T90).
+- Simpler screens and wording: a "Try saying" hint while listening until your first question; shorter small print.
 - Example questions to read off the screen, in your language: Settings → Listening → What you can ask SideKick, and
   numbered on the SideKick voice check screen. Every example is checked to be understood (PlanQuestionTest).
 - Settings: Screen & text size is its own section, listed first.

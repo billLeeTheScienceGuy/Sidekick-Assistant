@@ -72,7 +72,7 @@ internal fun SummarySection(entries: List<CommitmentEntity>, liveText: String, c
         Text("The status shown is current; completion/cancellation dates are not recorded.", style = MaterialTheme.typography.bodySmall)
         group("Without a date · all saved items", digest.undated)
         Text("Recent conversation highlights", style = MaterialTheme.typography.titleMedium)
-        Text("Temporary source excerpts. Later corrections may replace earlier details. These excerpts are cleared with the temporary transcript.")
+        Text("Temporary quotes, cleared with the recent text.")
         if (highlights.isEmpty()) Text("No temporary conversation highlights.")
         highlights.forEachIndexed { index, line -> Text(line, modifier = Modifier.testTag("summary-excerpt-$index")) }
         if (liveText.isNotBlank()) TextButton(onClick = onClear, enabled = canClear, modifier = Modifier.testTag("clear-conversation")) { Text("Clear recent conversation") }

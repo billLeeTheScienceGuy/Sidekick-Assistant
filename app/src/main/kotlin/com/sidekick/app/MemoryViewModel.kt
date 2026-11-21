@@ -102,7 +102,7 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     fun analyze() {
         if (busy.value) return
         val origin = analysisSource
-        container.risk.inspect(transcript.value)
+        container.risk.inspectMessage(transcript.value)
         val input = container.temporary.prepareChanges(Transcript(transcript.value.trim(), capturedAt, capturedZone, Speaker.USER, true), origin ?: "typed")
         busy.value = true
         importJob = viewModelScope.launch {

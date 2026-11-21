@@ -48,8 +48,7 @@ internal fun ModelPackSection(initiallyExpanded: Boolean = true) {
     }, modifier = Modifier.testTag("model-readiness"))
     if (missing.isEmpty()) TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Hide speech files" else "Manage speech files") }
     if (expanded || missing.isNotEmpty()) {
-    Text("English Faster mode and voice matching are built in. Languages share files: one download can make several languages ready, " +
-        "and you only ever download what is missing. Files can be switched off without deleting them. Speech stays on this phone.")
+    Text("English Faster and voice matching are built in. One download can cover several languages. Speech stays on this phone.")
     var confirm by remember { mutableStateOf<Pair<String, Boolean>?>(null) } // pack, true = remove / false = switch off
     val installedNow = remember(revision) { ModelPacks.installedPacks(context) }
     val inUseNow = remember(revision) { ModelPacks.packsInUse(context) }
@@ -105,7 +104,7 @@ internal fun ModelPackSection(initiallyExpanded: Boolean = true) {
                 }
                 if (installed && !bundled) TextButton(enabled = !working && !listening.recording && !listening.processing, onClick = { confirm = id to true },
                     modifier = Modifier.testTag("pack-remove-$id")) { Text("Remove from phone (frees $megabytes MB)") }
-                if (!installed && id == "korean") QuietLabel("Not offered for download yet: its training data's license still needs confirmation.")
+                if (!installed && id == "korean") QuietLabel("Not available for download yet.")
                 else if (!installed) {
                     val adds = remember(revision, quality) { LanguageReadiness.unlocks(id, quality, installedNow, inUseNow) }
                     if (adds.isNotEmpty()) QuietLabel("Makes ready: ${adds.joinToString { it.label.substringAfter(" · ") }}")
@@ -131,7 +130,7 @@ internal fun ModelPackSection(initiallyExpanded: Boolean = true) {
             }, modifier = Modifier.testTag("pack-confirm")) { Text(if (remove) "Remove" else "Switch off") } },
             dismissButton = { TextButton(onClick = { confirm = null }) { Text("Cancel") } })
     }
-    QuietLabel("Downloads come only from SideKick's own page. Each file is checked against a fingerprint built into the app before it is installed; any other file is refused. SideKick itself never connects to the internet.")
+    QuietLabel("Files come only from SideKick's page and are checked before installing. SideKick never connects to the internet.")
     TextButton(enabled = !working && !listening.recording && !listening.processing, modifier = Modifier.testTag("import-speech-pack"),
         onClick = { picker.launch(arrayOf("*/*")) }) { Text("Install speech file") }
     // SideKick has no network permission: the browser downloads the file, then "Install speech file" verifies it.
@@ -162,7 +161,7 @@ internal fun QuickStart(onClose: () -> Unit) {
     val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { refresh++ }
     AlertDialog(onDismissRequest = onClose, title = { Text("Get started") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("You can type notes and use plans now. Follow these steps for speech.")
+            Text("You can type notes and use plans now. For speech:")
             Text("1. Choose speech language and quality", style = MaterialTheme.typography.titleMedium)
             Box {
                 TextButton(enabled = editable, onClick = { languageMenu = true }, modifier = Modifier.testTag("setup-language-choice")) { Text("Language: ${language.label}") }
@@ -178,7 +177,7 @@ internal fun QuickStart(onClose: () -> Unit) {
             }
             ModelPackSection(initiallyExpanded = false)
             Text("2. Optional: set up your voice", style = MaterialTheme.typography.titleMedium)
-            Text(if (voiceReady) "Your voice is set up for this language" else "Until your voice is set up for this language, plans you say are kept as information only.")
+            Text(if (voiceReady) "Your voice is set up for this language" else "Until then, plans you say are kept as information only.")
             TextButton(enabled = editable, onClick = { context.startActivity(Intent(context, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java)) }) { Text("Set up my voice") }
             Text("3. Android permissions", style = MaterialTheme.typography.titleMedium)
             val mic = remember(refresh) { context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED }
@@ -190,7 +189,7 @@ internal fun QuickStart(onClose: () -> Unit) {
                 else context.startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName))
             }) { Text("Enable reminder alerts") }
             Text("4. Start listening", style = MaterialTheme.typography.titleMedium)
-            Text("Return home and tap Start listening when everyone agrees. Voice matching does not prove consent. Settings has more options for listening, messages and places.")
+            Text("Tap Start listening when everyone agrees. Voice matching doesn’t prove consent.")
         }
     }, confirmButton = { TextButton(onClick = onClose) { Text("Done") } })
 }

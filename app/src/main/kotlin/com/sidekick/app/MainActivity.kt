@@ -136,7 +136,7 @@ class MainActivity : ComponentActivity() {
             catch (e: Exception) { error = "Could not change listening. Try again." }
         }
         fun startRecording() {
-            if (missingPacks.isNotEmpty()) { error = "Speech for this language isn’t installed yet. Tap Set up speech to install it, or choose English Faster."; return }
+            if (missingPacks.isNotEmpty()) { error = "Speech for this language isn’t installed. Tap Set up speech."; return }
             try { startForegroundService(Intent(this@MainActivity, ListeningService::class.java)) }
             catch (e: Exception) { error = "Could not start recording. Reopen the app and try again." }
         }
@@ -254,7 +254,7 @@ class MainActivity : ComponentActivity() {
                     TextButton(onClick = { serviceAction(ListeningService.CANCEL) }) { Text(if (handsOff) "Stop & clear temporary text" else "Stop & discard what was heard") }
                 }
                 if (plannerOpen && !remindersReady) item {
-                    Text("Reminder notifications are blocked. Your events are saved; enable notifications for alerts.", modifier = Modifier.testTag("reminders-blocked"))
+                    Text("Reminder alerts are off. Your plans are saved; turn on notifications to get alerts.", modifier = Modifier.testTag("reminders-blocked"))
                     TextButton(onClick = { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }) { Text("Notification settings") }
                 }
                 if (plannerOpen && automaticChanges.isNotEmpty()) {
@@ -300,6 +300,7 @@ class MainActivity : ComponentActivity() {
                                 }
                                 LinearProgressIndicator(progress = { (listening.level * 5).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                                 Text("${listening.seconds / 60}m ${listening.seconds % 60}s · ${listening.chunks} phrases")
+                                AskHint()
                                 Button(onClick = { serviceAction(ListeningService.FINISH) }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Stop listening") }
                             } else if (listening.processing) LinearProgressIndicator(Modifier.fillMaxWidth())
                             else Button(onClick = { requestListening() }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = !busy && missingPacks.isEmpty()) { Text("Start listening") }
@@ -348,7 +349,7 @@ class MainActivity : ComponentActivity() {
                             Text("Speech: ${speechLanguage.label} · turned into text on this phone")
                             Text("New times use phone timezone: ${ZoneId.systemDefault().id}", style = MaterialTheme.typography.bodySmall)
                             Text(if (speechQuality.usesSenseVoice(speechLanguage)) "SenseVoice int8 · ${speechLanguage.label} · on-device" else if (speechQuality.usesOmni(speechLanguage, true)) "Omnilingual int8 · ${speechLanguage.label} · on-device" else speechQuality.label, style = MaterialTheme.typography.bodySmall)
-                            if (speechLanguage != com.sidekick.core.SpeechLanguage.ENGLISH) Text("Basic event/date rules support these languages. Review dates, attendance and place; unclear phrases stay unknown.", style = MaterialTheme.typography.bodySmall)
+                            if (speechLanguage != com.sidekick.core.SpeechLanguage.ENGLISH) Text("Check dates and places; unclear phrases stay unknown.", style = MaterialTheme.typography.bodySmall)
                             if (listening.recognitionDiagnostics.isNotEmpty()) {
                                 Text("Time checks", style = MaterialTheme.typography.titleSmall)
                                 listening.recognitionDiagnostics.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
@@ -366,7 +367,7 @@ class MainActivity : ComponentActivity() {
                                 TextButton(onClick = { wavPicker.launch(arrayOf("audio/wav", "audio/x-wav", "audio/wave")) }, enabled = !busy) { Text("Import a recording (WAV file)") }
                             }
                                 if (listening.lastLatencyMs > 0) QuietLabel("Last phrase took ${listening.lastLatencyMs / 1000.0}s")
-                                QuietLabel(if (handsOff) "Personal plans with clear times get reminders. Other voices stay information-only. Undo automatic changes from notifications. Set up your voice in Settings."
+                                QuietLabel(if (handsOff) "Your plans with clear times get reminders. Other voices stay information only. Undo from notifications."
                                     else "Only approved items are saved. Set up your voice in Settings for personal plans. Voice matching can be wrong.")
                             }
                             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }

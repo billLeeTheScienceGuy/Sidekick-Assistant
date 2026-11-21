@@ -63,7 +63,7 @@ internal fun CompactHome(
             else -> "Not listening"
         }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("compact-status"))
-        if (listening.recording) Text(if (listening.speechActive) "Hearing someone speak" else "Waiting for someone to speak",
+        if (listening.recording) Text(if (listening.speechActive) "Hearing speech" else "Waiting for speech",
             style = MaterialTheme.typography.bodyLarge)
         val stopColors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError)
         Button(onClick = if (listening.recording) onFinish else onStart,
@@ -75,12 +75,13 @@ internal fun CompactHome(
         }
         if (listening.processing) LinearProgressIndicator(Modifier.fillMaxWidth())
         // The rules line stays visible while listening (state rule, or the default reminder when stopped).
-        Text(listening.rulesLabel.takeIf { listening.recording && it.isNotBlank() } ?: "Rules follow your state · audio discarded",
+        Text(listening.rulesLabel.takeIf { listening.recording && it.isNotBlank() } ?: "Follows your state’s rules · no audio saved",
             style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("compact-rules"))
         if (listening.recording) {
             if (listening.consent.isNotBlank()) Text(listening.consent, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("consent-status"))
             if (listening.callActive) Text("Call detected: strictest rule", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("call-status"))
             if (listening.answer.isNotBlank()) Text(listening.answer, style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("plan-answer"))
+            else AskHint()
             RestingTip(listening)
             if (listening.noticeNeeded || showAnnounce) {
                 OutlinedButton(onClick = onAnnounce, modifier = Modifier.fillMaxWidth().heightIn(min = SimpleTarget).testTag("announce-notice")) {
@@ -92,10 +93,10 @@ internal fun CompactHome(
             }
         }
         if (listening.recording || listening.processing) TextButton(onClick = onDiscard, modifier = Modifier.fillMaxWidth().heightIn(min = SimpleTarget).testTag("compact-discard")) {
-            Text(if (handsOff) "Stop and clear what was heard" else "Stop and discard what was heard", style = MaterialTheme.typography.titleMedium)
+            Text("Stop and delete what was heard", style = MaterialTheme.typography.titleMedium)
         }
         if (needsModel) {
-            Text("Speech for your language isn’t installed yet.", style = MaterialTheme.typography.bodyLarge)
+            Text("Speech for your language isn’t installed.", style = MaterialTheme.typography.bodyLarge)
             FilledTonalButton(onClick = onSetup, modifier = Modifier.fillMaxWidth().heightIn(min = SimpleTarget).testTag("compact-setup")) {
                 Text("Set up speech", style = MaterialTheme.typography.titleMedium)
             }
@@ -106,7 +107,7 @@ internal fun CompactHome(
         }
         HorizontalDivider()
         Text("Your next plans", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
-        if (next.isEmpty()) Text("No plans coming up. Plans you mention while listening appear here.",
+        if (next.isEmpty()) Text("No plans yet. Plans you mention while listening show up here.",
             style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("today-empty"))
         next.forEach { (item, at) -> TodayPlanCard(item, at, undoable[item.id], onOpen, onUndo) { removing = item } }
         OutlinedButton(onClick = onAllPlans, modifier = Modifier.fillMaxWidth().heightIn(min = SimpleTarget).testTag("today-all-plans")) {
@@ -115,7 +116,7 @@ internal fun CompactHome(
     }
     removing?.let { item ->
         AlertDialog(onDismissRequest = { removing = null }, title = { Text("Remove this plan?") },
-            text = { Text("“${item.title}” and its reminder are removed from your list. You can bring it back from Plans → Past.") },
+            text = { Text("“${item.title}” and its reminder are removed. You can restore it from Plans → Past.") },
             confirmButton = { TextButton(onClick = { onRemove(item); removing = null }, modifier = Modifier.heightIn(min = SimpleTarget).testTag("confirm-remove")) { Text("Remove") } },
             dismissButton = { TextButton(onClick = { removing = null }, modifier = Modifier.heightIn(min = SimpleTarget)) { Text("Keep it") } })
     }
@@ -159,12 +160,12 @@ internal fun SimpleMore(manualNotes: Boolean, onSummary: () -> Unit, onConversat
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp).testTag("more-content"),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("More", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.semantics { heading() })
-        MoreItem("Summary of your day", "Your plans and events for any day.", "more-summary", onSummary)
+        MoreItem("Day summary", "Your plans for any day.", "more-summary", onSummary)
         MoreItem(if (manualNotes) "What was heard & notes" else "What was heard",
-            if (manualNotes) "Recent words, typing a note, and listening details." else "Recent words and listening details.", "more-conversation", onConversation)
-        MoreItem("Set up speech and your voice", "Language, speech files, your voice and phone permissions.", "get-started", onSetup)
-        MoreItem("Settings", "Listening, your voice, reminders and privacy.", "more-settings", onSettings)
-        MoreItem("Use the detailed screen", "Shows every tool at once. You can switch back in Settings.", "more-detailed", onDetailed)
+            if (manualNotes) "Recent words and notes." else "Recent words.", "more-conversation", onConversation)
+        MoreItem("Setup", "Speech, your voice, permissions.", "get-started", onSetup)
+        MoreItem("Settings", "Screen, listening, voice, reminders, privacy.", "more-settings", onSettings)
+        MoreItem("Detailed screen", "Shows every tool. Switch back in Settings.", "more-detailed", onDetailed)
     }
 }
 
@@ -177,4 +178,23 @@ private fun MoreItem(title: String, explanation: String, tag: String, onClick: (
             Text(explanation, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+/** While listening, until the first question: one example to say and a link to the full list. */
+@Composable
+internal fun AskHint() {
+    val settings = (androidx.compose.ui.platform.LocalContext.current.applicationContext as SidekickApplication).guidance
+    val asked by settings.askedQuestion.collectAsState()
+    if (asked) return
+    val language by settings.speechLanguage.collectAsState()
+    val detect by settings.detectLanguages.collectAsState()
+    val codes = askLanguages(language, detect)
+    var all by remember { mutableStateOf(false) }
+    Column(Modifier.testTag("ask-hint")) {
+        Text("Try saying: “${com.sidekick.core.PlanQuestion.examples(codes.first()).first()}”", style = MaterialTheme.typography.bodyLarge)
+        TextButton(onClick = { all = true }, modifier = Modifier.heightIn(min = 48.dp).testTag("ask-more")) { Text("More questions") }
+    }
+    if (all) AlertDialog(onDismissRequest = { all = false }, title = { Text("Ask SideKick") },
+        text = { Column(Modifier.verticalScroll(rememberScrollState())) { AskExamples(codes) } },
+        confirmButton = { TextButton(onClick = { all = false }) { Text("Close") } })
 }

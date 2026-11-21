@@ -138,10 +138,8 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                         }
                         if (wakeSetup) {
                             Text("SideKick voice check", style = MaterialTheme.typography.headlineMedium)
-                            Text("Optional. SideKick learns how you say its name. When a “SideKick, …” question comes from a voice SideKick isn't sure about " +
-                                "and your “SideKick” matches, the answer is spoken instead of only shown.")
-                            Text("It never overrides a voice SideKick thinks is someone else and doesn't change conversation text. " +
-                                "A recording of you saying “SideKick” could fool it. Only a voice signature of the name is saved; audio is discarded and nothing is transcribed.",
+                            Text("Optional. SideKick learns how you say its name, so it knows your questions are yours and answers out loud.")
+                            Text("Never overrides someone else’s voice. A recording of you could fool it. Only a voice signature is saved; no audio.",
                                 style = MaterialTheme.typography.bodySmall)
                             if (wakeSaved) Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                 Switch(wakeOn, { (application as SidekickApplication).voiceProfile.setWakeOn(it) }, enabled = !active, modifier = Modifier.testTag("wake-check"))
@@ -151,8 +149,7 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                             Card(Modifier.fillMaxWidth()) {
                                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Text("How to record", style = MaterialTheme.typography.titleMedium)
-                                    Text("Read these out one at a time. After each one, stay quiet until the count goes up (about 2 seconds). " +
-                                        "Pause briefly after “SideKick”. Normal voice and distance, in a quiet place.")
+                                    Text("Read each one aloud, with a short pause after “SideKick”. Then stay quiet until the count goes up.")
                                     val detectNow by (application as SidekickApplication).guidance.detectLanguages.collectAsState()
                                     com.sidekick.app.AskExamples(listOf(com.sidekick.app.askLanguages(language, detectNow).first()), numbered = true)
                                 }
@@ -175,11 +172,10 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                             return@Column
                         }
                         Text("Set up my voice", style = MaterialTheme.typography.headlineMedium)
-                        Text("Speaker model: ${selectedModel.label}")
-                        val dates = java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM)
+                                                val dates = java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM)
                         Text("Saved profiles: " + if (enrolled.isEmpty()) "none" else enrolled.entries.joinToString(", ") { "${it.key.label} (${dates.format(java.util.Date(it.value))})" })
                         if (auto) {
-                            Text("Listening language is Auto-detect, which checks every saved profile. Choose which language to record now:")
+                            Text("Choose the language to record:")
                             @OptIn(ExperimentalLayoutApi::class)
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 com.sidekick.core.SpeechLanguage.entries.filter { it != com.sidekick.core.SpeechLanguage.AUTO }.forEach { option ->
@@ -188,7 +184,7 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                             }
                         } else Text("Voice setup language: ${language.label}")
                         val haveSettings = savedSettings[target].orEmpty()
-                        Text("Where are you recording? Setting up in more than one place helps SideKick recognise you in real conversations. Each one is kept as its own profile.")
+                        Text("Where are you? Setting up in more than one place helps.")
                         @OptIn(ExperimentalLayoutApi::class)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             VoiceSetting.entries.forEach { option ->
@@ -197,11 +193,10 @@ class VoiceEnrollmentActivity : ComponentActivity() {
                                     modifier = Modifier.testTag("voice-setting-${option.name.lowercase()}"))
                             }
                         }
-                        Text(if (setting in haveSettings) "This replaces your ${target.label} “${setting.label.lowercase()}” profile. Your other profiles are kept."
-                            else "This adds a ${target.label} “${setting.label.lowercase()}” profile. Your other profiles are kept.")
-                        Text("Speak ${target.label} for this setup. English and Auto-detect share the English profile.")
-                        Text("${setting.hint} Only your voice should be heard: no one else talking. Read three different sentences, at least four seconds each, with a two-second pause between them. Each sample is checked for consistent matching. Setup stops after three samples or 45 seconds.")
-                        Text("Only a local voice signature is saved. Audio is discarded; enrollment is never transcribed. Speaker matches can be wrong and do not establish consent.")
+                        Text(if (setting in haveSettings) "Replaces your ${target.label} “${setting.label.lowercase()}” setup."
+                            else "Adds a ${target.label} “${setting.label.lowercase()}” setup.")
+                                                Text("${setting.hint} Only you talking. Read the text below in ${target.label}, pausing 2 seconds after each sentence, until 3/3.")
+                        Text("Only a voice signature is saved; no audio. Matching can be wrong and doesn’t prove consent.")
                         Text(when (target) {
                             com.sidekick.core.SpeechLanguage.ARABIC -> "اقرأ بصوت طبيعي حتى يكتمل الإعداد. غدا سألتقي بصديق لتناول الغداء، وسنتحدث عن خططنا لعطلة نهاية الأسبوع. أحب المشي في الهواء الطلق وزيارة أماكن جديدة. هذا الأسبوع لدي أشياء كثيرة أريد القيام بها، وفي المساء أحب أن أستريح وأستمع إلى الموسيقى. واصل الحديث بشكل طبيعي عن حياتك اليومية حتى ينتهي الإعداد."
                             com.sidekick.core.SpeechLanguage.KOREAN -> "자연스럽게 계속 읽어 주세요. 내일은 친구를 만나서 점심을 먹을 거예요. 우리는 주말에 무엇을 할지 이야기할 거예요. 저는 날씨가 좋으면 밖에서 산책하는 것을 좋아해요. 새로운 장소를 찾아가고 맛있는 음식을 먹는 것도 좋아해요. 이번 주에는 해야 할 일이 많지만 저녁에는 편하게 쉬고 싶어요. 설정이 끝날 때까지 자연스럽게 이야기를 계속해 주세요."

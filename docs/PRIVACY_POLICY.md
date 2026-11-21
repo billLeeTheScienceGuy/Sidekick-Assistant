@@ -23,6 +23,7 @@ how the app works, not legal advice. Last updated: November 16, 2026 (voiceprint
 | **Your voice consent record** (the name you typed, time, notice version, method) | Proof of your written consent before your voice signature was made | App settings, this phone only | Deleted together with your voice signature | Same as above |
 | **Notice records** (time, state code(s), recording rule, voice rule, notice text version, spoken / spoken automatically / "I told everyone", volume, measured loudness, counted or not) | Shows when and how people were told about note-taking. No audio, no voice data | App database | Same as your saved plans (Settings → Privacy → retention); deleted with the session if you discard it | *Discard session*, retention setting, or *Delete all* |
 | **Saved plans and events** (title, time, place; optional short text excerpt) | Your reminders and calendar items | App database | Until you delete them, or the retention period you choose | Planner, or Settings → Privacy |
+| **Scam warning signs** (which kinds of sign were seen and when, e.g. “asked for a code”; never the words) | Warn you, answer “SideKick, is this a scam?”, summarize a call afterwards | Memory only | 10 minutes, or until the call ends | Turn off *Scam warnings* in Settings → Privacy |
 | **Recent live text** | Review before saving | Memory only | Until the session ends or you clear it | *Discard session* |
 
 Android backup is turned off for voice data; the voice signature lives in no-backup storage.

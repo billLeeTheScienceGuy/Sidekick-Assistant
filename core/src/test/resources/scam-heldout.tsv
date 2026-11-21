@@ -1,0 +1,35 @@
+# Held-out set: written after the rules were tuned and never used to tune them. Reported, not required to be perfect.
+STOP	en	Hi, I'm with Amazon security. Someone bought an iPhone on your account. To cancel it, I'll need the one-time code we sent you.
+STOP	en	This is Social Security. Your number has been suspended due to suspicious activity. Press one to speak with an agent and confirm your PIN.
+STOP	en	Hey it's your nephew Mike. I got into some trouble and I'm in jail, I need you to wire 2000 dollars for the lawyer. Please keep this a secret.
+STOP	en	Your Wells Fargo card has been locked. Click wellsfargo-alerts.click to restore access.
+STOP	en	We sent you a check for 3000 dollars by mistake, you were overpaid. Please deposit it and send the difference back through Western Union today.
+STOP	en	You've won a new car! You only need to pay the taxes and shipping first, 800 dollars in Google Play gift cards.
+STOP	en	Download TeamViewer and I'll walk you through the refund. Microsoft support will credit your account.
+STOP	en	Congrats on the job offer. Before you start, buy the training equipment with your own money and we'll reimburse you, the position requires it.
+STOP	en	The officer said I have to go to the Bitcoin machine at the gas station and deposit my savings, and stay on the line the whole time.
+CAUTION	en	Can you read me the numbers on the back of the gift card?
+STOP	ko	고객님, 국세청입니다. 미납 세금이 있어서 계좌가 동결될 예정입니다. 지금 바로 송금해 주세요.
+STOP	ko	경찰청 사이버수사대입니다. 원격 지원 앱을 깔아 주시면 저희가 확인해 드리겠습니다.
+STOP	ko	아빠, 나 휴대폰 분실해서 친구 폰으로 연락해. 급하게 문화상품권 좀 사서 핀번호 보내 줘.
+STOP	zh	您好，这里是医保局，您的医保卡异常，需要把验证码报给我核实。
+STOP	ru	Здравствуйте, это сотрудник банка. На ваше имя оформляют кредит. Срочно назовите код из смс.
+STOP	ar	مرحبا، هنا البنك المركزي. بطاقتك مجمدة. أعطني الرقم السري فوراً.
+STOP	fr	Bonjour, je suis conseiller bancaire. Une opération suspecte a eu lieu, nous devons transférer votre épargne sur un compte sécurisé.
+STOP	de	Guten Tag, Ihr Enkel hatte einen Unfall und braucht dringend Geld für die Kaution. Ein Bote holt das Bargeld ab.
+NONE	en	I'm buying a gift card for my coworker's farewell.
+NONE	en	Did you get the verification email from the school portal?
+NONE	en	I'll wire the deposit for the apartment once the lease is signed.
+NONE	en	The doctor's office called to confirm my appointment tomorrow.
+NONE	en	Let's not tell anyone about the engagement until Sunday.
+NONE	en	My computer is so slow, I think I need a new one.
+NONE	en	He works at the police station downtown.
+NONE	en	Please stay on the line, I'm grabbing a pen. Okay, go ahead with the address.
+NONE	en	Can you share your screen so we can look at the slides?
+NONE	en	The pin on the map shows where the restaurant is.
+NONE	ko	다음 주에 택배로 보내 줄게.
+NONE	ko	비밀번호 바꿨어, 나중에 알려 줄게.
+NONE	zh	我的验证码收到了，已经登录了。
+NONE	ru	Срочно перезвони, когда освободишься.
+NONE	fr	Le code de la porte est 1234, entre directement.
+NONE	de	Ich habe meine PIN vergessen und gehe morgen zur Bank.

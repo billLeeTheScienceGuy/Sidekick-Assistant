@@ -45,8 +45,8 @@ internal fun CalendarSyncSection() {
     }
     HorizontalDivider()
     Text("Calendar", style = MaterialTheme.typography.titleMedium)
-    QuietLabel("Copy upcoming plans to your calendar. The account may send titles, times and places online. Conversation text and voice setup aren’t copied.")
-    QuietLabel("Plans need a start and end time to appear in your calendar. SideKick reminders work without calendar sync.")
+    QuietLabel("Copies upcoming plans to your calendar. Your calendar account may send titles, times and places online.")
+    QuietLabel("Plans need a start and end time to appear.")
     Box {
     TextButton(enabled = !loading && !config.enabled, modifier = Modifier.testTag("choose-sync-calendar"), onClick = {
         if (AndroidCalendarGateway(context).permitted()) load() else permissions.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
@@ -69,9 +69,9 @@ internal fun CalendarSyncSection() {
             modifier = Modifier.testTag("sync-informational").controlLabel("Include plans I’m not attending"))
         Text("Include plans I’m not attending", Modifier.padding(start = 8.dp))
     }
-    QuietLabel("Turning sync off leaves existing copies in your calendar. Plans you aren’t attending appear as free time.")
+    QuietLabel("Turning sync off keeps existing copies. Plans you aren’t attending show as free.")
     SettingsDetails("How calendar updates work") {
-        QuietLabel("Changes and cancellations update copies you haven’t edited in your calendar. Copies with outside edits, added guests or repeating dates are left alone. Old copies stay in their original calendar if you choose another.")
+        QuietLabel("Changes update copies you haven’t edited in your calendar. Copies you edited are left alone.")
     }
     Text(status.note, modifier = Modifier.testTag("calendar-sync-status"))
     if (config.enabled) TextButton(onClick = { app.calendarMirror.requestSync() }, modifier = Modifier.testTag("retry-calendar-sync")) { Text("Retry calendar sync") }
@@ -81,7 +81,7 @@ internal fun CalendarSyncSection() {
     if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
     if (note.isNotBlank()) Text(note)
     if (confirming) AlertDialog(onDismissRequest = { confirming = false }, title = { Text("Copy plans to your calendar?") },
-        text = { Text("Copies upcoming plans with start and end times. Your calendar account may send their titles, times and places online. Conversation text stays private. No invitations are sent. SideKick updates or deletes copies only if you haven’t changed them in your calendar.") },
+        text = { Text("Copies plans with start and end times. Your calendar account may send titles, times and places online. No invitations are sent.") },
         confirmButton = { TextButton(onClick = { app.guidance.setCalendarSync(config.copy(enabled = true)); confirming = false }) { Text("Enable sync") } },
         dismissButton = { TextButton(onClick = { confirming = false }) { Text("Cancel") } })
 }

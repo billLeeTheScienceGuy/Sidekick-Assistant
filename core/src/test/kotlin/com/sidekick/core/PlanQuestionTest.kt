@@ -30,6 +30,7 @@ class PlanQuestionTest {
                     is PlanQuestion.Day -> if (q.days == 7) "week" else if (q.offsetDays == 1) "tomorrow" else "today"
                     is PlanQuestion.Next -> "next"
                     is PlanQuestion.Find -> "find"
+                    is PlanQuestion.Scam -> "scam"
                 }
             }
             assertEquals(listOf("today", "tomorrow", "week", "next", "find"), kinds, code)

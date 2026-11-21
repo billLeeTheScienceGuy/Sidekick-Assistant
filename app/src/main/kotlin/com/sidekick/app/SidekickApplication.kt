@@ -23,7 +23,7 @@ class SidekickApplication : Application() {
     val guidance by lazy { GuidanceSettings(this) }
     val background = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val risk by lazy { LocalRiskAlerts(this) { guidance.riskAdvisories.value } }
-    val messageInbox by lazy { MessageInbox(guidance, temporary, background, onRisk = risk::inspect) { automation.process() } }
+    val messageInbox by lazy { MessageInbox(guidance, temporary, background, onRisk = risk::inspectMessage) { automation.process() } }
     val reminders by lazy { ReminderCoordinator(this, database.commitments()) }
     val calendarMirror by lazy { CalendarMirror(this, database, guidance) }
     val automation by lazy { AutomaticMemory(this, guidance, temporary, database.commitments(), reminders) }

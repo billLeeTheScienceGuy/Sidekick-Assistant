@@ -20,7 +20,7 @@ object CaptureStatusAlerts {
         try {
             manager.notify(TAG, ID, Notification.Builder(context, CHANNEL).setSmallIcon(android.R.drawable.ic_btn_speak_now)
                 .setContentTitle("SideKick listening stopped")
-                .setContentText("Open SideKick to check the interruption and start again when ready.")
+                .setContentText("Open SideKick to start again.")
                 .setContentIntent(open).setVisibility(Notification.VISIBILITY_PRIVATE).setAutoCancel(true).setOnlyAlertOnce(true).build())
         } catch (_: SecurityException) { }
     }

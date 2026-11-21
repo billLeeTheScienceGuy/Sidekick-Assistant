@@ -21,6 +21,8 @@ object PlanQuestion {
     data class Day(val offsetDays: Int, val days: Int, override val language: String) : Question
     data class Next(override val language: String) : Question
     data class Find(val words: List<String>, override val language: String) : Question
+    /** "SideKick, is this a scam?": answered from recent scam warning signs (ScamQuestion), not from plans. */
+    data class Scam(override val language: String) : Question
 
     private class Lang(
         val code: String, val wake: Regex,
@@ -90,6 +92,7 @@ object PlanQuestion {
         // The name may be written in any script ("SideKick，我…"); the words after it decide the language.
         val rest = LANGS.firstNotNullOfOrNull { l -> l.wake.find(text)?.groupValues?.get(1)?.trim() } ?: return null
         if (rest.isEmpty()) return null
+        ScamQuestion.asked(rest)?.let { return Scam(it) }
         val code = when {
             rest.any { it in '가'..'힣' } -> "ko"
             rest.any { Character.UnicodeScript.of(it.code) == Character.UnicodeScript.HAN } -> "zh"
@@ -188,6 +191,7 @@ object PlanQuestion {
                     else -> "${pick.title}${if (lang == "zh") "：" else ": "}${when_(pick, today, zone, lang, true)}${if (past) WORDS.getValue(lang).past else ""}${if (lang == "zh") "。" else "."}"
                 }
             }
+            is Scam -> ScamQuestion.answer(null, lang) // the app answers these from its scam monitor
         }
     }
 

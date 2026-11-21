@@ -679,3 +679,14 @@ count goes up", a sample unlike the others is dropped instead of failing all fiv
 to 10 tries in 2 minutes, and Try again on the same screen. Screen choices moved to their own Settings section, shown
 first. Phone: InterfaceCustomizationTest and ResponsiveInterfaceTest 9 of 9; test copy removed. The voice log shows the
 "SideKick" match score (number only).
+
+**T90 Scam warnings (November 20).** `ScamSignals` replaces the four English rules: about 20 signs in 7 languages,
+scored over a 10-minute window (`ScamMonitor`: STOP = a story plus an ask, a "safe account", or three signs with an ask;
+CAUTION = one strong ask, an ask with another sign, or a story told in secret; urgency or secrecy alone never warns),
+per-message checks with on-phone link checks (`LinkCheck`), "SideKick, is this a scam?" in 7 languages, a call summary.
+Core tests (`ScamSignalsTest`): the tuning set (`scam-eval.tsv`, written for this test in the style of FTC and Korean
+FSS scam scripts, plus everyday talk using the same words) catches 40 of 40 scams, 0 false alarms in 28 lines. A
+held-out set written after tuning (`scam-heldout.tsv`), first run: warned on 15 of 18 scams (12 at the expected level),
+1 false alarm in 16 lines; after two general fixes it used to motivate (code requests phrased as "I'll need the code",
+a Korean offer to tell a password later), 17 of 18 and 0 of 16, so the first-run figure is the honest estimate. Not yet
+tested on real call recordings. Limits: during calls only the owner's side is heard; rules can be evaded by new wording.

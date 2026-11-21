@@ -78,7 +78,7 @@ class PrivacyScreenTest {
             compose.onNodeWithText("123456", substring = true).assertDoesNotExist()
             app.risk.inspect("Read me the verification code 123456.")
             assertEquals(1, app.risk.alerts.value.size)
-            compose.onNodeWithTag("dismiss-risk-secret-request").performClick()
+            compose.onNodeWithTag("dismiss-risk-conversation").performClick()
             assertTrue(app.risk.alerts.value.isEmpty())
             app.guidance.setRiskAdvisories(false)
             app.risk.inspect("Pay the fine with gift cards.")
