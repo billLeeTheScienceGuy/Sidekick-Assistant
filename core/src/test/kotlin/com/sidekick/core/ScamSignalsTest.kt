@@ -37,6 +37,13 @@ class ScamSignalsTest {
         assertTrue(alarms.size <= 1, "more than one false alarm on held-out everyday talk")
     }
 
+    /** Android's regex engine (ICU) rejects inline flags such as (?U) that the JVM accepts; keep the source free of them. */
+    @Test fun patternsAvoidAndroidOnlyErrors() {
+        val source = java.io.File("src/main/kotlin/com/sidekick/core/ScamSignals.kt").readText()
+        assertFalse(Regex("""\(\?[a-zA-Z]*U""").containsMatchIn(source), "(?U) crashes on Android")
+        assertEquals(ScamLevel.STOP, ScamMonitor().add("Гарантированный доход на инвестиционной платформе. Переведите USDT сегодня.", 0).level)
+    }
+
     @Test fun signsAddUpOverAConversation() {
         val monitor = ScamMonitor(windowMs = 600_000)
         assertEquals(ScamLevel.NONE, monitor.add("This is the fraud department at your bank.", 0).level)

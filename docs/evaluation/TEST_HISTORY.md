@@ -690,3 +690,10 @@ held-out set written after tuning (`scam-heldout.tsv`), first run: warned on 15 
 1 false alarm in 16 lines; after two general fixes it used to motivate (code requests phrased as "I'll need the code",
 a Korean offer to tell a password later), 17 of 18 and 0 of 16, so the first-run figure is the honest estimate. Not yet
 tested on real call recordings. Limits: during calls only the owner's side is heard; rules can be evaded by new wording.
+
+**T91 Phone suite catches an Android-only regex crash (November 20).** The first phone run of T90 crashed: Android's
+regex engine (ICU) rejects the inline flag the JVM accepts for Unicode letter classes, so the scam rules failed to load
+on the phone while every laptop test passed. The rules now spell letters as \p{L}, accepted by both, and a core test
+fails if the flag comes back. The owner's app had the faulty build for about an hour but was not listening (checked: no
+crash in its log). Rerun: full phone suite 131 of 131; test copy removed. Lesson: core changes that use regex features
+need a phone run before release, not only laptop tests.

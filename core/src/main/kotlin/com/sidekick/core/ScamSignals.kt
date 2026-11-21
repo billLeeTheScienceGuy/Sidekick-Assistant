@@ -30,7 +30,11 @@ enum class ScamSignal(val label: String, val pretext: Boolean = false, val ask: 
 }
 
 object ScamSignals {
-    private fun rx(p: String) = Regex("(?U)$p", setOf(RegexOption.IGNORE_CASE))
+    /**
+     * Letters of every script for \w (Cyrillic, Korean...). Android's regex engine rejects the inline Unicode-classes flag, so \w is
+     * spelled out with \p{L}, which both Android and the JVM accept. ScamSignalsTest.patternsAvoidAndroidOnlyErrors checks.
+     */
+    private fun rx(p: String) = Regex(p.replace("\\w", "[\\p{L}\\p{N}_]"), setOf(RegexOption.IGNORE_CASE))
     private class Rules(val defensive: Regex?, val signs: List<Pair<ScamSignal, Regex>>)
 
     private val EN = Rules(
