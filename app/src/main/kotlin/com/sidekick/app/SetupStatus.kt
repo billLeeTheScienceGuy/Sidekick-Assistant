@@ -50,53 +50,53 @@ internal fun SetupStatus(settings: GuidanceSettings) {
     val reminderReady = remember(refresh) { reminders.notificationsAllowed() }
     var reminderResult by remember { mutableStateOf("") }
     var schedulingReminder by remember { mutableStateOf(false) }
-    Text("Setup status")
-    Text("Reminder delivery: ${if (reminderReady) "Enabled" else "Blocked in Android settings"}", modifier = Modifier.testTag("reminder-access-status"))
+    Text(tr(R.string.setup_status))
+    Text(tr(R.string.reminder_delivery_1_s, if (reminderReady) tr(R.string.enabled) else tr(R.string.blocked_in_android_settings)), modifier = Modifier.testTag("reminder-access-status"))
     Text(remember(refresh) { reminders.alertDescription() }, modifier = Modifier.testTag("reminder-alert-details"))
     TextButton(modifier = Modifier.testTag("reminder-channel-settings"), onClick = {
         context.startActivity(android.content.Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
             .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
             .putExtra(Settings.EXTRA_CHANNEL_ID, com.sidekick.app.reminders.ReminderCoordinator.CHANNEL))
-    }) { Text("Reminder sound, vibration & pop-up") }
+    }) { Text(tr(R.string.reminder_sound_vibration_pop_up)) }
     TextButton(enabled = reminderReady && !schedulingReminder, modifier = Modifier.testTag("test-reminder"), onClick = {
         scope.launch {
             schedulingReminder = true
             try {
                 val due = reminders.scheduleCheck()
                 val time = java.time.Instant.ofEpochMilli(due).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm z"))
-                reminderResult = "Test reminder set for $time. Lock the phone and wait. Android may delay it."
+                reminderResult = tr(R.string.test_reminder_set_for_1_s, time)
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { reminderResult = "Could not schedule the check. Enable reminder notifications and try again." }
+            catch (_: Exception) { reminderResult = tr(R.string.could_not_schedule_the_check_enable) }
             finally { schedulingReminder = false }
         }
-    }) { Text("Test a reminder in 2 minutes") }
+    }) { Text(tr(R.string.test_a_reminder_in_2_minutes)) }
     if (reminderResult.isNotBlank()) Text(reminderResult, modifier = Modifier.testTag("reminder-check-result"))
-    Text("Location permission: ${if (permission) "Allowed" else "Not allowed"}", modifier = Modifier.testTag("location-permission-status"))
-    Text("Android Location: ${if (locationOn) "On" else "Off"}")
-    Text("Message scanning: " + when {
-        !scanning -> "Off"
-        !notificationAccess -> "Needs Android notification access"
-        apps.isEmpty() -> "Choose a messaging app"
-        !listenerConnected -> "Access allowed; waiting for Android listener connection"
-        else -> "Ready for new notifications from ${apps.size} selected app(s)"
+    Text(tr(R.string.location_permission_1_s, if (permission) tr(R.string.allowed) else tr(R.string.not_allowed)), modifier = Modifier.testTag("location-permission-status"))
+    Text(tr(R.string.android_location_1_s, if (locationOn) tr(R.string.on) else tr(R.string.off)))
+    Text(tr(R.string.message_scanning) + when {
+        !scanning -> tr(R.string.off)
+        !notificationAccess -> tr(R.string.needs_android_notification_access)
+        apps.isEmpty() -> tr(R.string.choose_a_messaging_app)
+        !listenerConnected -> tr(R.string.access_allowed_waiting_for_android_listener)
+        else -> tr(R.string.ready_for_new_notifications_from_1, apps.size)
     }, modifier = Modifier.testTag("message-access-status"))
     if (scanning && notificationAccess && !listenerConnected) TextButton(onClick = {
         MessageNotificationListener.requestConnection(context)
-    }, modifier = Modifier.testTag("reconnect-messages")) { Text("Reconnect message notifications") }
+    }, modifier = Modifier.testTag("reconnect-messages")) { Text(tr(R.string.reconnect_message_notifications)) }
     TextButton(enabled = permission && locationOn && !checking, modifier = Modifier.testTag("test-phone-location"), onClick = {
         scope.launch {
-            checking = true; result = "Checking phone location…"
+            checking = true; result = tr(R.string.checking_phone_location)
             try {
                 val fix = PlaceLookup(context).currentLocation()
-                result = if (fix == null) "No recent location fix. Try again or use a chosen city."
+                result = if (fix == null) tr(R.string.no_recent_location_fix_try_again)
                 else {
                     val age = ((SystemClock.elapsedRealtimeNanos() - fix.elapsedRealtimeNanos) / 1_000_000_000).coerceAtLeast(0)
-                    "Phone location works: approximate accuracy ${fix.accuracy.toInt()} m; fix $age seconds old."
+                    tr(R.string.phone_location_works_approximate_accuracy_1, fix.accuracy.toInt(), age)
                 }
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { result = "Location check could not finish. Try again or use a chosen city." }
+            catch (_: Exception) { result = tr(R.string.location_check_could_not_finish_try) }
             finally { checking = false }
         }
-    }) { Text(if (checking) "Checking…" else "Test phone location") }
+    }) { Text(if (checking) tr(R.string.checking) else tr(R.string.test_phone_location)) }
     if (result.isNotBlank()) Text(result)
 }

@@ -4,6 +4,15 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 
 ## Unreleased (privacy, consent and location work package)
 
+- App language, separate from the speech language: Settings → Screen & text size → App language ("Same as phone", English,
+  한국어, 中文, العربية, Русский, Français, Deutsch). All screens, notifications and the widget are translated (translations
+  are machine-assisted drafts, not yet reviewed by native speakers); Arabic lays out right to left. Spoken answers and the
+  voice-setup reading passages still follow the speech language. Recording-rule texts from the core module are translated by
+  phrase; scam-warning wording is still English.
+- Optional crash reports, no network: after a crash SideKick keeps a small local report (time, versions, device model,
+  exception type and stack; never messages or anything you said) and on the next start offers to send it through Android's
+  share sheet, or delete it. Settings → Privacy → Offer to send crash reports (on by default) and View crash reports.
+  At most 5 reports for 30 days. See docs/PRIVACY_POLICY.md.
 - Scam warnings, much wider: about 20 kinds of warning sign (impersonation, family emergency, prize and job fees,
   investment, overpayment, gift cards, crypto, cash couriers, codes, remote access, "safe" accounts...) in all 7 languages,
   scored together over the last 10 minutes ("Be careful" or "Stop now" with one plain step); "Stop now" vibrates.

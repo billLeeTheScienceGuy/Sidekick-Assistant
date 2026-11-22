@@ -1,5 +1,8 @@
 package com.sidekick.app.speaker
 
+import com.sidekick.app.R
+import com.sidekick.app.tr
+
 import android.content.Context
 import android.util.AtomicFile
 import com.sidekick.core.VoiceMatch
@@ -14,10 +17,10 @@ import java.io.File
  * Where a setup recording was made. Each setting is its own profile; a turn counts as the owner when it matches any one
  * of them on its own (signatures from different settings are never averaged together).
  */
-enum class VoiceSetting(val label: String, val suffix: String, val hint: String) {
-    QUIET("Quiet room", "", "Alone in a quiet room, phone about 30–50 cm away."),
-    NOISY("Some background noise", "-noisy", "With everyday background sound (TV, café, fan), phone at your usual distance."),
-    TABLE("Phone on a table", "-table", "Phone lying on a table about an arm’s length away, as in a meeting."),
+enum class VoiceSetting(val suffix: String) {
+    QUIET(""), NOISY("-noisy"), TABLE("-table");
+    val label: String get() = when (this) { QUIET -> tr(R.string.quiet_room); NOISY -> tr(R.string.some_background_noise); TABLE -> tr(R.string.phone_on_a_table) }
+    val hint: String get() = when (this) { QUIET -> tr(R.string.alone_in_a_quiet_room_phone); NOISY -> tr(R.string.with_everyday_background_sound_tv_caf); TABLE -> tr(R.string.phone_lying_on_a_table_about) }
 }
 
 /**
@@ -78,7 +81,7 @@ class VoiceProfile(context: Context, initialLanguage: SpeechLanguage = SpeechLan
             preferences.getString("consent_method", "checkbox").orEmpty(), preferences.getBoolean("consent_guardian", false))
     }
     @Synchronized fun recordConsent(record: com.sidekick.core.VoiceprintConsent) {
-        require(record.valid) { "Consent record is incomplete." }
+        require(record.valid) { tr(R.string.consent_record_is_incomplete) }
         preferences.edit().putString("consent_name", record.name.take(80)).putLong("consent_at", record.atEpochMs)
             .putInt("consent_version", record.noticeVersion).putString("consent_method", record.method)
             .putBoolean("consent_guardian", record.guardian).putBoolean("legacy_needs_consent", false).apply()
@@ -149,10 +152,10 @@ class VoiceProfile(context: Context, initialLanguage: SpeechLanguage = SpeechLan
     /** Saves to [target]'s [setting] slot; Auto-detect setup chooses the language explicitly. Other settings are kept. */
     @Synchronized fun save(samples: List<FloatArray>, target: SpeechLanguage = languageValue.value, setting: VoiceSetting = VoiceSetting.QUIET) {
         require(samples.size == 3)
-        require(samples.all { it.size == modelValue.value.dimension }) { "Voice samples belong to a different speaker model." }
+        require(samples.all { it.size == modelValue.value.dimension }) { tr(R.string.voice_samples_belong_to_a_different) }
         val vectors = samples.map(VoiceMatch::normalized)
         require(vectors.indices.all { i -> vectors.indices.all { j -> VoiceMatch.similarity(vectors[i], vectors[j]) >= .6f } }) {
-            "Voice samples differed too much. Try again, staying in the same place and keeping the phone still."
+            tr(R.string.voice_samples_differed_too_much_try)
         }
         val result = VoiceMatch.normalized(FloatArray(modelValue.value.dimension) { i -> vectors.sumOf { it[i].toDouble() }.toFloat() / 3 })
         val data = JSONObject().put("model", modelValue.value.hash).put("embedding", JSONArray(result.toList())).toString().toByteArray()
@@ -205,9 +208,9 @@ class VoiceProfile(context: Context, initialLanguage: SpeechLanguage = SpeechLan
             ?.takeIf { it.size == modelValue.value.dimension }
     }
     @Synchronized fun saveWake(samples: List<FloatArray>) {
-        require(samples.all { it.size == modelValue.value.dimension }) { "Voice samples belong to a different speaker model." }
+        require(samples.all { it.size == modelValue.value.dimension }) { tr(R.string.voice_samples_belong_to_a_different) }
         val template = com.sidekick.core.WakeVoice.template(samples)
-            ?: throw IllegalArgumentException("Your “SideKick” samples differed too much. Try again in one place, phone still.")
+            ?: throw IllegalArgumentException(tr(R.string.your_sidekick_samples_differed_too_much))
         try {
             val bytes = JSONObject().put("model", modelValue.value.hash).put("embedding", JSONArray(template.toList())).toString().toByteArray()
             val destination = wakeFile(); val stream = destination.startWrite()

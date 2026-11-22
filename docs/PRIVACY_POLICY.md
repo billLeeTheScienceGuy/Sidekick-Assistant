@@ -24,6 +24,7 @@ how the app works, not legal advice. Last updated: November 16, 2026 (voiceprint
 | **Notice records** (time, state code(s), recording rule, voice rule, notice text version, spoken / spoken automatically / "I told everyone", volume, measured loudness, counted or not) | Shows when and how people were told about note-taking. No audio, no voice data | App database | Same as your saved plans (Settings → Privacy → retention); deleted with the session if you discard it | *Discard session*, retention setting, or *Delete all* |
 | **Saved plans and events** (title, time, place; optional short text excerpt) | Your reminders and calendar items | App database | Until you delete them, or the retention period you choose | Planner, or Settings → Privacy |
 | **Scam warning signs** (which kinds of sign were seen and when, e.g. “asked for a code”; never the words) | Warn you, answer “SideKick, is this a scam?”, summarize a call afterwards | Memory only | 10 minutes, or until the call ends | Turn off *Scam warnings* in Settings → Privacy |
+| **Crash reports** (optional; time, app version, Android version, device model, exception type and where it happened: class, method and line; the screen that was open, e.g. “Plans”; never exception messages, conversations, plans, names, voice data or locations) | Help fix a crash; you are asked on the next start whether to send it | App's no-backup storage, this phone only | At most the 5 newest, none older than 30 days, or until you choose *Don't send* | Don't send, Settings → Privacy → View crash reports → Delete all, or turn off *Offer to send crash reports* |
 | **Recent live text** | Review before saving | Memory only | Until the session ends or you clear it | *Discard session* |
 
 Android backup is turned off for voice data; the voice signature lives in no-backup storage.
@@ -62,6 +63,7 @@ Settings → Privacy → *Treat every place as the strictest state* turns off al
 - Turn off *Recognize my voice* at any time; voice matching stops but your setup is kept.
 - *Delete my voice setup* removes every voice signature and the consent record at once.
 - *Delete all* removes saved plans, notice records and temporary text.
+- *Offer to send crash reports* (Settings → Privacy, on by default): when off, no report is saved and saved ones are deleted. A report never leaves the phone by itself: SideKick has no network access of its own, and *Send* only opens Android's share sheet so you choose where it goes (for example an email to the developer).
 - Uninstalling the app removes everything it stored.
 
 ## Contact

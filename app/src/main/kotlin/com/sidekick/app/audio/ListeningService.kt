@@ -1,5 +1,8 @@
 package com.sidekick.app.audio
 
+import com.sidekick.app.R
+import com.sidekick.app.tr
+
 import android.Manifest
 import android.app.*
 import android.content.Intent
@@ -29,13 +32,13 @@ data class ListeningState(
     val seconds: Int = 0, val chunks: Int = 0, val lastLatencyMs: Long = 0,
     val speechActive: Boolean = false,
     val enrolling: Boolean = false, val voiceSamples: Int = 0,
-    val voiceStatus: String = "Speaker unassigned",
+    val voiceStatus: String = tr(R.string.speaker_unassigned),
     val userVoiceChunks: Int = 0, val otherVoiceChunks: Int = 0, val unknownVoiceChunks: Int = 0,
     val voiceDiagnostics: List<String> = emptyList(),
     val recognitionDiagnostics: List<String> = emptyList(),
     val diarizationMs: Long = 0, val speakerParts: Int = 0,
     val recognizer: String? = null,
-    val note: String = "Microphone is off",
+    val note: String = tr(R.string.microphone_is_off),
     /** Which consent rule applies and what it is doing right now (see RecordingConsent in core). */
     val consent: String = "",
     /** One line for the home screen: the rule where you are, set once listening has checked the location. */
@@ -45,7 +48,7 @@ data class ListeningState(
     /** Phrases from other voices discarded on arrival this session. */
     val droppedChunks: Int = 0,
     /** Label of the owner's attestation button (TX/WA: "I told everyone (incl. voice analysis)"). */
-    val attestLabel: String = "I told everyone (incl. voice analysis)",
+    val attestLabel: String = tr(R.string.i_told_everyone_incl_voice_analysis),
     /** A grouped voice may be named for this session right now (ConsentGate.namingAllowed). */
     val namingAllowed: Boolean = false,
     /** A notice is currently in effect (for "Announce again"). */
@@ -138,8 +141,8 @@ class ListeningService : Service() {
         val now = SystemClock.elapsedRealtime()
         // Voice grouping is never allowed here (STRICT, or NOTICE before notice): forget every other voice at once.
         if (!g.groupingAllowed()) forgetOthers()
-        mutableState.update { it.copy(consent = g.status(now) + " · " + g.place.reason, rulesLabel = g.homeLabel(), noticeNeeded = g.noticeNeeded(),
-            attestLabel = g.attestLabel(), namingAllowed = g.namingAllowed(now), noticeActive = g.noticeAtMs != null) }
+        mutableState.update { it.copy(consent = com.sidekick.app.CoreText.localize(g.status(now) + " · " + g.place.reason), rulesLabel = com.sidekick.app.CoreText.localize(g.homeLabel()), noticeNeeded = g.noticeNeeded(),
+            attestLabel = com.sidekick.app.CoreText.localize(g.attestLabel()), namingAllowed = g.namingAllowed(now), noticeActive = g.noticeAtMs != null) }
     }
 
     /** SessionVoices, session names, naming context and recent anchors: memory only, cleared together. */
@@ -178,10 +181,10 @@ class ListeningService : Service() {
             mutableState.update { it.copy(note = note) }
         }
         if (!speakerOutput()) {
-            refuse("Notice not played: sound would go to headphones or Bluetooth. Use the phone speaker, or tell everyone."); return
+            refuse(tr(R.string.notice_not_played_sound_would_go)); return
         }
         checkCovered { covered ->
-            if (covered) refuse("Phone seems covered or in a pocket. Take it out and announce again, or tell everyone.")
+            if (covered) refuse(tr(R.string.phone_seems_covered_or_in_a))
             else speakNotice(auto)
         }
     }
@@ -234,7 +237,7 @@ class ListeningService : Service() {
         if (audio.isStreamMute(stream) || volume < target) {
             restore(); autoAnnouncer.failed()
             recordNotice(g, method, percent, null, false)
-            mutableState.update { it.copy(note = "Notice too quiet: raise the volume or tell everyone, then tap \"I told everyone\".") }
+            mutableState.update { it.copy(note = tr(R.string.notice_too_quiet_raise_the_volume)) }
             return
         }
         noticeLevels.clear()
@@ -256,13 +259,13 @@ class ListeningService : Service() {
                         if (audible) { g.noticeGiven(SystemClock.elapsedRealtime(), includesVoice); refreshConsent() }
                         else {
                             autoAnnouncer.failed()
-                            mutableState.update { it.copy(note = "Notice too quiet to count. Uncover the phone or raise the volume and announce again, or tell everyone.") }
+                            mutableState.update { it.copy(note = tr(R.string.notice_too_quiet_to_count_uncover)) }
                         }
                     }
                     @Deprecated("Deprecated in Java") override fun onError(id: String?) {
                         noticePlaying = false; muteUntil = SystemClock.elapsedRealtime() + 700
                         restore(); autoAnnouncer.failed()
-                        mutableState.update { it.copy(note = "Couldn't play the notice. Tell everyone you're taking notes, then tap \"I told everyone\".") }
+                        mutableState.update { it.copy(note = tr(R.string.couldn_t_play_the_notice_tell)) }
                     }
                 })
                 noticePlaying = true; playStartedAt = SystemClock.elapsedRealtime() // mute before audio starts; onDone/onError release it
@@ -272,7 +275,7 @@ class ListeningService : Service() {
                 }
             } else {
                 restore(); autoAnnouncer.failed()
-                mutableState.update { it.copy(note = "No text-to-speech voice. Tell everyone you're taking notes, then tap \"I told everyone\".") }
+                mutableState.update { it.copy(note = tr(R.string.no_text_to_speech_voice_tell)) }
             }
         }
     }
@@ -292,15 +295,15 @@ class ListeningService : Service() {
                 val g = gate; val engine = turnEngine
                 val key = intent.getStringExtra(VOICE_KEY); val name = intent.getStringExtra(VOICE_NAME)
                 if (g != null && engine != null && key != null && g.namingAllowed(SystemClock.elapsedRealtime()) && engine.nameVoice(key, name)) {
-                    app.temporary.voiceNamed(key, name?.let(com.sidekick.core.SessionVoices::cleanName), "Voice")
-                } else mutableState.update { it.copy(note = "Voices can't be named right now.") }
+                    app.temporary.voiceNamed(key, name?.let(com.sidekick.core.SessionVoices::cleanName), tr(R.string.voice))
+                } else mutableState.update { it.copy(note = tr(R.string.voices_can_t_be_named_right)) }
                 return START_NOT_STICKY
             }
         }
         val recovering = intent == null || intent.action == RESUME
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            mutableState.value = ListeningState(note = "Microphone permission is required")
-            app.assistant.disarm("Microphone permission is required")
+            mutableState.value = ListeningState(note = tr(R.string.microphone_permission_is_required))
+            app.assistant.disarm(tr(R.string.microphone_permission_is_required))
             if (recovering) CaptureStatusAlerts.stopped(this)
             stopSelf(); return START_NOT_STICKY
         }
@@ -314,17 +317,17 @@ class ListeningService : Service() {
         if (!enrollment && !recovering) app.assistant.rememberUserStart()
         try {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
-                NotificationChannel(CHANNEL, "Listening and transcription", NotificationManager.IMPORTANCE_LOW))
+                NotificationChannel(CHANNEL, tr(R.string.listening_and_transcription), NotificationManager.IMPORTANCE_LOW))
             if (Build.VERSION.SDK_INT >= 30) startForeground(1, notification(true), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
             else startForeground(1, notification(true))
             CaptureStatusAlerts.clear(this)
-            mutableState.value = ListeningState(processing = true, enrolling = enrollment, note = "Preparing local speech detection…")
+            mutableState.value = ListeningState(processing = true, enrolling = enrollment, note = tr(R.string.preparing_local_speech_detection))
             capture = scope.launch {
                 // A recoverable error restarts listening 5 s later inside the same service (it keeps its microphone
                 // permission while in the foreground), up to 5 times an hour; otherwise the session ends here.
                 try {
                     while (runSession() && !finish && !discard) {
-                        mutableState.update { it.copy(processing = true, note = "Restarting listening after a problem…") }
+                        mutableState.update { it.copy(processing = true, note = tr(R.string.restarting_listening_after_a_problem)) }
                         delay(retry.delayMs)
                         if (finish || discard) break // Finish or Stop pressed while waiting
                     }
@@ -336,7 +339,7 @@ class ListeningService : Service() {
                 // Android refused the microphone for a resume started in the background (right after an update or a
                 // restart, before SideKick's assistant service is connected again). Recovery stays enabled: that
                 // connection tries again and is allowed.
-                mutableState.value = ListeningState(note = "Waiting to resume listening…")
+                mutableState.value = ListeningState(note = tr(R.string.waiting_to_resume_listening))
             } else {
                 CaptureStatusAlerts.stopped(this)
                 app.assistant.disarm("Android could not start listening. Open SideKick and start again.")
@@ -356,13 +359,13 @@ class ListeningService : Service() {
         val done = PendingIntent.getService(this, 3, Intent(this, ListeningService::class.java).setAction(FINISH), PendingIntent.FLAG_IMMUTABLE)
         val open = PendingIntent.getActivity(this, 2, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         return Notification.Builder(this, CHANNEL).setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setContentTitle(if (paused != null) "SideKick · Paused" else if (recording) "SideKick · Listening" else "SideKick · Finishing transcript")
-            .setContentText(paused ?: if (app.guidance.handsOffMode.value && !enrollment) "On-device · plans save automatically" else "On-device · no audio saved")
+            .setContentTitle(if (paused != null) tr(R.string.sidekick_paused) else if (recording) tr(R.string.sidekick_listening) else tr(R.string.sidekick_finishing_transcript))
+            .setContentText(paused ?: if (app.guidance.handsOffMode.value && !enrollment) tr(R.string.on_device_plans_save_automatically) else tr(R.string.on_device_no_audio_saved))
             .setContentIntent(open).setOngoing(true)
-            .apply { if (recording) addAction(Notification.Action.Builder(null, "Finish", done).build()) }
-            .apply { if (recording && !enrollment) addAction(Notification.Action.Builder(null, "Announce",
+            .apply { if (recording) addAction(Notification.Action.Builder(null, tr(R.string.finish), done).build()) }
+            .apply { if (recording && !enrollment) addAction(Notification.Action.Builder(null, tr(R.string.announce),
                 PendingIntent.getService(this@ListeningService, 4, Intent(this@ListeningService, ListeningService::class.java).setAction(ANNOUNCE), PendingIntent.FLAG_IMMUTABLE)).build()) }
-            .addAction(Notification.Action.Builder(null, if (app.guidance.handsOffMode.value && !enrollment) "Stop & clear text" else "Discard session", cancel).build()).build()
+            .addAction(Notification.Action.Builder(null, if (app.guidance.handsOffMode.value && !enrollment) tr(R.string.stop_clear_text) else tr(R.string.discard_session), cancel).build()).build()
     }
 
     private val retry = com.sidekick.core.ListeningRetry()
@@ -382,7 +385,7 @@ class ListeningService : Service() {
         // Until the location lookup answers, the strictest rule applies.
         val strictest = app.guidance.strictestEverywhere.value
         val consent = com.sidekick.core.ConsentGate(
-            if (strictest) com.sidekick.core.RecordingJurisdiction.strictestEverywhere() else com.sidekick.core.RecordingJurisdiction.unknown("Checking location…"),
+            if (strictest) com.sidekick.core.RecordingJurisdiction.strictestEverywhere() else com.sidekick.core.RecordingJurisdiction.unknown(tr(R.string.checking_location)),
             voiceNoticeEverywhere = app.guidance.voiceLineEverywhere.value)
         val speaker = SpeakerEngine(this, app.voiceProfile) {
             if (consent.strictOwnerMatch()) com.sidekick.core.VoiceMatch.Thresholds.BEFORE_NOTICE else com.sidekick.core.VoiceMatch.Thresholds.STANDARD
@@ -400,16 +403,16 @@ class ListeningService : Service() {
         val wake = getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SideKick:LiveNotes")
         wake.setReferenceCounted(false)
         try {
-            check(com.sidekick.app.speech.ModelPacks.missing(this, setupLanguage, app.guidance.speechQuality.value).isEmpty()) { "Install the selected speech model pack in Get started, or choose English Fast." }
+            check(com.sidekick.app.speech.ModelPacks.missing(this, setupLanguage, app.guidance.speechQuality.value).isEmpty()) { tr(R.string.install_the_selected_speech_model_pack) }
             wake.acquire(10 * 60_000L)
             NativeVad.open(VadModel.install(this))
             currentCoroutineContext().ensureActive()
             val minimum = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-            check(minimum > 0) { "This microphone configuration is unavailable." }
+            check(minimum > 0) { tr(R.string.this_microphone_configuration_is_unavailable) }
             val audio = AudioRecord(MediaRecorder.AudioSource.MIC, 16000, AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT, maxOf(minimum, 256_000)) // 8 s of buffer: no audio lost if processing is briefly delayed
             recorder = audio
-            check(audio.state == AudioRecord.STATE_INITIALIZED) { "Microphone could not initialize." }
+            check(audio.state == AudioRecord.STATE_INITIALIZED) { tr(R.string.microphone_could_not_initialize) }
             val started = Instant.now()
             val zone = ZoneId.systemDefault()
             val startedClock = SystemClock.elapsedRealtime()
@@ -436,7 +439,7 @@ class ListeningService : Service() {
                     if (!strictest) follower = launch {
                         try { JurisdictionLocator.follow(this@ListeningService) { place -> applyPlace(place) } }
                         catch (e: CancellationException) { throw e }
-                        catch (_: Exception) { applyPlace(com.sidekick.core.RecordingJurisdiction.unknown("Location lookup failed")) }
+                        catch (_: Exception) { applyPlace(com.sidekick.core.RecordingJurisdiction.unknown(tr(R.string.location_lookup_failed))) }
                     }
                     follower?.let(watchers::add)
                     watchers += launch { app.guidance.autoAnnounce.collect { autoAnnouncer.enabled = it } }
@@ -491,7 +494,7 @@ class ListeningService : Service() {
                 // Optional SideKick voice check: how the start of an unassigned phrase matches the owner's "SideKick".
                 var wakeScore: Float? = null
                 var voiceTrack = "spk_session_unassigned0"
-                var voiceLabel = "Unassigned voice"
+                var voiceLabel = tr(R.string.unassigned_voice)
                 var voiceName: String? = null
                 var voiceGrouped = false
                 var continuation = false
@@ -505,7 +508,7 @@ class ListeningService : Service() {
                     heldText = null
                     if (discard) return
                     app.temporary.appendAttributedLive(h.text, h.at, zone, if (owner) Speaker.USER else Speaker.UNKNOWN, h.continuation,
-                        if (owner) track else "spk_session_unassigned_held", if (owner) label else "Unassigned voice", recognitionReliable = h.reliable, timeChoices = h.choices)
+                        if (owner) track else "spk_session_unassigned_held", if (owner) label else tr(R.string.unassigned_voice), recognitionReliable = h.reliable, timeChoices = h.choices)
                     if (owner) mutableState.update { it.copy(userVoiceChunks = it.userVoiceChunks + 1, unknownVoiceChunks = (it.unknownVoiceChunks - 1).coerceAtLeast(0)) }
                     // Saved plans are processed with the next chunk's text (or at session end).
                 }
@@ -536,9 +539,9 @@ class ListeningService : Service() {
                                 otherVoiceChunks = it.otherVoiceChunks + if (identified == Speaker.OTHER) 1 else 0,
                                 unknownVoiceChunks = it.unknownVoiceChunks + if (identified == Speaker.UNKNOWN) 1 else 0,
                                 voiceStatus = when (identified) {
-                                    Speaker.USER -> "Likely your voice · $voiceLabel"
-                                    Speaker.OTHER -> "$voiceLabel · information only"
-                                    Speaker.UNKNOWN -> "$voiceLabel · identity unassigned"
+                                    Speaker.USER -> tr(R.string.likely_your_voice_1_s, voiceLabel)
+                                    Speaker.OTHER -> tr(R.string.n_1_s_information_only, voiceLabel)
+                                    Speaker.UNKNOWN -> tr(R.string.n_1_s_identity_unassigned, voiceLabel)
                                 }) }
                             // Speech the consent rule does not allow is dropped before recognition: never transcribed.
                             // New conversation and no notice in effect: with the setting on, announce now and drop this
@@ -563,7 +566,7 @@ class ListeningService : Service() {
                         val total = com.sidekick.core.WakeVoice.SAMPLES
                         if (!discard && wakeSamples.size < total && wakeTries < com.sidekick.core.WakeVoice.MAX_TRIES) {
                             val vector = runCatching { speaker.wakeEmbedding(samples) }.getOrNull()
-                            if (vector == null) mutableState.update { it.copy(note = "Didn't catch “SideKick”. Say it again with a short pause after it (${wakeSamples.size}/$total).") }
+                            if (vector == null) mutableState.update { it.copy(note = tr(R.string.didn_t_catch_sidekick_say_it, wakeSamples.size, total)) }
                             else {
                                 wakeTries++
                                 wakeSamples += vector
@@ -574,8 +577,8 @@ class ListeningService : Service() {
                                     wakeSamples.size == total -> finish = true
                                     wakeTries >= com.sidekick.core.WakeVoice.MAX_TRIES -> finish = true
                                     else -> mutableState.update { it.copy(voiceSamples = wakeSamples.size, note =
-                                        (if (odd != null) "One sounded different from the others, so it was left out. " else "Got it. ") +
-                                        "Now say the next one (${wakeSamples.size}/$total).") }
+                                        (if (odd != null) tr(R.string.one_sounded_different_from_the_others) else tr(R.string.got_it)) +
+                                        tr(R.string.now_say_the_next_one_1, wakeSamples.size, total)) }
                                 }
                             }
                         }
@@ -586,10 +589,10 @@ class ListeningService : Service() {
                         } else if (!discard && enrollmentSamples.size < 3) {
                             try {
                                 enrollmentSamples += speaker.enrollmentEmbedding(samples)
-                                mutableState.update { it.copy(voiceSamples = enrollmentSamples.size, note = "Voice setup: ${enrollmentSamples.size}/3 checked samples") }
+                                mutableState.update { it.copy(voiceSamples = enrollmentSamples.size, note = tr(R.string.voice_setup_1_s_3_checked, enrollmentSamples.size)) }
                                 if (enrollmentSamples.size == 3) finish = true
                             } catch (e: IllegalArgumentException) {
-                                mutableState.update { it.copy(note = "${e.message} Try another sentence (${enrollmentSamples.size}/3 kept).") }
+                                mutableState.update { it.copy(note = tr(R.string.n_1_s_try_another_sentence_2, e.message, enrollmentSamples.size)) }
                             }
                         }
                         false
@@ -617,13 +620,13 @@ class ListeningService : Service() {
                     mutableState.update { it.copy(chunks = it.chunks + 1, lastLatencyMs = latency,
                         recognizer = app.speech.lastBackend,
                         recognitionDiagnostics = (it.recognitionDiagnostics + listOfNotNull(app.speech.lastClockDiagnostic, app.speech.lastRetryDiagnostic)).takeLast(8),
-                        note = if (it.recording) { if (app.speech.lastUncertain) "Listening · unclear phrase kept as text only" else if (app.guidance.handsOffMode.value) "Listening · saving events automatically" else "Listening · live text is ready for review" } else "Finishing remaining speech…") }
+                        note = if (it.recording) { if (app.speech.lastUncertain) tr(R.string.listening_unclear_phrase_kept_as_text) else if (app.guidance.handsOffMode.value) tr(R.string.listening_saving_events_automatically) else tr(R.string.listening_live_text_is_ready_for) } else tr(R.string.finishing_remaining_speech)) }
                 }
                 processor = pipeline
                 val worker = launch { pipeline.consume() }
                 if (!finish) audio.startRecording()
-                check(finish || audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "Microphone did not start." }
-                mutableState.update { it.copy(recording = !finish, processing = false, note = "Listening · waiting for speech") }
+                check(finish || audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) { tr(R.string.microphone_did_not_start) }
+                mutableState.update { it.copy(recording = !finish, processing = false, note = tr(R.string.listening_waiting_for_speech)) }
                 var filled = 0
                 var reportedDrops = 0
                 var target = 4096
@@ -685,16 +688,16 @@ class ListeningService : Service() {
                         if (filled > 0) { feed(filled, speakingNotice(SystemClock.elapsedRealtime()) || muteUntil > blockStart); filled = 0 }
                         pipeline.flushPending(); audio.stop(); rest.pause()
                         if (wake.isHeld) wake.release()
-                        mutableState.update { it.copy(note = "Paused · phone resting. Pick it up to resume.", level = 0f, speechActive = false) }
-                        pausedNotification("The phone is resting and it's quiet. Pick it up or unlock it to resume.")
+                        mutableState.update { it.copy(note = tr(R.string.paused_phone_resting_pick_it_up), level = 0f, speechActive = false) }
+                        pausedNotification(tr(R.string.the_phone_is_resting_and_it))
                         while (!finish && !woke.get() && !power.isInteractive && app.guidance.pauseWhenResting.value) delay(1_000)
                         woke.set(false)
                         if (finish) break
                         wake.acquire(10 * 60_000L); renewAt = SystemClock.elapsedRealtime() + 5 * 60_000L
                         audio.startRecording(); captureHealth = com.sidekick.core.CaptureHealth(SystemClock.elapsedRealtime())
                         rest.resume(SystemClock.elapsedRealtime())
-                        check(audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "Microphone did not restart after the pause." }
-                        mutableState.update { it.copy(note = "Listening · resumed") }; pausedNotification(null)
+                        check(audio.recordingState == AudioRecord.RECORDSTATE_RECORDING) { tr(R.string.microphone_did_not_restart_after_the) }
+                        mutableState.update { it.copy(note = tr(R.string.listening_resumed)) }; pausedNotification(null)
                         continue
                     }
                     if (enrollment && SystemClock.elapsedRealtime() - startedClock >= if (wakeEnrollment) 120_000 else 45_000) { finish = true; break }
@@ -706,28 +709,28 @@ class ListeningService : Service() {
                         // Every 2 s (was 4 times a second): revoking the permission ends the app anyway, and a muted
                         // microphone only delivers silence, so at most 2 s of silence is read before stopping.
                         privacyCheckAt = SystemClock.elapsedRealtime() + if (legacy) 250 else 2_000
-                        check(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) { "Microphone access was removed. Listening stopped." }
+                        check(checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) { tr(R.string.microphone_access_was_removed_listening_stopped) }
                         // Muted microphone (Android also sets this when you press mute during a call): pause, with no time
                         // limit, and carry on when it is unmuted. Muted audio is silence, so nothing is heard meanwhile.
                         val muted = audioManager.isMicrophoneMute
                         if (muted != mutedPause) {
                             mutedPause = muted
                             if (muted) {
-                                mutableState.update { it.copy(note = "Paused · mic muted. Resumes when unmuted.", level = 0f, speechActive = false) }
-                                pausedNotification("The microphone is muted. SideKick carries on when it's unmuted.")
-                            } else { mutableState.update { it.copy(note = "Listening · the microphone is back") }; pausedNotification(null) }
+                                mutableState.update { it.copy(note = tr(R.string.paused_mic_muted_resumes_when_unmuted), level = 0f, speechActive = false) }
+                                pausedNotification(tr(R.string.the_microphone_is_muted_sidekick_carries))
+                            } else { mutableState.update { it.copy(note = tr(R.string.listening_the_microphone_is_back)) }; pausedNotification(null) }
                         }
                         // Another app took the microphone (a call, a recorder, the camera): wait and carry on when it is
                         // free; stop only if it stays taken for 10 minutes. Silenced audio is silence, so nothing is heard.
                         val silenced = !muted && Build.VERSION.SDK_INT >= 29 && audio.activeRecordingConfiguration?.isClientSilenced == true
                         when (handback.update(silenced, SystemClock.elapsedRealtime())) {
-                            com.sidekick.core.MicHandback.State.TAKEN -> if (!mutableState.value.note.startsWith("Paused · another app")) {
-                                mutableState.update { it.copy(note = "Paused · another app is using the mic. Resumes when it’s free.", level = 0f, speechActive = false) }
-                                pausedNotification("Another app is using the microphone. SideKick carries on when it's free.")
+                            com.sidekick.core.MicHandback.State.TAKEN -> if (mutableState.value.note != tr(R.string.paused_another_app_is_using_the)) {
+                                mutableState.update { it.copy(note = tr(R.string.paused_another_app_is_using_the), level = 0f, speechActive = false) }
+                                pausedNotification(tr(R.string.another_app_is_using_the_microphone))
                             }
-                            com.sidekick.core.MicHandback.State.RETURNED -> { mutableState.update { it.copy(note = "Listening · the microphone is back") }; pausedNotification(null) }
+                            com.sidekick.core.MicHandback.State.RETURNED -> { mutableState.update { it.copy(note = tr(R.string.listening_the_microphone_is_back)) }; pausedNotification(null) }
                             com.sidekick.core.MicHandback.State.GIVE_UP ->
-                                error("Another app kept the microphone for 10 minutes. Listening stopped; start again when it's free.")
+                                error(tr(R.string.mic_kept_by_other_app))
                             com.sidekick.core.MicHandback.State.LISTENING -> Unit
                         }
                     }
@@ -754,9 +757,9 @@ class ListeningService : Service() {
                     // Tell the user while SideKick is catching up, or if audio ever had to be dropped (memory low).
                     val backlogNote = when {
                         pipeline.droppedCount > reportedDrops -> { reportedDrops = pipeline.droppedCount
-                            "Phone memory was low: ${pipeline.droppedCount} older phrases could not be kept. Listening continues." }
-                        pipeline.catchingUp && !mutableState.value.note.startsWith("Catching up") ->
-                            "Catching up · faster recognition for a moment (${pipeline.waitingSeconds} s of speech waiting)"
+                            tr(R.string.phone_memory_was_low_1_s, pipeline.droppedCount) }
+                        pipeline.catchingUp && !mutableState.value.note.startsWith(tr(R.string.catching_up_faster_recognition_for_a, 0).substringBefore("0")) ->
+                            tr(R.string.catching_up_faster_recognition_for_a, pipeline.waitingSeconds)
                         else -> null
                     }
                     if (backlogNote != null) mutableState.update { it.copy(note = backlogNote) }
@@ -768,7 +771,7 @@ class ListeningService : Service() {
                 }
                 if (filled > 0) feed(filled, speakingNotice(SystemClock.elapsedRealtime()) || muteUntil > blockStart)
                 runCatching { audio.stop() }; audio.release(); recorder = null
-                mutableState.update { it.copy(recording = false, processing = true, level = 0f, note = "Finishing remaining speech…") }
+                mutableState.update { it.copy(recording = false, processing = true, level = 0f, note = tr(R.string.finishing_remaining_speech)) }
                 if (Build.VERSION.SDK_INT >= 34) startForeground(1, notification(false), ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE)
                 else getSystemService(NotificationManager::class.java).notify(1, notification(false))
                 pipeline.finish()
@@ -779,30 +782,30 @@ class ListeningService : Service() {
             currentCoroutineContext().ensureActive()
             var wakeSaved = false
             if (wakeEnrollment && !discard && wakeSamples.size == com.sidekick.core.WakeVoice.SAMPLES) {
-                check(app.voiceProfile.consent.value?.valid == true) { "Voice setup needs your consent first. Nothing was saved." }
-                check(app.voiceProfile.model.value == setupModel) { "Voice settings changed. Repeat setup in the selected language." }
+                check(app.voiceProfile.consent.value?.valid == true) { tr(R.string.voice_setup_needs_your_consent_first) }
+                check(app.voiceProfile.model.value == setupModel) { tr(R.string.voice_settings_changed_repeat_setup_in) }
                 wakeSaved = runCatching { app.voiceProfile.saveWake(wakeSamples) }.isSuccess
             }
             if (enrollment && !wakeEnrollment && !discard && enrollmentSamples.size == 3) {
-                check(app.voiceProfile.consent.value?.valid == true) { "Voice setup needs your consent first. Nothing was saved." }
-                check(app.voiceProfile.language.value == setupLanguage && app.voiceProfile.model.value == setupModel) { "Voice settings changed. Repeat setup in the selected language." }
+                check(app.voiceProfile.consent.value?.valid == true) { tr(R.string.voice_setup_needs_your_consent_first) }
+                check(app.voiceProfile.language.value == setupLanguage && app.voiceProfile.model.value == setupModel) { tr(R.string.voice_settings_changed_repeat_setup_in) }
                 app.voiceProfile.save(enrollmentSamples, profileTarget, enrollmentSetting)
             }
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
                 note = if (wakeEnrollment) {
-                    if (wakeSaved) "SideKick voice check is set up and on."
-                    else if (wakeSamples.size == com.sidekick.core.WakeVoice.SAMPLES) "Your “SideKick” samples differed too much. Try again in one place, phone still."
-                    else if (wakeTries >= com.sidekick.core.WakeVoice.MAX_TRIES) "Your “SideKick” samples kept differing. Try again somewhere quiet, phone still, same distance each time. Nothing was saved."
-                    else "SideKick voice check setup stopped. Nothing was saved."
+                    if (wakeSaved) tr(R.string.sidekick_voice_check_is_set_up)
+                    else if (wakeSamples.size == com.sidekick.core.WakeVoice.SAMPLES) tr(R.string.your_sidekick_samples_differed_too_much)
+                    else if (wakeTries >= com.sidekick.core.WakeVoice.MAX_TRIES) tr(R.string.your_sidekick_samples_kept_differing_try)
+                    else tr(R.string.sidekick_voice_check_setup_stopped_nothing)
                 } else if (enrollment) {
-                    if (enrollmentSamples.size == 3) "Voice setup complete. Your ${profileTarget.label} profile (${enrollmentSetting.label.lowercase()}) is saved."
-                    else "Voice setup incomplete. Speak in longer phrases and try again; any previous profile is unchanged."
-                } else if (it.chunks == 0) "No speech detected. Try speaking closer to the microphone." else if (app.guidance.handsOffMode.value) app.automation.status.value else "Session finished. Review and approve commitments below.") }
+                    if (enrollmentSamples.size == 3) tr(R.string.voice_setup_complete_your_1_s, profileTarget.label, enrollmentSetting.label.lowercase())
+                    else tr(R.string.voice_setup_incomplete_speak_in_longer)
+                } else if (it.chunks == 0) tr(R.string.no_speech_detected_try_speaking_closer) else if (app.guidance.handsOffMode.value) app.automation.status.value else tr(R.string.session_finished_review_and_approve_commitments)) }
         } catch (e: CancellationException) {
             if (!discard && !finish) android.util.Log.w("SidekickListen", "listening cancelled by Android or the app")
             if (!discard && !finish) CaptureStatusAlerts.stopped(this)
             mutableState.update { it.copy(recording = false, processing = false, level = 0f,
-                note = if (discard) "Session discarded" else "Listening interrupted. Review text captured so far.") }
+                note = if (discard) tr(R.string.session_discarded) else tr(R.string.listening_interrupted_review_text_captured_so)) }
             throw e
         } catch (e: Exception) {
             // The stop reason only (our own message, never words or audio), so an interruption can be diagnosed later.
@@ -810,10 +813,10 @@ class ListeningService : Service() {
             android.util.Log.w("SidekickListen", "listening ${if (retryWanted) "restarting after" else "stopped"}: ${e.javaClass.simpleName}: ${e.message}")
             if (!retryWanted) {
                 CaptureStatusAlerts.stopped(this)
-                if (!enrollment) app.assistant.disarm("Listening paused after an error. Start again when ready.")
+                if (!enrollment) app.assistant.disarm(tr(R.string.listening_paused_after_an_error_start))
             }
             mutableState.update { it.copy(recording = false, processing = retryWanted, level = 0f,
-                note = if (retryWanted) "Restarting listening after a problem…" else e.message ?: "Listening failed. Review the text captured so far, then try again.") }
+                note = if (retryWanted) tr(R.string.restarting_listening_after_a_problem) else e.message ?: tr(R.string.listening_failed_review_the_text_captured)) }
         } finally {
             runCatching { recorder?.stop() }; recorder?.release()
             // Learning across sessions: only after a normal session (not voice setup, not discarded).
@@ -831,7 +834,7 @@ class ListeningService : Service() {
         return retryWanted
     }
 
-    override fun onTimeout(startId: Int) { CaptureStatusAlerts.stopped(this); app.assistant.disarm("Android stopped listening"); capture?.cancel(); stopSelf() }
+    override fun onTimeout(startId: Int) { CaptureStatusAlerts.stopped(this); app.assistant.disarm(tr(R.string.android_stopped_listening)); capture?.cancel(); stopSelf() }
     override fun onDestroy() { noticeVoice?.shutdown(); noticeVoice = null; answerVoice?.shutdown(); answerVoice = null; gate = null; scope.cancel(); stopForeground(STOP_FOREGROUND_REMOVE); super.onDestroy() }
     companion object {
         private const val CHANNEL = "listening"

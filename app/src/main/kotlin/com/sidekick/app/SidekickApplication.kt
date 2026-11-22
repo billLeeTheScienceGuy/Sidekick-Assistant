@@ -28,8 +28,14 @@ class SidekickApplication : Application() {
     val calendarMirror by lazy { CalendarMirror(this, database, guidance) }
     val automation by lazy { AutomaticMemory(this, guidance, temporary, database.commitments(), reminders) }
     val assistant by lazy { com.sidekick.app.assistant.AssistantControl(this) }
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        AppLanguage.refresh(this)
+    }
     override fun onCreate() {
         super.onCreate()
+        AppLanguage.refresh(this)
+        CrashReports.install(this)
         guidance // Read persisted mode before any background worker starts.
         calendarMirror.start(background)
         // Home-screen widget: redraw when plans change or listening starts or stops.

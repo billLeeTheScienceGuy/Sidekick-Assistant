@@ -1,5 +1,8 @@
 package com.sidekick.app.audio
 
+import com.sidekick.app.R
+import com.sidekick.app.tr
+
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -46,13 +49,13 @@ object JurisdictionLocator {
     suspend fun locate(context: Context, lowPower: Boolean = false): RecordingJurisdiction.Place = withContext(Dispatchers.IO) {
         try {
             val fine = fine(context)
-            if (!fine && !coarse(context)) return@withContext RecordingJurisdiction.unknown("Location permission not granted")
-            val manager = context.getSystemService(LocationManager::class.java) ?: return@withContext RecordingJurisdiction.unknown("No location service")
+            if (!fine && !coarse(context)) return@withContext RecordingJurisdiction.unknown(tr(R.string.location_permission_not_granted))
+            val manager = context.getSystemService(LocationManager::class.java) ?: return@withContext RecordingJurisdiction.unknown(tr(R.string.no_location_service))
             val location = runCatching { fresh(manager, fine, lowPower) }.getOrNull() ?: runCatching { lastKnown(manager) }.getOrNull()
-                ?: return@withContext RecordingJurisdiction.unknown("No location fix")
+                ?: return@withContext RecordingJurisdiction.unknown(tr(R.string.no_location_fix))
             place(context, location)
         } catch (e: CancellationException) { throw e }
-        catch (_: Exception) { RecordingJurisdiction.unknown("Location lookup failed") }
+        catch (_: Exception) { RecordingJurisdiction.unknown(tr(R.string.location_lookup_failed)) }
     }
 
     /** Within this distance of another state: precise location (GPS when allowed). Back to low power beyond FAR. */
@@ -84,7 +87,7 @@ object JurisdictionLocator {
             if (manager == null || !(fine(context) || coarse(context))) return
             listener?.let { runCatching { manager.removeUpdates(it) } }
             val l = LocationListener { location ->
-                onPlace(try { place(context, location) } catch (_: Exception) { RecordingJurisdiction.unknown("Location lookup failed") })
+                onPlace(try { place(context, location) } catch (_: Exception) { RecordingJurisdiction.unknown(tr(R.string.location_lookup_failed)) })
                 val near = runCatching { nearBorder(location) }.getOrDefault(true)
                 if (near != precise) { precise = near; register() }
             }

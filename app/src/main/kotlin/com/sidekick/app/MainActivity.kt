@@ -39,6 +39,7 @@ import java.time.ZoneId
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: android.content.Context) { super.attachBaseContext(AppLanguage.wrap(newBase)) }
     private var remindersReady by mutableStateOf(true)
     override fun onResume() {
         super.onResume()
@@ -90,7 +91,7 @@ class MainActivity : ComponentActivity() {
         val sharedMessagesEnabled by (application as SidekickApplication).guidance.sharedMessages.collectAsStateWithLifecycle()
         val speechLanguage by (application as SidekickApplication).guidance.speechLanguage.collectAsStateWithLifecycle()
         val speechQuality by (application as SidekickApplication).guidance.speechQuality.collectAsStateWithLifecycle()
-        var settingsOpen by remember { mutableStateOf(false) }
+        var settingsOpen by rememberSaveable { mutableStateOf(false) }
         var quickStartOpen by remember { mutableStateOf(false) }
         val packRevision by com.sidekick.app.speech.ModelPacks.revision.collectAsStateWithLifecycle()
         val missingPacks = remember(speechLanguage, speechQuality, packRevision) { com.sidekick.app.speech.ModelPacks.missing(this@MainActivity, speechLanguage, speechQuality) }
@@ -119,6 +120,7 @@ class MainActivity : ComponentActivity() {
         var moreOpen by rememberSaveable { mutableStateOf(false) }
         var selectedView by rememberSaveable { mutableStateOf(PlannerView.REVIEW) }
         var search by rememberSaveable { mutableStateOf("") }
+        SideEffect { CrashReports.screen = when { settingsOpen -> "Settings"; plannerOpen -> "Plans"; summaryOpen -> "Summary"; moreOpen -> "More"; quickStartOpen -> "Quick start"; else -> "Home" } }
         val references = entries.map { PlannerEntry(it.id, it.state, it.dueAt, it.capturedAt) }
         val byId = entries.associateBy { it.id }
         val shownEntries = if (plannerOpen) Planner.select(references, selectedView).mapNotNull { byId[it.id] }
@@ -133,22 +135,22 @@ class MainActivity : ComponentActivity() {
 
         fun serviceAction(action: String) {
             try { startService(Intent(this@MainActivity, ListeningService::class.java).setAction(action)) }
-            catch (e: Exception) { error = "Could not change listening. Try again." }
+            catch (e: Exception) { error = tr(R.string.could_not_change_listening_try_again) }
         }
         fun startRecording() {
-            if (missingPacks.isNotEmpty()) { error = "Speech for this language isn’t installed. Tap Set up speech."; return }
+            if (missingPacks.isNotEmpty()) { error = tr(R.string.speech_for_this_language_isn_t); return }
             try { startForegroundService(Intent(this@MainActivity, ListeningService::class.java)) }
-            catch (e: Exception) { error = "Could not start recording. Reopen the app and try again." }
+            catch (e: Exception) { error = tr(R.string.could_not_start_recording_reopen_the) }
         }
         val microphonePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) startRecording() else error = "Microphone permission was denied. You can still type."
+            if (granted) startRecording() else error = tr(R.string.microphone_permission_was_denied_you_can)
         }
         val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (awaitingLiveNotifications) {
                 awaitingLiveNotifications = false
                 if (granted) microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
-                else error = "Enable notifications for listening controls, then try again."
-            } else if (!granted) error = "Notifications are disabled. You can save commitments without reminders."
+                else error = tr(R.string.enable_notifications_for_listening_controls_then)
+            } else if (!granted) error = tr(R.string.notifications_are_disabled_you_can_save)
             else model.notificationPermissionChanged()
         }
         val preciseLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
@@ -225,45 +227,46 @@ class MainActivity : ComponentActivity() {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (oneScreen && (expandedCapture || summaryOpen) && !plannerOpen)
                             OutlinedButton(onClick = { expandedCapture = false; summaryOpen = false; moreOpen = true },
-                                modifier = Modifier.heightIn(min = SimpleTarget).testTag("simple-back")) { Text("Back to More", style = MaterialTheme.typography.titleMedium) }
-                        Text(if (summaryOpen) "Summary" else if (plannerOpen) { if (oneScreen) "Plans" else "Planner" } else if (oneScreen) "What was heard" else "Capture",
+                                modifier = Modifier.heightIn(min = SimpleTarget).testTag("simple-back")) { Text(tr(R.string.back_to_more), style = MaterialTheme.typography.titleMedium) }
+                        Text(if (summaryOpen) tr(R.string.summary) else if (plannerOpen) { if (oneScreen) tr(R.string.plans) else tr(R.string.planner) } else if (oneScreen) tr(R.string.what_was_heard) else tr(R.string.capture),
                             style = MaterialTheme.typography.headlineMedium)
-                        QuietLabel(if (summaryOpen) "Your day at a glance." else if (plannerOpen) { if (oneScreen) "Your plans and reminders. Every action has its own button." else "Plans, reminders and things to review." }
-                            else "Turn conversations into plans.")
-                        if (oneScreen) Text(if (handsOff) "Plans save automatically. You can undo them here." else "Plans wait until you check them.",
+                        QuietLabel(if (summaryOpen) tr(R.string.your_day_at_a_glance) else if (plannerOpen) { if (oneScreen) tr(R.string.your_plans_and_reminders_every_action) else tr(R.string.plans_reminders_and_things_to_review) }
+                            else tr(R.string.turn_conversations_into_plans))
+                        if (oneScreen) Text(if (handsOff) tr(R.string.plans_save_automatically_you_can_undo) else tr(R.string.plans_wait_until_you_check_them),
                             style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("automation-status"))
                         else {
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                SuggestionChip(onClick = { settingsOpen = true }, label = { Text(if (handsOff) "Hands-off" else "Review first") })
-                                TextButton(onClick = { quickStartOpen = true }, modifier = Modifier.testTag("get-started")) { Text("Set up speech") }
+                                SuggestionChip(onClick = { settingsOpen = true }, label = { Text(if (handsOff) tr(R.string.hands_off) else tr(R.string.review_first)) })
+                                TextButton(onClick = { quickStartOpen = true }, modifier = Modifier.testTag("get-started")) { Text(tr(R.string.set_up_speech)) }
                             }
-                            QuietLabel(if (handsOff) "Hands-off mode · $automaticStatus" else "Review mode · approve items to save", Modifier.testTag("automation-status"))
+                            QuietLabel(if (handsOff) tr(R.string.hands_off_mode_1_s, automaticStatus) else tr(R.string.review_mode_approve_items_to_save), Modifier.testTag("automation-status"))
                         }
                     }
                 }
+                item { CrashReportCard() }
                 item { RiskSection() }
                 if (summaryOpen && (listening.recording || listening.processing)) item {
                     Text(listening.note)
-                    if (listening.recording) Button(onClick = { serviceAction(ListeningService.FINISH) }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Stop listening") }
+                    if (listening.recording) Button(onClick = { serviceAction(ListeningService.FINISH) }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text(tr(R.string.stop_listening)) }
                 }
                 if (summaryOpen) item { SummarySection(entries, liveText, !listening.recording && !listening.processing, model::clearRecentConversation, ::openEditor) }
                 else {
                 if (plannerOpen && (listening.recording || listening.processing)) item {
                     Text(listening.note)
-                    if (listening.recording) Button(onClick = { serviceAction(ListeningService.FINISH) }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Stop listening") }
-                    TextButton(onClick = { serviceAction(ListeningService.CANCEL) }) { Text(if (handsOff) "Stop & clear temporary text" else "Stop & discard what was heard") }
+                    if (listening.recording) Button(onClick = { serviceAction(ListeningService.FINISH) }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text(tr(R.string.stop_listening)) }
+                    TextButton(onClick = { serviceAction(ListeningService.CANCEL) }) { Text(if (handsOff) tr(R.string.stop_clear_temporary_text) else tr(R.string.stop_discard_what_was_heard)) }
                 }
                 if (plannerOpen && !remindersReady) item {
-                    Text("Reminder alerts are off. Your plans are saved; turn on notifications to get alerts.", modifier = Modifier.testTag("reminders-blocked"))
-                    TextButton(onClick = { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }) { Text("Notification settings") }
+                    Text(tr(R.string.reminder_alerts_are_off_your_plans), modifier = Modifier.testTag("reminders-blocked"))
+                    TextButton(onClick = { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }) { Text(tr(R.string.notification_settings)) }
                 }
                 if (plannerOpen && automaticChanges.isNotEmpty()) {
-                    item { Text("Recently saved for you", style = MaterialTheme.typography.titleMedium) }
+                    item { Text(tr(R.string.recently_saved_for_you), style = MaterialTheme.typography.titleMedium) }
                     items(automaticChanges, key = { "automatic-${it.id}" }) { change ->
                         Card(Modifier.fillMaxWidth().testTag("automatic-change-${change.id}")) {
                             Column(Modifier.padding(16.dp)) {
                                 Text("${change.action}: ${change.title}")
-                                TextButton(onClick = { model.undoAutomatic(change.id, change.token) }, modifier = Modifier.testTag("undo-${change.id}")) { Text("Undo") }
+                                TextButton(onClick = { model.undoAutomatic(change.id, change.token) }, modifier = Modifier.testTag("undo-${change.id}")) { Text(tr(R.string.undo)) }
                             }
                         }
                     }
@@ -271,20 +274,20 @@ class MainActivity : ComponentActivity() {
                 if (!plannerOpen) item {
                     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text("Live notes", style = MaterialTheme.typography.titleLarge)
-                            QuietLabel("${speechLanguage.label} · On-device")
+                            Text(tr(R.string.live_notes), style = MaterialTheme.typography.titleLarge)
+                            QuietLabel(tr(R.string.n_1_s_on_device, speechLanguage.label))
                             Text(listening.note)
                             if (listening.recording) {
-                                Text(if (listening.speechActive) "Speech detected" else "Waiting for speech · microphone stays on")
+                                Text(if (listening.speechActive) tr(R.string.speech_detected) else tr(R.string.waiting_for_speech_microphone_stays_on))
                                 Text(listening.voiceStatus)
                                 if (listening.consent.isNotBlank()) QuietLabel(listening.consent, Modifier.testTag("consent-status"))
-                                if (listening.droppedChunks > 0) QuietLabel("${listening.droppedChunks} phrases from other voices dropped, never saved")
-                                if (listening.callActive) QuietLabel("Call detected: strictest rule", Modifier.testTag("call-status"))
+                                if (listening.droppedChunks > 0) QuietLabel(trn(R.plurals.phrases_dropped, listening.droppedChunks, listening.droppedChunks))
+                                if (listening.callActive) QuietLabel(tr(R.string.call_detected_strictest_rule), Modifier.testTag("call-status"))
                                 if (listening.answer.isNotBlank()) Text(listening.answer, style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("plan-answer"))
                                 RestingTip(listening)
                                 if (listening.noticeNeeded || alwaysAnnounce) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OutlinedButton(onClick = { serviceAction(ListeningService.ANNOUNCE) }, modifier = Modifier.testTag("announce-notice")) {
-                                        Text(if (listening.noticeActive) "Announce again" else "Announce note-taking")
+                                        Text(if (listening.noticeActive) tr(R.string.announce_again) else tr(R.string.announce_note_taking))
                                     }
                                     TextButton(onClick = { serviceAction(ListeningService.NOTICE_GIVEN) }, modifier = Modifier.testTag("notice-given")) { Text(listening.attestLabel) }
                                 }
@@ -293,29 +296,29 @@ class MainActivity : ComponentActivity() {
                                         AssistChip(onClick = {
                                             try { startService(Intent(this@MainActivity, ListeningService::class.java).setAction(ListeningService.NAME_VOICE)
                                                 .putExtra(ListeningService.VOICE_KEY, suggestion.voiceKey).putExtra(ListeningService.VOICE_NAME, suggestion.name)) }
-                                            catch (_: Exception) { error = "Could not name this voice." }
+                                            catch (_: Exception) { error = tr(R.string.could_not_name_this_voice) }
                                         }, label = { Text("${suggestion.name}?") }, modifier = Modifier.testTag("name-suggestion"))
-                                        TextButton(onClick = { (application as SidekickApplication).temporary.dismissNameSuggestion() }) { Text("Not now") }
+                                        TextButton(onClick = { (application as SidekickApplication).temporary.dismissNameSuggestion() }) { Text(tr(R.string.not_now)) }
                                     }
                                 }
                                 LinearProgressIndicator(progress = { (listening.level * 5).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
-                                Text("${listening.seconds / 60}m ${listening.seconds % 60}s · ${listening.chunks} phrases")
+                                Text(tr(R.string.n_1_sm_2_ss_3_s, listening.seconds / 60, listening.seconds % 60, listening.chunks))
                                 AskHint()
-                                Button(onClick = { serviceAction(ListeningService.FINISH) }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("Stop listening") }
+                                Button(onClick = { serviceAction(ListeningService.FINISH) }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text(tr(R.string.stop_listening)) }
                             } else if (listening.processing) LinearProgressIndicator(Modifier.fillMaxWidth())
-                            else Button(onClick = { requestListening() }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = !busy && missingPacks.isEmpty()) { Text("Start listening") }
-                            if (missingPacks.isNotEmpty()) Text("Speech files needed. Tap Set up speech to install them, or choose English Faster.")
+                            else Button(onClick = { requestListening() }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = !busy && missingPacks.isEmpty()) { Text(tr(R.string.start_listening)) }
+                            if (missingPacks.isNotEmpty()) Text(tr(R.string.speech_files_needed_tap_set_up))
                             if (listening.recording || listening.processing)
-                                TextButton(onClick = { serviceAction(ListeningService.CANCEL) }) { Text(if (handsOff) "Stop & clear temporary text" else "Stop & discard what was heard") }
+                                TextButton(onClick = { serviceAction(ListeningService.CANCEL) }) { Text(if (handsOff) tr(R.string.stop_clear_temporary_text) else tr(R.string.stop_discard_what_was_heard)) }
                             if (liveText.isNotBlank()) {
-                                Text("Recent live text", style = MaterialTheme.typography.titleMedium)
+                                Text(tr(R.string.recent_live_text), style = MaterialTheme.typography.titleMedium)
                                 Text(liveText.takeLast(if (showFullLiveText) 3000 else 600), modifier = Modifier.testTag("live-text"))
-                                if (liveText.length > 600) TextButton(onClick = { showFullLiveText = !showFullLiveText }) { Text(if (showFullLiveText) "Show less text" else "Show more text") }
+                                if (liveText.length > 600) TextButton(onClick = { showFullLiveText = !showFullLiveText }) { Text(if (showFullLiveText) tr(R.string.show_less_text) else tr(R.string.show_more_text)) }
                                 if (speakerTurns.isNotEmpty()) {
-                                    TextButton(onClick = { showSpeakerTurns = !showSpeakerTurns }, modifier = Modifier.testTag("speaker-turns-toggle")) { Text(if (showSpeakerTurns) "Hide who said what" else "Show who said what") }
+                                    TextButton(onClick = { showSpeakerTurns = !showSpeakerTurns }, modifier = Modifier.testTag("speaker-turns-toggle")) { Text(if (showSpeakerTurns) tr(R.string.hide_who_said_what) else tr(R.string.show_who_said_what)) }
                                     if (showSpeakerTurns) {
-                                        Text("Voice labels are anonymous and last only until listening stops. They do not identify people or verify consent." +
-                                            if (listening.namingAllowed && listening.recording) " Tap a voice label to name it until listening stops." else "", style = MaterialTheme.typography.bodySmall)
+                                        Text(tr(R.string.voice_labels_are_anonymous_and_last) +
+                                            if (listening.namingAllowed && listening.recording) tr(R.string.tap_a_voice_label_to_name) else "", style = MaterialTheme.typography.bodySmall)
                                         speakerTurns.forEachIndexed { index, turn ->
                                             val time = turn.at.atZone(ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
                                             val nameable = turn.voiceKey != null && listening.namingAllowed && listening.recording
@@ -325,38 +328,38 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 }
-                                TextButton(onClick = { model.copyLiveText(); consent = false }) { Text("Copy recent text for editing") }
+                                TextButton(onClick = { model.copyLiveText(); consent = false }) { Text(tr(R.string.copy_recent_text_for_editing)) }
                             }
-                            QuietLabel("Audio is discarded. Recent text is temporary; saved events stay on this device.")
+                            QuietLabel(tr(R.string.audio_is_discarded_recent_text_is))
                             TextButton(onClick = { showSessionDetails = !showSessionDetails }, modifier = Modifier.testTag("session-details")) {
-                                Text(if (showSessionDetails) "Hide listening details" else "Listening details")
+                                Text(if (showSessionDetails) tr(R.string.hide_listening_details) else tr(R.string.listening_details))
                             }
                             if (showSessionDetails) {
                             val sessionNotices = noticeRecords.filter { it.sessionId == listening.sessionId }
                             if (sessionNotices.isNotEmpty()) {
-                                Text("Notice record", style = MaterialTheme.typography.titleSmall)
+                                Text(tr(R.string.notice_record), style = MaterialTheme.typography.titleSmall)
                                 sessionNotices.forEach { record ->
                                     val time = java.time.Instant.ofEpochMilli(record.noticeAt).atZone(ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
-                                    val how = when (record.method) { "SPOKEN" -> "spoken"; "SPOKEN_AUTO" -> "spoken automatically"; else -> "you told everyone" }
-                                    val delivery = if (record.audible == null) "" else " · volume ${record.volumePercent ?: 0}%" +
-                                        if (record.audible == true) " · heard by the phone" else " · too quiet, not counted"
+                                    val how = when (record.method) { "SPOKEN" -> "spoken"; "SPOKEN_AUTO" -> tr(R.string.spoken_automatically); else -> tr(R.string.you_told_everyone) }
+                                    val delivery = if (record.audible == null) "" else tr(R.string.volume_1_s, record.volumePercent ?: 0) +
+                                        if (record.audible == true) tr(R.string.heard_by_the_phone) else tr(R.string.too_quiet_not_counted)
                                     Text("$time · $how$delivery · ${record.stateCodes.ifBlank { "unknown place" }} · " +
-                                        "${if (record.recordingRule == "ALL_PARTY") "all-party" else "one-party"} · voice ${record.biometricRule.lowercase()}" +
-                                        (if (record.includesVoice) " · incl. voice line" else "") + " · text v${record.textVersion}",
+                                        tr(R.string.n_1_s_voice_2_s, if (record.recordingRule == "ALL_PARTY") "all-party" else "one-party", record.biometricRule.lowercase()) +
+                                        (if (record.includesVoice) tr(R.string.incl_voice_line) else "") + tr(R.string.text_v_1_s, record.textVersion),
                                         style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("notice-record"))
                                 }
                             }
-                            Text("Speech: ${speechLanguage.label} · turned into text on this phone")
-                            Text("New times use phone timezone: ${ZoneId.systemDefault().id}", style = MaterialTheme.typography.bodySmall)
+                            Text(tr(R.string.speech_1_s_turned_into_text, speechLanguage.label))
+                            Text(tr(R.string.new_times_use_phone_timezone_1, ZoneId.systemDefault().id), style = MaterialTheme.typography.bodySmall)
                             Text(if (speechQuality.usesSenseVoice(speechLanguage)) "SenseVoice int8 · ${speechLanguage.label} · on-device" else if (speechQuality.usesOmni(speechLanguage, true)) "Omnilingual int8 · ${speechLanguage.label} · on-device" else speechQuality.label, style = MaterialTheme.typography.bodySmall)
-                            if (speechLanguage != com.sidekick.core.SpeechLanguage.ENGLISH) Text("Check dates and places; unclear phrases stay unknown.", style = MaterialTheme.typography.bodySmall)
+                            if (speechLanguage != com.sidekick.core.SpeechLanguage.ENGLISH) Text(tr(R.string.check_dates_and_places_unclear_phrases), style = MaterialTheme.typography.bodySmall)
                             if (listening.recognitionDiagnostics.isNotEmpty()) {
-                                Text("Time checks", style = MaterialTheme.typography.titleSmall)
+                                Text(tr(R.string.time_checks), style = MaterialTheme.typography.titleSmall)
                                 listening.recognitionDiagnostics.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
                             }
-                            if (listening.chunks > 0) Text("Phrases: likely you ${listening.userVoiceChunks} · other ${listening.otherVoiceChunks} · unassigned ${listening.unknownVoiceChunks}", style = MaterialTheme.typography.bodySmall)
+                            if (listening.chunks > 0) Text(tr(R.string.phrases_likely_you_1_s_other, listening.userVoiceChunks, listening.otherVoiceChunks, listening.unknownVoiceChunks), style = MaterialTheme.typography.bodySmall)
                             if (listening.voiceDiagnostics.isNotEmpty()) {
-                                TextButton(onClick = { showVoiceDiagnostics = !showVoiceDiagnostics }) { Text(if (showVoiceDiagnostics) "Hide voice details" else "Voice details") }
+                                TextButton(onClick = { showVoiceDiagnostics = !showVoiceDiagnostics }) { Text(if (showVoiceDiagnostics) tr(R.string.hide_voice_details) else tr(R.string.voice_details)) }
                                 if (showVoiceDiagnostics) {
                                     listening.recognizer?.let { Text("Last speech engine: $it · on this phone", style = MaterialTheme.typography.bodySmall) }
                                     Text("Telling voices apart took ${listening.diarizationMs} ms · ${listening.speakerParts} parts", style = MaterialTheme.typography.bodySmall)
@@ -364,11 +367,11 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                             if (!listening.recording && !listening.processing) {
-                                TextButton(onClick = { wavPicker.launch(arrayOf("audio/wav", "audio/x-wav", "audio/wave")) }, enabled = !busy) { Text("Import a recording (WAV file)") }
+                                TextButton(onClick = { wavPicker.launch(arrayOf("audio/wav", "audio/x-wav", "audio/wave")) }, enabled = !busy) { Text(tr(R.string.import_a_recording_wav_file)) }
                             }
                                 if (listening.lastLatencyMs > 0) QuietLabel("Last phrase took ${listening.lastLatencyMs / 1000.0}s")
-                                QuietLabel(if (handsOff) "Your plans with clear times get reminders. Other voices stay information only. Undo from notifications."
-                                    else "Only approved items are saved. Set up your voice in Settings for personal plans. Voice matching can be wrong.")
+                                QuietLabel(if (handsOff) tr(R.string.your_plans_with_clear_times_get)
+                                    else tr(R.string.only_approved_items_are_saved_set))
                             }
                             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                         }
@@ -377,56 +380,56 @@ class MainActivity : ComponentActivity() {
                 if (!plannerOpen && manualNotes) item {
                     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text("Write a note", style = MaterialTheme.typography.titleLarge)
+                            Text(tr(R.string.write_a_note), style = MaterialTheme.typography.titleLarge)
                             OutlinedTextField(value = transcript, onValueChange = { model.setTranscript(it) },
-                                label = { Text("Transcript or typed words") }, modifier = Modifier.fillMaxWidth().testTag("transcript"), minLines = 2)
+                                label = { Text(tr(R.string.transcript_or_typed_words)) }, modifier = Modifier.fillMaxWidth().testTag("transcript"), minLines = 2)
                             FlowRow {
-                                TextButton(onClick = { model.setTranscript("I'll call Emma tomorrow at 5 pm. I will send the report on Friday.", Instant.now()); consent = false }) { Text("Use an example") }
-                                TextButton(onClick = { model.clearTranscript(); consent = false }) { Text("Clear text") }
+                                TextButton(onClick = { model.setTranscript(tr(R.string.i_ll_call_emma_tomorrow_at), Instant.now()); consent = false }) { Text(tr(R.string.use_an_example)) }
+                                TextButton(onClick = { model.clearTranscript(); consent = false }) { Text(tr(R.string.clear_text)) }
                             }
                             Row {
-                                Checkbox(checked = consent, onCheckedChange = { consent = it }, modifier = Modifier.testTag("consent").controlLabel("These are my words; analyze and save matching commitments"))
-                                Text("These are my words. Save matching commitments on this device.", Modifier.weight(1f).padding(top = 10.dp))
+                                Checkbox(checked = consent, onCheckedChange = { consent = it }, modifier = Modifier.testTag("consent").controlLabel(tr(R.string.these_are_my_words_analyze_and)))
+                                Text(tr(R.string.these_are_my_words_save_matching), Modifier.weight(1f).padding(top = 10.dp))
                             }
                             Button(onClick = model::analyze, enabled = consent && transcript.isNotBlank() && !busy && !listening.recording && !listening.processing) {
-                                Text(if (busy) "Analyzing…" else "Find commitments")
+                                Text(if (busy) tr(R.string.analyzing) else tr(R.string.find_commitments))
                             }
                             TextButton(onClick = { model.analyzeSharedText(transcript); consent = false },
                                 enabled = transcript.isNotBlank() && !busy && !listening.recording && !listening.processing) {
-                                Text("Analyze as message text")
+                                Text(tr(R.string.analyze_as_message_text))
                             }
-                            TextButton(onClick = { showNoteTools = !showNoteTools }, modifier = Modifier.testTag("note-tools")) { Text(if (showNoteTools) "Hide note tools" else "More note tools") }
+                            TextButton(onClick = { showNoteTools = !showNoteTools }, modifier = Modifier.testTag("note-tools")) { Text(if (showNoteTools) tr(R.string.hide_note_tools) else tr(R.string.more_note_tools)) }
                             if (showNoteTools) {
-                                QuietLabel("Notes and live speech use the same local rules; unclear details stay unknown.")
+                                QuietLabel(tr(R.string.notes_and_live_speech_use_the))
                             }
                             Text(message, style = MaterialTheme.typography.bodySmall)
-                            if (busy) TextButton(onClick = model::cancelImport) { Text("Cancel current operation") }
+                            if (busy) TextButton(onClick = model::cancelImport) { Text(tr(R.string.cancel_current_operation)) }
                         }
                     }
                 }
                 item {
-                    Text(if (plannerOpen) "Your plans" else "Recent suggestions", style = MaterialTheme.typography.titleLarge)
-                    QuietLabel("Manual entry, event times and reminders are optional.")
+                    Text(if (plannerOpen) tr(R.string.your_plans) else tr(R.string.recent_suggestions), style = MaterialTheme.typography.titleLarge)
+                    QuietLabel(tr(R.string.manual_entry_event_times_and_reminders))
                     if (plannerOpen) {
                         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             PlannerView.entries.forEach { view ->
                                 val label = when (view) {
-                                    PlannerView.REVIEW -> "To check"
-                                    PlannerView.REMINDERS -> "With reminder"
-                                    PlannerView.UNSCHEDULED -> "No reminder"
-                                    PlannerView.HISTORY -> "Past"
-                                    PlannerView.ALL -> "All"
+                                    PlannerView.REVIEW -> tr(R.string.to_check)
+                                    PlannerView.REMINDERS -> tr(R.string.with_reminder)
+                                    PlannerView.UNSCHEDULED -> tr(R.string.no_reminder)
+                                    PlannerView.HISTORY -> tr(R.string.past)
+                                    PlannerView.ALL -> tr(R.string.all)
                                 }
                                 FilterChip(selected = selectedView == view, onClick = { selectedView = view },
                                     label = { Text("$label (${Planner.select(references, view).size})", maxLines = 1) }, modifier = Modifier.testTag("filter-${view.name}"))
                             }
                         }
-                        OutlinedTextField(value = search, onValueChange = { search = it }, label = { Text("Search plans") },
+                        OutlinedTextField(value = search, onValueChange = { search = it }, label = { Text(tr(R.string.search_plans)) },
                             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("planner-search"))
                     }
-                    if (manualNotes) TextButton(onClick = { model.addManual(); selectedView = PlannerView.REVIEW; search = "" }, modifier = Modifier.testTag("manual-add")) { Text("Add a plan") }
+                    if (manualNotes) TextButton(onClick = { model.addManual(); selectedView = PlannerView.REVIEW; search = "" }, modifier = Modifier.testTag("manual-add")) { Text(tr(R.string.add_a_plan)) }
                 }
-                if (shownEntries.isEmpty()) item { Text(if (plannerOpen) "No plans here." else "Plans you mention will appear here.") }
+                if (shownEntries.isEmpty()) item { Text(if (plannerOpen) tr(R.string.no_plans_here) else tr(R.string.plans_you_mention_will_appear_here)) }
                 items(shownEntries, key = { it.id }) { entry ->
                     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -434,42 +437,42 @@ class MainActivity : ComponentActivity() {
                             QuietLabel("“${entry.evidence.take(180)}${if (entry.evidence.length > 180) "…" else ""}”")
                             Text(planStateLabel(entry.state), color = MaterialTheme.colorScheme.primary)
                             entry.dueAt?.let {
-                                Text("Reminder: ${TimeResolver.format(Instant.ofEpochMilli(it), ZoneId.of(entry.zoneId))} · ${entry.zoneId}")
+                                Text(tr(R.string.reminder_1_s_2_s, TimeResolver.format(Instant.ofEpochMilli(it), ZoneId.of(entry.zoneId)), entry.zoneId))
                                 if (entry.state == "ACCEPTED" && it < System.currentTimeMillis())
-                                    Text("Reminder time has passed. Mark done or choose another time.", color = MaterialTheme.colorScheme.error)
+                                    Text(tr(R.string.reminder_time_has_passed_mark_done), color = MaterialTheme.colorScheme.error)
                             }
                             if (entry.activityStartAt != null || entry.activityEndAt != null) {
-                                fun activityTime(value: Long?) = value?.let { TimeResolver.format(Instant.ofEpochMilli(it), ZoneId.of(entry.zoneId)) } ?: "Unknown"
-                                Text("Activity: ${activityTime(entry.activityStartAt)} – ${activityTime(entry.activityEndAt)} · ${entry.zoneId}")
+                                fun activityTime(value: Long?) = value?.let { TimeResolver.format(Instant.ofEpochMilli(it), ZoneId.of(entry.zoneId)) } ?: tr(R.string.unknown)
+                                Text(tr(R.string.activity_1_s_2_s_3, activityTime(entry.activityStartAt), activityTime(entry.activityEndAt), entry.zoneId))
                             }
-                            if (entry.informational) Text("For your information · doesn’t block your calendar")
-                            if (entry.sourceKey?.startsWith("uncertain:") == true) Text("Possible change to a plan · please check it")
-                            else if (entry.sourceKey?.startsWith("confirm:") == true) Text("Unclear time · check the time before accepting", color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("confirm-time-${entry.id}"))
-                            else if (entry.sourceKey?.startsWith("voice:") == true) Text("Heard while listening · check who said it")
-                            else if (entry.sourceKey != null) Text("From a message · you may not be going")
-                            entry.placeName?.let { Text("Place: $it") }
+                            if (entry.informational) Text(tr(R.string.for_your_information_doesn_t_block))
+                            if (entry.sourceKey?.startsWith("uncertain:") == true) Text(tr(R.string.possible_change_to_a_plan_please))
+                            else if (entry.sourceKey?.startsWith("confirm:") == true) Text(tr(R.string.unclear_time_check_the_time_before), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("confirm-time-${entry.id}"))
+                            else if (entry.sourceKey?.startsWith("voice:") == true) Text(tr(R.string.heard_while_listening_check_who_said))
+                            else if (entry.sourceKey != null) Text(tr(R.string.from_a_message_you_may_not))
+                            entry.placeName?.let { Text(tr(R.string.place_1_s, it)) }
                             entry.placeAddress?.let { Text(it) }
                             Text(entry.reviewNote, style = MaterialTheme.typography.bodySmall)
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(onClick = { openEditor(entry) }, modifier = Modifier.testTag("review-${entry.id}")) { Text(when (entry.state) {
-                                    "PROPOSED" -> "Review & accept"
-                                    "DONE", "DISMISSED", "CANCELLED" -> "Reopen"
-                                    else -> "Edit"
+                                    "PROPOSED" -> tr(R.string.review_accept)
+                                    "DONE", "DISMISSED", "CANCELLED" -> tr(R.string.reopen)
+                                    else -> tr(R.string.edit)
                                 }) }
-                                if (entry.state == "PROPOSED") TextButton(onClick = { model.dismiss(entry.id) }) { Text("Dismiss") }
-                                if (entry.state == "ACCEPTED") TextButton(onClick = { model.done(entry.id) }) { Text("Done") }
+                                if (entry.state == "PROPOSED") TextButton(onClick = { model.dismiss(entry.id) }) { Text(tr(R.string.dismiss)) }
+                                if (entry.state == "ACCEPTED") TextButton(onClick = { model.done(entry.id) }) { Text(tr(R.string.done)) }
                             }
-                            TextButton(onClick = { model.delete(entry.id) }) { Text("Delete") }
+                            TextButton(onClick = { model.delete(entry.id) }) { Text(tr(R.string.delete)) }
                         }
                     }
                 }
                 if (!plannerOpen && entries.size > 3) item {
-                    TextButton(onClick = { plannerOpen = true; selectedView = PlannerView.ALL }, modifier = Modifier.testTag("all-commitments")) { Text("See all ${entries.size} plans") }
+                    TextButton(onClick = { plannerOpen = true; selectedView = PlannerView.ALL }, modifier = Modifier.testTag("all-commitments")) { Text(trn(R.plurals.see_all_plans_count, entries.size, entries.size)) }
                 }
                 item {
-                    if (plannerOpen && entries.isNotEmpty()) TextButton(onClick = { deleteDialog = true }) { Text("Delete all saved plans") }
-                    if (plannerOpen) TextButton(onClick = { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }) { Text("Notification settings") }
-                    QuietLabel("Listen only when everyone agrees. Optional place lookup uses the internet.")
+                    if (plannerOpen && entries.isNotEmpty()) TextButton(onClick = { deleteDialog = true }) { Text(tr(R.string.delete_all_saved_plans)) }
+                    if (plannerOpen) TextButton(onClick = { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }) { Text(tr(R.string.notification_settings)) }
+                    QuietLabel(tr(R.string.listen_only_when_everyone_agrees_optional))
                 }
                 }
             }
@@ -477,35 +480,35 @@ class MainActivity : ComponentActivity() {
         }
         namingVoice?.let { key ->
             var name by remember(key) { mutableStateOf("") }
-            AlertDialog(onDismissRequest = { namingVoice = null }, title = { Text("Name this voice until listening stops") },
+            AlertDialog(onDismissRequest = { namingVoice = null }, title = { Text(tr(R.string.name_this_voice_until_listening_stops)) },
                 text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(name, { name = it.take(40) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.testTag("voice-name-field"))
-                    QuietLabel("Forgotten when listening stops. Never saved.")
+                    OutlinedTextField(name, { name = it.take(40) }, label = { Text(tr(R.string.name)) }, singleLine = true, modifier = Modifier.testTag("voice-name-field"))
+                    QuietLabel(tr(R.string.forgotten_when_listening_stops_never_saved))
                 } },
                 confirmButton = { TextButton(enabled = com.sidekick.core.SessionVoices.cleanName(name) != null, onClick = {
                     try { startService(Intent(this@MainActivity, ListeningService::class.java).setAction(ListeningService.NAME_VOICE)
                         .putExtra(ListeningService.VOICE_KEY, key).putExtra(ListeningService.VOICE_NAME, name)) }
-                    catch (_: Exception) { error = "Could not name this voice." }
+                    catch (_: Exception) { error = tr(R.string.could_not_name_this_voice) }
                     namingVoice = null
-                }, modifier = Modifier.testTag("voice-name-save")) { Text("Name") } },
-                dismissButton = { TextButton(onClick = { namingVoice = null }) { Text("Cancel") } })
+                }, modifier = Modifier.testTag("voice-name-save")) { Text(tr(R.string.name)) } },
+                dismissButton = { TextButton(onClick = { namingVoice = null }) { Text(tr(R.string.cancel)) } })
         }
         if (preciseDialog) AlertDialog(onDismissRequest = { preciseDialog = false; (application as SidekickApplication).guidance.markPreciseLocationAsked(); requestListening() },
-            title = { Text("Precise location?") },
-            text = { Text("More accurate state detection near borders. Location is used only on this phone and never saved. Without it, SideKick uses wider border margins.") },
+            title = { Text(tr(R.string.precise_location)) },
+            text = { Text(tr(R.string.more_accurate_state_detection_near_borders)) },
             confirmButton = { TextButton(onClick = {
                 preciseDialog = false; (application as SidekickApplication).guidance.markPreciseLocationAsked()
                 preciseLocation.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-            }, modifier = Modifier.testTag("precise-location-allow")) { Text("Continue") } },
-            dismissButton = { TextButton(onClick = { preciseDialog = false; (application as SidekickApplication).guidance.markPreciseLocationAsked(); requestListening() }) { Text("Not now") } })
+            }, modifier = Modifier.testTag("precise-location-allow")) { Text(tr(R.string.continue_text)) } },
+            dismissButton = { TextButton(onClick = { preciseDialog = false; (application as SidekickApplication).guidance.markPreciseLocationAsked(); requestListening() }) { Text(tr(R.string.not_now)) } })
         if (voiceConsentDialog) AlertDialog(onDismissRequest = { voiceConsentDialog = false; requestListening() },
-            title = { Text("Voice consent needed") },
-            text = { Text(if (voiceConsentNeeded) "Your saved voice setup needs your written consent. Until then, voice matching is off." else "Thanks. Voice matching is on.") },
+            title = { Text(tr(R.string.voice_consent_needed)) },
+            text = { Text(if (voiceConsentNeeded) tr(R.string.your_saved_voice_setup_needs_your) else tr(R.string.thanks_voice_matching_is_on)) },
             confirmButton = { TextButton(onClick = {
                 voiceConsentDialog = false
                 startActivity(Intent(this@MainActivity, com.sidekick.app.speaker.VoiceEnrollmentActivity::class.java).putExtra(com.sidekick.app.speaker.VoiceEnrollmentActivity.CONSENT_ONLY, true))
-            }, modifier = Modifier.testTag("voice-consent-review")) { Text("Review consent") } },
-            dismissButton = { TextButton(onClick = { voiceConsentDialog = false; requestListening() }) { Text("Listen without it") } })
+            }, modifier = Modifier.testTag("voice-consent-review")) { Text(tr(R.string.review_consent)) } },
+            dismissButton = { TextButton(onClick = { voiceConsentDialog = false; requestListening() }) { Text(tr(R.string.listen_without_it)) } })
         if (micDialog) ListeningStartDialog(
             settings = (application as SidekickApplication).guidance,
             handsOff = handsOff,
@@ -522,17 +525,17 @@ class MainActivity : ComponentActivity() {
         if (quickStartOpen) QuickStart { quickStartOpen = false }
         sharedText?.takeIf { !handsOff || !sharedMessagesEnabled }?.let { text ->
             val sharing by (application as SidekickApplication).guidance.sharedMessages.collectAsStateWithLifecycle()
-            AlertDialog(onDismissRequest = { sharedText = null }, title = { Text("Shared message") },
+            AlertDialog(onDismissRequest = { sharedText = null }, title = { Text(tr(R.string.shared_message)) },
                 text = { Column(Modifier.verticalScroll(rememberScrollState())) {
-                    Text(if (sharing) "Analyze selected text for information-only activities? Sender plans are not assumed to be yours. " + (if (handsOff) "Detected events save automatically; full messages stay temporary." else "Nothing saves until approval.") else "Shared-message analysis is off. Enable it in Settings to analyze this text.")
+                    Text(if (sharing) tr(R.string.analyze_selected_text_for_information_only) + (if (handsOff) tr(R.string.detected_events_save_automatically_full_messages) else tr(R.string.nothing_saves_until_approval)) else tr(R.string.shared_message_analysis_is_off_enable))
                     Text(text.take(2000))
-                } }, confirmButton = { TextButton(enabled = sharing, onClick = { model.analyzeSharedText(text); sharedText = null; plannerOpen = true; summaryOpen = false; moreOpen = false; expandedCapture = false; selectedView = PlannerView.REVIEW; search = "" }) { Text("Find activity suggestions") } },
-                dismissButton = { TextButton(onClick = { sharedText = null }) { Text("Discard") } })
+                } }, confirmButton = { TextButton(enabled = sharing, onClick = { model.analyzeSharedText(text); sharedText = null; plannerOpen = true; summaryOpen = false; moreOpen = false; expandedCapture = false; selectedView = PlannerView.REVIEW; search = "" }) { Text(tr(R.string.find_activity_suggestions)) } },
+                dismissButton = { TextButton(onClick = { sharedText = null }) { Text(tr(R.string.discard)) } })
         }
-        if (deleteDialog) AlertDialog(onDismissRequest = { deleteDialog = false }, title = { Text("Delete all saved plans?") },
-            text = { Text("All plans and their reminders will be removed. This can’t be undone.") },
-            confirmButton = { TextButton(onClick = { model.deleteAll(); deleteDialog = false }) { Text("Delete all") } },
-            dismissButton = { TextButton(onClick = { deleteDialog = false }) { Text("Cancel") } })
+        if (deleteDialog) AlertDialog(onDismissRequest = { deleteDialog = false }, title = { Text(tr(R.string.delete_all_saved_plans_2)) },
+            text = { Text(tr(R.string.all_plans_and_their_reminders_will)) },
+            confirmButton = { TextButton(onClick = { model.deleteAll(); deleteDialog = false }) { Text(tr(R.string.delete_all)) } },
+            dismissButton = { TextButton(onClick = { deleteDialog = false }) { Text(tr(R.string.cancel)) } })
     }
 }
 
@@ -552,22 +555,22 @@ private fun Editor(item: CommitmentEntity, entries: List<CommitmentEntity>, erro
         val ids = Planner.sameReminderMinute(entries.map { PlannerEntry(it.id, it.state, it.dueAt, it.capturedAt) }, item.id, proposed).toSet()
         entries.filter { it.id in ids }.map { it.title }
     }.orEmpty()
-    AlertDialog(onDismissRequest = onClose, title = { Text("Check this plan") },
+    AlertDialog(onDismissRequest = onClose, title = { Text(tr(R.string.check_this_plan)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (item.sourceKey?.startsWith("uncertain:") == true || item.sourceKey?.startsWith("confirm:") == true || item.sourceKey?.startsWith("review:") == true) Text(item.reviewNote, color = MaterialTheme.colorScheme.error)
-                OutlinedTextField(value = title, onValueChange = { if (it.length <= 500) title = it }, label = { Text(if (informational) "Event or note" else "What will you do?") }, modifier = Modifier.testTag("edit-title"))
+                OutlinedTextField(value = title, onValueChange = { if (it.length <= 500) title = it }, label = { Text(if (informational) tr(R.string.event_or_note) else tr(R.string.what_will_you_do)) }, modifier = Modifier.testTag("edit-title"))
                 Row {
-                    Checkbox(informational, { informational = it }, modifier = Modifier.testTag("event-informational").controlLabel("Information only; attendance is unconfirmed"))
-                    Text("For information only; I’m not planning to attend.", Modifier.padding(top = 12.dp))
+                    Checkbox(informational, { informational = it }, modifier = Modifier.testTag("event-informational").controlLabel(tr(R.string.information_only_attendance_is_unconfirmed)))
+                    Text(tr(R.string.for_information_only_i_m_not), Modifier.padding(top = 12.dp))
                 }
-                DateTimeChoice("Reminder", time, zone, "edit-time", "pick-reminder", onChange = { time = it })
-                Text("Timezone: ${zone.id}. Check suggested times; choose No reminder to clear it.")
-                if (!informational && clashes.isNotEmpty()) Text("Other reminders in this minute: ${clashes.take(3).joinToString()}. This does not check event durations or your calendar.")
+                DateTimeChoice(tr(R.string.reminder), time, zone, "edit-time", "pick-reminder", onChange = { time = it })
+                Text(tr(R.string.timezone_1_s_check_suggested_times, zone.id))
+                if (!informational && clashes.isNotEmpty()) Text(tr(R.string.other_reminders_in_this_minute_1, clashes.take(3).joinToString()))
                 Column(Modifier.fillMaxWidth()) {
-                    TextButton(onClick = { time = TimeResolver.format(Instant.now().plusSeconds(120), zone) }, modifier = Modifier.fillMaxWidth()) { Text("In 2 minutes", maxLines = 1) }
-                    TextButton(onClick = { time = TimeResolver.format(Instant.now().plusSeconds(3600), zone) }, modifier = Modifier.fillMaxWidth()) { Text("In 1 hour", maxLines = 1) }
-                    TextButton(onClick = { time = "" }, modifier = Modifier.fillMaxWidth()) { Text("No reminder", maxLines = 1) }
+                    TextButton(onClick = { time = TimeResolver.format(Instant.now().plusSeconds(120), zone) }, modifier = Modifier.fillMaxWidth()) { Text(tr(R.string.in_2_minutes), maxLines = 1) }
+                    TextButton(onClick = { time = TimeResolver.format(Instant.now().plusSeconds(3600), zone) }, modifier = Modifier.fillMaxWidth()) { Text(tr(R.string.in_1_hour), maxLines = 1) }
+                    TextButton(onClick = { time = "" }, modifier = Modifier.fillMaxWidth()) { Text(tr(R.string.no_reminder), maxLines = 1) }
                 }
                 CalendarSection(activityStart, activityEnd, zone, informational = informational, askAboutEnd = askAboutEnd &&
                     (activityStart.isNotBlank() || com.sidekick.core.ActivityTiming.looksLikeActivity(item.title)),
@@ -579,6 +582,6 @@ private fun Editor(item: CommitmentEntity, entries: List<CommitmentEntity>, erro
                 }, onAddress = { placeAddress = it })
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
-        }, confirmButton = { TextButton(onClick = { onSave(title, time, zone.id, activityStart, activityEnd, informational, placeName, placeAddress) }, enabled = title.isNotBlank()) { Text(if (item.sourceKey?.startsWith("uncertain:") == true) "Confirm & apply update" else "Save & accept") } },
-        dismissButton = { TextButton(onClick = onClose) { Text("Cancel") } })
+        }, confirmButton = { TextButton(onClick = { onSave(title, time, zone.id, activityStart, activityEnd, informational, placeName, placeAddress) }, enabled = title.isNotBlank()) { Text(if (item.sourceKey?.startsWith("uncertain:") == true) tr(R.string.confirm_apply_update) else tr(R.string.save_accept)) } },
+        dismissButton = { TextButton(onClick = onClose) { Text(tr(R.string.cancel)) } })
 }

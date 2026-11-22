@@ -24,12 +24,12 @@ internal fun RestingTip(listening: ListeningState) {
     if (done || on || !listening.recording || listening.seconds < RESTING_TIP_AFTER_SECONDS) return
     OutlinedCard(Modifier.fillMaxWidth().testTag("resting-tip")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Save battery overnight?", style = MaterialTheme.typography.titleMedium)
-            Text("After 30 quiet minutes untouched, SideKick can turn the mic off until you pick up the phone. Speech before then is missed.", style = MaterialTheme.typography.bodyMedium)
+            Text(tr(R.string.save_battery_overnight), style = MaterialTheme.typography.titleMedium)
+            Text(tr(R.string.after_30_quiet_minutes_untouched_sidekick), style = MaterialTheme.typography.bodyMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { app.guidance.setPauseWhenResting(true); app.guidance.setRestingTipDone() },
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("resting-tip-on")) { Text("Turn on") }
-                TextButton(onClick = { app.guidance.setRestingTipDone() }, modifier = Modifier.heightIn(min = 48.dp).testTag("resting-tip-later")) { Text("Not now") }
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("resting-tip-on")) { Text(tr(R.string.turn_on)) }
+                TextButton(onClick = { app.guidance.setRestingTipDone() }, modifier = Modifier.heightIn(min = 48.dp).testTag("resting-tip-later")) { Text(tr(R.string.not_now)) }
             }
         }
     }

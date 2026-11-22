@@ -1,5 +1,8 @@
 package com.sidekick.app.assistant
 
+import com.sidekick.app.R
+import com.sidekick.app.tr
+
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -23,9 +26,9 @@ private class SidekickSession(private val appContext: Context) : VoiceInteractio
     private var statusView: TextView? = null
     private var observing: Job? = null
     private fun status() = when {
-        ListeningService.state.value.recording -> "Listening on this phone."
-        ListeningService.state.value.processing -> "Finishing speech on this phone."
-        else -> "Open SideKick to start a consenting listening session."
+        ListeningService.state.value.recording -> tr(R.string.listening_on_this_phone)
+        ListeningService.state.value.processing -> tr(R.string.finishing_speech_on_this_phone)
+        else -> tr(R.string.open_sidekick_to_start_a_consenting)
     }
     override fun onShow(args: Bundle?, showFlags: Int) {
         super.onShow(args, showFlags)
@@ -38,15 +41,15 @@ private class SidekickSession(private val appContext: Context) : VoiceInteractio
     override fun onDestroy() { scope.cancel(); super.onDestroy() }
     override fun onCreateContentView(): View = LinearLayout(appContext).apply {
         orientation = LinearLayout.VERTICAL; setPadding(32, 32, 32, 32); setBackgroundColor(android.graphics.Color.WHITE)
-        addView(TextView(appContext).apply { text = "SideKick · your local assistant"; textSize = 22f; setTextColor(android.graphics.Color.BLACK) })
+        addView(TextView(appContext).apply { text = tr(R.string.sidekick_your_local_assistant); textSize = 22f; setTextColor(android.graphics.Color.BLACK) })
         addView(TextView(appContext).apply {
             statusView = this; text = status()
             setTextColor(android.graphics.Color.BLACK)
         })
-        addView(Button(appContext).apply { text = "Open SideKick"; setOnClickListener {
+        addView(Button(appContext).apply { text = tr(R.string.open_sidekick); setOnClickListener {
             startAssistantActivity(Intent(appContext, MainActivity::class.java)); finish()
         } })
-        addView(Button(appContext).apply { text = "Stop listening"; setOnClickListener {
+        addView(Button(appContext).apply { text = tr(R.string.stop_listening); setOnClickListener {
             (appContext.applicationContext as SidekickApplication).assistant.disarm()
             appContext.startService(Intent(appContext, ListeningService::class.java).setAction(ListeningService.FINISH)); finish()
         } })

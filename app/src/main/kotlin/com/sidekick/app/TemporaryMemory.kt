@@ -33,7 +33,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
     /** forgetOthers(): drop every voice name, suggestion and naming context; on-screen labels lose their names too. */
     @Synchronized fun forgetVoiceNames() {
         naming.clear(); mutableNameSuggestion.value = null
-        mutableSpeakerTurns.value = mutableSpeakerTurns.value.map { if (it.voiceKey != null) it.copy(label = "Unassigned voice", voiceKey = null) else it }
+        mutableSpeakerTurns.value = mutableSpeakerTurns.value.map { if (it.voiceKey != null) it.copy(label = tr(R.string.unassigned_voice), voiceKey = null) else it }
     }
     private fun invitationProposal(text: String, clock: String, at: Instant, zone: ZoneId, title: String, informational: Boolean,
         source: String, note: String): ProposedCommitment? =
@@ -118,9 +118,9 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
             activityEndAt = end ?: target.activityEndAt,
             placeName = detected.placeName ?: target.placeName,
             placeAddress = if (placeChanged || addressChanged) detected.placeAddress else target.placeAddress,
-            reviewNote = "Possible update · speaker uncertain. Confirm this statement refers to ‘${target.title}’ before replacing its details. Original item stays unchanged until you approve.")
+            reviewNote = tr(R.string.possible_update_speaker_uncertain_confirm_this, target.title))
         if (reviewed.containsKey(key(candidate))) return
-        check(pending != null || mutableDrafts.value.size < 200) { "Review pending proposals first." }
+        check(pending != null || mutableDrafts.value.size < 200) { tr(R.string.review_pending_proposals_first) }
         mutableDrafts.value = mutableDrafts.value.filterNot { it.id == candidate.id } + candidate
         updateTargets[candidate.id] = target.id
         observations[key(candidate)] = at
@@ -138,8 +138,8 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         val heardClock = KoreanClockRepair.clockOf(heard) ?: return
         val options = choices.mapNotNull { KoreanClockRepair.clockOf(it) }
         addProposals(proposals.map { it.copy(sourceKey = "confirm:${heard.lowercase().hashCode()}",
-            needsReview = "Unclear time: heard “$heardClock”. Set to ${options.first()}" +
-                (if (options.size > 1) " (or ${options.drop(1).joinToString(", ")})" else "") + ". Check the time, then accept. " + it.needsReview) }, at)
+            needsReview = tr(R.string.unclear_time_heard_1_s_set, heardClock, options.first()) +
+                (if (options.size > 1) tr(R.string.or_1_s, options.drop(1).joinToString(", ")) else "") + tr(R.string.check_the_time_then_accept) + it.needsReview) }, at)
     }
 
     /** Reset reference context on speaker changes; unknown voices never create personal promises. */
@@ -190,15 +190,15 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         val proposals = if (speaker == Speaker.USER) HandsOffPlans.complete(input, ActivityTiming.merge(input, pipeline.process(input)))
             else AnalysisContext.others(input)
         var attributed = proposals.map { it.copy(sourceKey = sourceKey(),
-            needsReview = (if (speaker == Speaker.USER) "Likely your voice; verify attribution. " else if (speaker == Speaker.OTHER) "Another voice; attendance unconfirmed. " else "Speaker unassigned; attendance unconfirmed. ") + it.needsReview) }
+            needsReview = (if (speaker == Speaker.USER) tr(R.string.likely_your_voice_verify_attribution) else if (speaker == Speaker.OTHER) tr(R.string.another_voice_attendance_unconfirmed) else tr(R.string.speaker_unassigned_attendance_unconfirmed)) + it.needsReview) }
         val extra = mutableListOf<ProposedCommitment>()
         if (speaker != Speaker.USER) VoiceInvitations.invitation(fresh.text)?.let { clock ->
             // Another speaker's dated invitation: information only, never a reminder.
             if (speakerName != null && speakerTrack != null) naming.invited(speakerTrack, speakerName, clock, capturedAt)
             if (attributed.none { it.activityStartAt != null }) {
-                val who = speakerName ?: speakerLabel.takeIf { grouped && it.startsWith("Voice ") } ?: "Another voice"
+                val who = speakerName ?: speakerLabel.takeIf { grouped && it.startsWith("Voice ") } ?: tr(R.string.another_voice)
                 invitationProposal(fresh.text, clock, capturedAt, zone, VoiceInvitations.otherTitle(who, clock), true, sourceKey(),
-                    "Another voice's invitation; attendance unconfirmed. Activity times are suggestions from speech; review them.")?.let(extra::add)
+                    tr(R.string.another_voice_s_invitation_attendance_unconfirmed))?.let(extra::add)
             }
         }
         if (speaker == Speaker.USER) {
@@ -209,13 +209,13 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
                 val dated = attributed.any { it.activityStartAt != null }
                 attributed = attributed.map { if (it.activityStartAt != null) it.copy(title = title) else it }
                 if (!dated) invitationProposal(fresh.text, replyClock, capturedAt, zone, title, false, sourceKey(),
-                    "Likely your voice; verify attribution. Activity times are suggestions from speech; review them.")?.let(extra::add)
+                    tr(R.string.likely_your_voice_verify_attribution_activity))?.let(extra::add)
             }
             naming.accepted(fresh.text, capturedAt)?.let { invitation ->
                 // A short "sure" is weak evidence: the owner event waits in Review, never saved automatically.
                 invitationProposal(fresh.text, invitation.clock, invitation.at, zone, VoiceInvitations.ownerTitle(invitation.name, invitation.clock), false,
                     "review:accept:${invitation.voiceKey.hashCode()}:${invitation.at.toEpochMilli()}",
-                    "You said \u201c${fresh.text.trim().take(40)}\u201d after ${invitation.name}'s invitation. Check before accepting.")?.let(extra::add)
+                    tr(R.string.you_said_1_s_after_2, fresh.text.trim().take(40), invitation.name))?.let(extra::add)
             }
         }
         addProposals(attributed + extra, capturedAt)
@@ -295,7 +295,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
                     activityEndAt = if (endChanged) candidate.activityEndAt else duplicate.activityEndAt,
                     placeName = if (placeChanged) candidate.placeName else duplicate.placeName,
                     placeAddress = if (placeChanged || addressChanged) candidate.placeAddress else duplicate.placeAddress,
-                    reviewNote = "Possible update · repeated speech. Confirm this repeated event refers to ‘${duplicate.title}’ before replacing its details. Original item stays unchanged until you approve.")
+                    reviewNote = tr(R.string.possible_update_repeated_speech_confirm_this, duplicate.title))
                 if (reviewed.containsKey(key(revision))) continue
                 updateTargets[revision.id] = duplicate.id
                 observations[key(revision)] = observedAt ?: Instant.ofEpochMilli(candidate.capturedAt)
@@ -319,7 +319,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
                     activityEndAt = if (endChanged) candidate.activityEndAt else saved.activityEndAt,
                     placeName = if (placeChanged) candidate.placeName else saved.placeName,
                     placeAddress = if (placeChanged || addressChanged) candidate.placeAddress else saved.placeAddress, evidence = candidate.evidence,
-                    reviewNote = "Suggested activity update. Review before replacing saved details. " + candidate.reviewNote)
+                    reviewNote = tr(R.string.suggested_activity_update_review_before_replacing) + candidate.reviewNote)
                 updateTargets[revision.id] = saved.id
                 observations[key(revision)] = observedAt ?: Instant.ofEpochMilli(candidate.capturedAt)
                 if (pending >= 0) drafts[pending] = revision else { drafts += revision; added++ }
@@ -337,13 +337,13 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
                 } else { drafts += candidate; added++ }
             }
         }
-        check(drafts.size <= 200) { "Review or discard pending proposals before continuing." }
+        check(drafts.size <= 200) { tr(R.string.review_or_discard_pending_proposals_before) }
         mutableDrafts.value = drafts
         return added
     }
 
     @Synchronized fun add(item: CommitmentEntity) {
-        check(mutableDrafts.value.size < 200) { "Review pending proposals first." }
+        check(mutableDrafts.value.size < 200) { tr(R.string.review_pending_proposals_first) }
         mutableDrafts.value += item
     }
     @Synchronized fun remove(id: String) { mutableDrafts.value = mutableDrafts.value.filterNot { it.id == id }; updateTargets.remove(id) }
@@ -370,7 +370,7 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
         val noun = Regex("\\b(party|meeting|appointment|class|lecture|concert|dinner|lunch|wedding|birthday|practice|workshop|movie|trip|shift|call)\\b", RegexOption.IGNORE_CASE).find(saved.title)?.value
         val zone = ZoneId.of(saved.zoneId)
         val local = Instant.ofEpochMilli(saved.activityStartAt).atZone(zone)
-        val opening = if (noun != null) "There's a $noun on ${local.toLocalDate()} at ${local.toLocalTime().toString().take(5)}."
+        val opening = if (noun != null) tr(R.string.there_s_a_1_s_on, noun, local.toLocalDate(), local.toLocalTime().toString().take(5))
             else LocalizedActivities.referenceOpening(saved.title, Instant.ofEpochMilli(saved.activityStartAt), zone) ?: return
         correctionContext = CorrectionContext(saved.id, opening, observedAt, zone, observedAt, saved)
     }
@@ -395,9 +395,9 @@ class TemporaryMemory(private val includeInformational: () -> Boolean = { true }
     @Synchronized fun addCancelReview(target: CommitmentEntity, heard: String, at: Instant): Boolean {
         val source = "review:cancel:${target.id}"
         if (mutableDrafts.value.any { it.sourceKey == source } || mutableDrafts.value.size >= 200) return false
-        val item = target.copy(id = UUID.randomUUID().toString(), state = "PROPOSED", title = "Cancel: ${target.title}".take(500),
+        val item = target.copy(id = UUID.randomUUID().toString(), state = "PROPOSED", title = tr(R.string.cancel_1_s, target.title).take(500),
             evidence = heard.trim().take(500), capturedAt = at.toEpochMilli(), dueAt = null, deliveredAt = null, sourceKey = source,
-            reviewNote = "Another voice said this is cancelled: “${heard.trim().take(120)}”. Your saved plan is unchanged. Accept to cancel it (Undo available), or Dismiss to keep it.")
+            reviewNote = tr(R.string.another_voice_said_this_is_cancelled, heard.trim().take(120)))
         mutableDrafts.value = mutableDrafts.value + item
         updateTargets[item.id] = target.id
         return true

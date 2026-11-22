@@ -18,7 +18,7 @@ import kotlinx.coroutines.sync.withLock
 
 data class CalendarSyncConfig(val enabled: Boolean = false, val calendarId: Long? = null, val includeInformational: Boolean = false)
 data class CalendarSyncStatus(val synced: Int = 0, val waiting: Int = 0, val conflicts: Int = 0,
-    val note: String = "Calendar sync is off. Existing calendar copies stay.")
+    val note: String = tr(R.string.calendar_sync_is_off_existing_calendar))
 
 /** Recoverable one-way mirror. Provider writes use snapshots and never overwrite external edits. */
 class CalendarMirror(private val context: Context, private val db: MemoryDatabase, private val settings: GuidanceSettings,
@@ -52,11 +52,11 @@ class CalendarMirror(private val context: Context, private val db: MemoryDatabas
         val now = android.os.SystemClock.elapsedRealtime()
         if (lastAlert != Long.MIN_VALUE && now - lastAlert < 900_000) return
         lastAlert = now
-        manager.createNotificationChannel(NotificationChannel("calendar-sync", "Calendar sync status", NotificationManager.IMPORTANCE_LOW))
+        manager.createNotificationChannel(NotificationChannel("calendar-sync", tr(R.string.calendar_sync_status), NotificationManager.IMPORTANCE_LOW))
         val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         try { if (manager.areNotificationsEnabled()) manager.notify("calendar-sync", 41, Notification.Builder(context, "calendar-sync")
-            .setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("SideKick calendar sync needs attention")
-            .setContentText("Review calendar access or changed calendar items in Settings. Local reminders remain active.")
+            .setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle(tr(R.string.sidekick_calendar_sync_needs_attention))
+            .setContentText(tr(R.string.review_calendar_access_or_changed_calendar))
             .setVisibility(Notification.VISIBILITY_PRIVATE).setContentIntent(open).setAutoCancel(true).build()) }
         catch (_: SecurityException) { }
     }
@@ -64,7 +64,7 @@ class CalendarMirror(private val context: Context, private val db: MemoryDatabas
     private fun fields(item: CommitmentEntity, calendarId: Long) = CalendarMirrorFields(calendarId, item.title.trim(),
         requireNotNull(item.activityStartAt), requireNotNull(item.activityEndAt), java.time.ZoneId.of(item.zoneId).id,
         (item.placeAddress ?: item.placeName).orEmpty(),
-        if (item.informational) "Information only; attendance unconfirmed. Saved from SideKick." else "Saved from SideKick.",
+        if (item.informational) tr(R.string.information_only_attendance_unconfirmed_saved_from) else tr(R.string.saved_from_sidekick),
         marker(item.id), context.packageName, if (item.informational) CalendarContract.Events.AVAILABILITY_FREE else CalendarContract.Events.AVAILABILITY_BUSY)
     private fun owned(record: CalendarRecord, id: String) = record.fields.marker == marker(id) &&
         record.fields.ownerPackage == context.packageName && !record.fields.hasGuests
@@ -78,7 +78,7 @@ class CalendarMirror(private val context: Context, private val db: MemoryDatabas
     suspend fun sync() = gate.withLock { withContext(Dispatchers.IO) {
         val config = settings.calendarSync.value
         if (!config.enabled || config.calendarId == null) { observe(false); publish(CalendarSyncStatus()); return@withContext }
-        if (!gateway.permitted()) { observe(false); publish(CalendarSyncStatus(note = "Calendar access is off. Sync will retry after access returns; local reminders stay active."), true); return@withContext }
+        if (!gateway.permitted()) { observe(false); publish(CalendarSyncStatus(note = tr(R.string.calendar_access_is_off_sync_will)), true); return@withContext }
         var synced = 0; var waiting = 0; var conflicts = 0
         try {
             observe(true)
@@ -150,9 +150,9 @@ class CalendarMirror(private val context: Context, private val db: MemoryDatabas
                 links.put(link.copy(appliedHash = desiredHash, pendingHash = null, state = "ACTIVE")); synced++
             }
             publish(CalendarSyncStatus(synced, waiting, conflicts,
-                "$synced calendar copies up to date · $waiting need dates or calendar access · $conflicts left unchanged after outside edits." +
-                    if (unavailable) " A calendar can’t be opened." else ""), conflicts > 0 || unavailable)
+                tr(R.string.n_1_s_calendar_copies_up_to, synced, waiting, conflicts) +
+                    if (unavailable) tr(R.string.a_calendar_can_t_be_opened) else ""), conflicts > 0 || unavailable)
         } catch (e: CancellationException) { throw e }
-        catch (_: Exception) { publish(CalendarSyncStatus(synced, waiting, conflicts, "Calendar sync interrupted; saved work will be retried. Local reminders remain active."), true) }
+        catch (_: Exception) { publish(CalendarSyncStatus(synced, waiting, conflicts, tr(R.string.calendar_sync_interrupted_saved_work_will)), true) }
     } }
 }

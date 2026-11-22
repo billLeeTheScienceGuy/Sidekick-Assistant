@@ -18,7 +18,7 @@ import kotlinx.coroutines.sync.withLock
 class AutomaticMemory(private val context: Context, private val settings: GuidanceSettings,
     private val temporary: TemporaryMemory, private val dao: CommitmentDao, private val reminders: ReminderCoordinator) {
     private val gate = Mutex()
-    private val mutableStatus = MutableStateFlow("Automatic saving is ready")
+    private val mutableStatus = MutableStateFlow(tr(R.string.automatic_saving_is_ready))
     val status = mutableStatus.asStateFlow()
     private data class Anchor(val id: String, val at: Instant)
     private val anchors = linkedMapOf<String, Anchor>()
@@ -60,7 +60,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
             // Cancellations heard from anyone but the owner never remove a plan; they wait in Review (below).
             val reviewCancel = operation.cancel && !owner
             if (!owner && !reviewCancel && track?.contains("_unassigned") == true) {
-                mutableStatus.value = "Speaker uncertain. Saved events were left unchanged."
+                mutableStatus.value = tr(R.string.speaker_uncertain_saved_events_were_left)
                 continue
             }
             // Upcoming: an all-day plan for today is still upcoming until its day ends.
@@ -87,22 +87,22 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
             val contextual = if (operation.localized && com.sidekick.core.LocalizedActivities.bareEventKey(operation.target) != null)
                 candidates.singleOrNull { it.id == anchor?.id } else null
             val item = contextual ?: candidates.singleOrNull()
-            if (item == null) { mutableStatus.value = "Event change unclear. Saved events were left unchanged."; continue }
+            if (item == null) { mutableStatus.value = tr(R.string.event_change_unclear_saved_events_were); continue }
             if (reviewCancel) {
                 temporary.addCancelReview(item, operation.evidence, pending.at)
-                mutableStatus.value = "Another voice said a plan is cancelled. It is unchanged and waits in Review."
+                mutableStatus.value = tr(R.string.another_voice_said_a_plan_is)
                 continue
             }
             val start = if (operation.cancel) null else operation.newStart(Instant.ofEpochMilli(item.activityStartAt!!), pending.at, ZoneId.of(item.zoneId))?.toEpochMilli()
-            if (!operation.cancel && start == null) { mutableStatus.value = "New event time is unclear. Saved time was left unchanged."; continue }
+            if (!operation.cancel && start == null) { mutableStatus.value = tr(R.string.new_event_time_is_unclear_saved); continue }
             try {
                 if (reminders.changeEvent(item, start, operation.cancel)) {
                     dao.get(item.id)?.let { saved -> temporary.changedEvent(saved, pending.at); remember(saved, pending.at) }
                     runCatching { notifyChange(item.id, item.title, true) }
-                    mutableStatus.value = if (operation.cancel) "Event cancelled automatically" else "Event rescheduled automatically"
+                    mutableStatus.value = if (operation.cancel) tr(R.string.event_cancelled_automatically) else tr(R.string.event_rescheduled_automatically)
                 }
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { mutableStatus.value = "Could not change the saved event. Try again." }
+            catch (_: Exception) { mutableStatus.value = tr(R.string.could_not_change_the_saved_event) }
         }
     }
     private fun ref(item: com.sidekick.app.data.CommitmentEntity) = com.sidekick.core.HandsOffPlans.PlanRef(item.title, item.evidence,
@@ -129,7 +129,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
             val updated = dao.get(old.id) ?: return true
             temporary.approve(candidate.id, updated); remember(updated, temporary.observedAt(candidate))
             runCatching { notifyChange(old.id, candidate.title, true) }
-            mutableStatus.value = "Updated automatically: the stated time replaced an assumption"
+            mutableStatus.value = tr(R.string.updated_automatically_the_stated_time_replaced)
             return true
         }
         val same = saved.filter { opening(it.evidence) != opening(candidate.evidence) && com.sidekick.core.HandsOffPlans.samePlan(ref(it), ref(candidate), zone) }
@@ -139,7 +139,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
     suspend fun process() = gate.withLock {
         temporary.pruneStale(System.currentTimeMillis())
         if (!settings.handsOffMode.value) {
-            if (temporary.takeChanges().isNotEmpty()) mutableStatus.value = "Event changes require Hands-off mode. Use Edit to change a saved event in Review mode."
+            if (temporary.takeChanges().isNotEmpty()) mutableStatus.value = tr(R.string.event_changes_require_hands_off_mode)
             return@withLock
         }
         if (!cleanupChecked) { consolidateAnnouncements(); cleanupChecked = true }
@@ -188,7 +188,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                             (item.placeName == null || candidate.placeName == null || item.placeName.equals(candidate.placeName, true)) &&
                             (item.placeAddress == null || candidate.placeAddress == null || item.placeAddress.equals(candidate.placeAddress, true))
                     }
-                    if (matches.size > 1) { mutableStatus.value = "Several saved events fit. This suggestion remains in Review."; continue }
+                    if (matches.size > 1) { mutableStatus.value = tr(R.string.several_saved_events_fit_this_suggestion); continue }
                     matches.singleOrNull()?.let { item ->
                         target = item.id; linked = true
                         attendance = item.informational && !candidate.informational &&
@@ -240,15 +240,15 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                 reminders.save(target, source.title, due?.takeIf { it > System.currentTimeMillis() }, source.zoneId,
                     flagged, source.activityStartAt, source.activityEndAt, source.informational, source.placeName.orEmpty(), source.placeAddress.orEmpty(), automatic = true)
                 wrote = true
-                val saved = dao.get(target) ?: error("Automatic save did not complete")
+                val saved = dao.get(target) ?: error(tr(R.string.automatic_save_not_complete))
                 temporary.approve(candidate.id, saved)
                 remember(saved, temporary.observedAt(candidate))
                 try { notifyChange(target, source.title, old != null) }
                 catch (e: CancellationException) { throw e }
                 catch (_: Exception) { /* Saving does not depend on notification permission. */ }
-                mutableStatus.value = if (old == null) "Saved automatically" else "Updated automatically"
+                mutableStatus.value = if (old == null) tr(R.string.saved_automatically) else tr(R.string.updated_automatically)
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { mutableStatus.value = "Automatic save failed. The item remains in Review." }
+            catch (_: Exception) { mutableStatus.value = tr(R.string.automatic_save_failed_the_item_remains) }
         }
         processChanges()
         if (wrote) consolidateAnnouncements()
@@ -263,23 +263,23 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
     private suspend fun notifyChange(id: String, title: String, updated: Boolean) {
         val change = dao.change(id) ?: return
         val manager = context.getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Automatic event changes", NotificationManager.IMPORTANCE_LOW))
+        manager.createNotificationChannel(NotificationChannel(CHANNEL, tr(R.string.automatic_event_changes), NotificationManager.IMPORTANCE_LOW))
         if (!manager.areNotificationsEnabled()) return
         val undo = PendingIntent.getBroadcast(context, 0,
             Intent(context, AutomaticUndoReceiver::class.java).setData(Uri.parse("sidekick://automatic/$id"))
                 .putExtra("token", change.token), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val open = PendingIntent.getActivity(context, 4, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         manager.notify(id, NOTIFICATION, Notification.Builder(context, CHANNEL).setSmallIcon(android.R.drawable.ic_menu_agenda)
-            .setContentTitle(if (dao.get(id)?.state == "CANCELLED") "SideKick cancelled an event" else if (updated) "SideKick updated an event" else "SideKick saved an event")
+            .setContentTitle(if (dao.get(id)?.state == "CANCELLED") tr(R.string.sidekick_cancelled_an_event) else if (updated) tr(R.string.sidekick_updated_an_event) else tr(R.string.sidekick_saved_an_event))
             .setContentText(title).setVisibility(Notification.VISIBILITY_PRIVATE).setOnlyAlertOnce(true)
-            .setContentIntent(open).setAutoCancel(true).addAction(Notification.Action.Builder(null, "Undo", undo).build()).build())
+            .setContentIntent(open).setAutoCancel(true).addAction(Notification.Action.Builder(null, tr(R.string.undo), undo).build()).build())
     }
     suspend fun undo(id: String, token: String): Boolean = gate.withLock {
         val undone = reminders.undoAutomatic(id, token)
         if (undone) {
             temporary.retire(id)
             context.getSystemService(NotificationManager::class.java).cancel(id, NOTIFICATION)
-            mutableStatus.value = "Automatic change undone"
+            mutableStatus.value = tr(R.string.automatic_change_undone)
         }
         undone
     }

@@ -23,8 +23,8 @@ class LocalRiskAlerts(private val context: Context, private val enabled: () -> B
     private var callStart: Long? = null
     private fun now() = android.os.SystemClock.elapsedRealtime()
     init {
-        manager.createNotificationChannel(NotificationChannel(CAUTION, "Scam warnings", NotificationManager.IMPORTANCE_DEFAULT))
-        manager.createNotificationChannel(NotificationChannel(STOP, "Scam warnings: stop now", NotificationManager.IMPORTANCE_HIGH).apply {
+        manager.createNotificationChannel(NotificationChannel(CAUTION, tr(R.string.scam_warnings), NotificationManager.IMPORTANCE_DEFAULT))
+        manager.createNotificationChannel(NotificationChannel(STOP, tr(R.string.scam_warnings_stop_now), NotificationManager.IMPORTANCE_HIGH).apply {
             enableVibration(true); vibrationPattern = longArrayOf(0, 600, 250, 600, 250, 600)
         })
     }
@@ -44,7 +44,7 @@ class LocalRiskAlerts(private val context: Context, private val enabled: () -> B
     @Synchronized fun inspectMessage(text: String) {
         if (!enabled()) return
         val a = ScamCheck.message(text)
-        if (a.level != ScamLevel.NONE) show("message", a, prefix = "Message: ")
+        if (a.level != ScamLevel.NONE) show("message", a, prefix = tr(R.string.message))
     }
 
     @Synchronized fun callStarted() { callStart = now() }
@@ -56,20 +56,20 @@ class LocalRiskAlerts(private val context: Context, private val enabled: () -> B
         val a = monitor.since(start)
         if (a.signals.isEmpty()) return
         val count = a.signals.size
-        show("call", a.copy(level = maxOf(a.level, ScamLevel.CAUTION)), prefix = "After your call: ",
-            title = "After your call: $count warning sign${if (count == 1) "" else "s"}")
+        show("call", a.copy(level = maxOf(a.level, ScamLevel.CAUTION)), prefix = tr(R.string.after_your_call),
+            title = trn(R.plurals.warning_signs_after_call, count, count))
     }
 
     /** "SideKick, is this a scam?" */
     @Synchronized fun answer(language: String): String = ScamQuestion.answer(if (enabled()) monitor.assessment(now()) else null, language)
 
     private fun show(id: String, a: ScamAssessment, prefix: String = "", title: String = prefix + a.title) {
-        val explanation = "${a.step}\nWarning signs: ${a.reasons}."
+        val explanation = tr(R.string.n_1_s_warning_signs_2_s, a.step, a.reasons)
         current.value = (current.value.filterNot { it.id == id } + RiskAdvisory(id, title, explanation)).takeLast(4)
         try {
             if (manager.areNotificationsEnabled()) manager.notify("risk:$id", 31,
                 Notification.Builder(context, if (a.level == ScamLevel.STOP) STOP else CAUTION).setSmallIcon(android.R.drawable.ic_dialog_alert)
-                    .setContentTitle("SideKick · $title").setContentText(a.step)
+                    .setContentTitle(tr(R.string.sidekick_1_s, title)).setContentText(a.step)
                     .setStyle(Notification.BigTextStyle().bigText(explanation))
                     .setVisibility(Notification.VISIBILITY_PRIVATE).setContentIntent(open).setAutoCancel(true).build())
         } catch (_: SecurityException) { /* The in-app warning remains without notification permission. */ }

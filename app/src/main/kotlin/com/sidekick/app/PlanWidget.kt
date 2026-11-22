@@ -39,11 +39,11 @@ class PlanWidget : AppWidgetProvider() {
             val next = app.database.commitments().all()
                 .filter { it.state == "ACCEPTED" && !it.informational && (it.activityStartAt ?: it.dueAt ?: 0) >= now - 15 * 60_000 }
                 .minByOrNull { it.activityStartAt ?: it.dueAt!! }
-            val text = next?.let { "${it.title}\n${describe(it.activityStartAt ?: it.dueAt!!, now)}" } ?: "No upcoming plans"
+            val text = next?.let { "${it.title}\n${describe(it.activityStartAt ?: it.dueAt!!, now)}" } ?: tr(R.string.no_upcoming_plans)
             val recording = ListeningService.state.value.recording
             val views = RemoteViews(context.packageName, R.layout.plan_widget).apply {
                 setTextViewText(R.id.widget_next, text)
-                setTextViewText(R.id.widget_button, if (recording) "Stop listening" else "Start listening")
+                setTextViewText(R.id.widget_button, if (recording) tr(R.string.stop_listening) else tr(R.string.start_listening))
                 val action = if (recording) PendingIntent.getService(context, 2,
                         Intent(context, ListeningService::class.java).setAction(ListeningService.FINISH), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
                     else PendingIntent.getActivity(context, 1, Intent(context, MainActivity::class.java).setAction(START)
@@ -59,8 +59,8 @@ class PlanWidget : AppWidgetProvider() {
             val time = Instant.ofEpochMilli(at).atZone(zone)
             val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
             val day = when (time.toLocalDate()) {
-                today -> "Today"
-                today.plusDays(1) -> "Tomorrow"
+                today -> tr(R.string.today)
+                today.plusDays(1) -> tr(R.string.tomorrow)
                 else -> time.format(DateTimeFormatter.ofPattern("EEE, MMM d", Locale.getDefault()))
             }
             return if (time.hour == 0 && time.minute == 0) day else "$day · ${time.format(DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault()))}"

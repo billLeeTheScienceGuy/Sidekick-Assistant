@@ -75,7 +75,7 @@ internal fun SidekickTheme(appearance: AppearanceMode = AppearanceMode.SYSTEM, d
 @Composable
 internal fun SidekickFrame(selected: Int, onSelect: (Int) -> Unit, onSettings: () -> Unit, simple: Boolean = false, content: @Composable () -> Unit) {
     // Simple layout: two main destinations plus a clearly labelled More. Detailed keeps the three original tabs.
-    val labels = if (simple) listOf("Today", "Plans", "More") else listOf("Capture", "Planner", "Summary")
+    val labels = if (simple) listOf(tr(R.string.today), tr(R.string.plans), tr(R.string.more)) else listOf(tr(R.string.capture), tr(R.string.planner), tr(R.string.summary))
     val tags = if (simple) listOf("today-tab", "planner-tab", "more-tab") else listOf("capture-tab", "planner-tab", "summary-tab")
     val symbols = if (simple) listOf(0, 1, 3) else listOf(0, 1, 2)
     val labelStyle = if (simple) MaterialTheme.typography.titleSmall else MaterialTheme.typography.labelMedium
@@ -87,10 +87,10 @@ internal fun SidekickFrame(selected: Int, onSelect: (Int) -> Unit, onSettings: (
             topBar = {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("SideKick", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                        Text(tr(R.string.sidekick), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                         if (simple) OutlinedButton(onClick = onSettings, modifier = Modifier.testTag("settings").heightIn(min = 56.dp)) {
-                            Text("Settings", style = MaterialTheme.typography.titleMedium)
-                        } else TextButton(onClick = onSettings, modifier = Modifier.testTag("settings").heightIn(min = 48.dp)) { Text("Settings") }
+                            Text(tr(R.string.settings), style = MaterialTheme.typography.titleMedium)
+                        } else TextButton(onClick = onSettings, modifier = Modifier.testTag("settings").heightIn(min = 48.dp)) { Text(tr(R.string.settings)) }
                     }
                 }
             }, bottomBar = {
@@ -127,7 +127,7 @@ internal fun SidekickFrame(selected: Int, onSelect: (Int) -> Unit, onSettings: (
         fun point(x: Float, y: Float) = Offset(x * u, y * u)
         fun line(x1: Float, y1: Float, x2: Float, y2: Float) = drawLine(color, point(x1, y1), point(x2, y2), 1.8f * u, StrokeCap.Round)
         if (index == 3) {
-            // "More": three dots.
+            // tr(R.string.more): three dots.
             for (x in listOf(5f, 12f, 19f)) drawCircle(color, 2f * u, point(x, 12f))
         } else if (index == 0) {
             drawRoundRect(color, point(9f, 2f), Size(6f * u, 12f * u), CornerRadius(3f * u), style = Stroke(1.8f * u))

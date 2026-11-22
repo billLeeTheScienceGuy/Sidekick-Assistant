@@ -24,11 +24,11 @@ import java.time.format.DateTimeFormatter
 
 /** Plain words for a saved plan's state (the stored codes stay unchanged). */
 internal fun planStateLabel(state: String): String = when (state) {
-    "PROPOSED" -> "Needs checking"
-    "ACCEPTED" -> "Saved"
-    "DONE" -> "Done"
-    "DISMISSED" -> "Removed"
-    "CANCELLED" -> "Cancelled"
+    "PROPOSED" -> tr(R.string.needs_checking)
+    "ACCEPTED" -> tr(R.string.saved)
+    "DONE" -> tr(R.string.done)
+    "DISMISSED" -> tr(R.string.removed)
+    "CANCELLED" -> tr(R.string.cancelled)
     else -> state.lowercase().replaceFirstChar { it.uppercase() }
 }
 
@@ -56,14 +56,15 @@ internal fun CompactHome(
     var removing by remember { mutableStateOf<CommitmentEntity?>(null) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp).testTag("one-screen-home"),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        CrashReportCard()
         RiskSection()
         Text(when {
-            listening.recording -> "Listening"
-            listening.processing -> "Finishing up…"
-            else -> "Not listening"
+            listening.recording -> tr(R.string.listening)
+            listening.processing -> tr(R.string.finishing_up)
+            else -> tr(R.string.not_listening)
         }, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }.testTag("compact-status"))
-        if (listening.recording) Text(if (listening.speechActive) "Hearing speech" else "Waiting for speech",
+        if (listening.recording) Text(if (listening.speechActive) tr(R.string.hearing_speech) else tr(R.string.waiting_for_speech),
             style = MaterialTheme.typography.bodyLarge)
         val stopColors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError)
         Button(onClick = if (listening.recording) onFinish else onStart,
@@ -71,21 +72,21 @@ internal fun CompactHome(
             colors = if (listening.recording) stopColors else ButtonDefaults.buttonColors(),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
             modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).testTag("compact-listen")) {
-            Text(if (listening.recording) "Stop listening" else "Start listening", style = MaterialTheme.typography.headlineSmall)
+            Text(if (listening.recording) tr(R.string.stop_listening) else tr(R.string.start_listening), style = MaterialTheme.typography.headlineSmall)
         }
         if (listening.processing) LinearProgressIndicator(Modifier.fillMaxWidth())
         // The rules line stays visible while listening (state rule, or the default reminder when stopped).
-        Text(listening.rulesLabel.takeIf { listening.recording && it.isNotBlank() } ?: "Follows your state’s rules · no audio saved",
+        Text(listening.rulesLabel.takeIf { listening.recording && it.isNotBlank() } ?: tr(R.string.follows_your_state_s_rules_no),
             style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("compact-rules"))
         if (listening.recording) {
             if (listening.consent.isNotBlank()) Text(listening.consent, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("consent-status"))
-            if (listening.callActive) Text("Call detected: strictest rule", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("call-status"))
+            if (listening.callActive) Text(tr(R.string.call_detected_strictest_rule), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("call-status"))
             if (listening.answer.isNotBlank()) Text(listening.answer, style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("plan-answer"))
             else AskHint()
             RestingTip(listening)
             if (listening.noticeNeeded || showAnnounce) {
                 OutlinedButton(onClick = onAnnounce, modifier = Modifier.fillMaxWidth().heightIn(min = SimpleTarget).testTag("announce-notice")) {
-                    Text(if (listening.noticeActive) "Announce again" else "Announce note-taking", style = MaterialTheme.typography.titleMedium)
+                    Text(if (listening.noticeActive) tr(R.string.announce_again) else tr(R.string.announce_note_taking), style = MaterialTheme.typography.titleMedium)
                 }
                 OutlinedButton(onClick = onNoticeGiven, modifier = Modifier.fillMaxWidth().heightIn(min = SimpleTarget).testTag("notice-given")) {
                     Text(listening.attestLabel, style = MaterialTheme.typography.titleMedium)
@@ -93,32 +94,32 @@ internal fun CompactHome(
             }
         }
         if (listening.recording || listening.processing) TextButton(onClick = onDiscard, modifier = Modifier.fillMaxWidth().heightIn(min = SimpleTarget).testTag("compact-discard")) {
-            Text("Stop and delete what was heard", style = MaterialTheme.typography.titleMedium)
+            Text(tr(R.string.stop_and_delete_what_was_heard), style = MaterialTheme.typography.titleMedium)
         }
         if (needsModel) {
-            Text("Speech for your language isn’t installed.", style = MaterialTheme.typography.bodyLarge)
+            Text(tr(R.string.speech_for_your_language_isn_t), style = MaterialTheme.typography.bodyLarge)
             FilledTonalButton(onClick = onSetup, modifier = Modifier.fillMaxWidth().heightIn(min = SimpleTarget).testTag("compact-setup")) {
-                Text("Set up speech", style = MaterialTheme.typography.titleMedium)
+                Text(tr(R.string.set_up_speech), style = MaterialTheme.typography.titleMedium)
             }
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge) }
         if (toCheck > 0) FilledTonalButton(onClick = onReview, modifier = Modifier.fillMaxWidth().heightIn(min = SimpleTarget).testTag("review-badge")) {
-            Text(if (toCheck == 1) "1 plan to check" else "$toCheck plans to check", style = MaterialTheme.typography.titleMedium)
+            Text(trn(R.plurals.plans_to_check, toCheck, toCheck), style = MaterialTheme.typography.titleMedium)
         }
         HorizontalDivider()
-        Text("Your next plans", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
-        if (next.isEmpty()) Text("No plans yet. Plans you mention while listening show up here.",
+        Text(tr(R.string.your_next_plans), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
+        if (next.isEmpty()) Text(tr(R.string.no_plans_yet_plans_you_mention),
             style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag("today-empty"))
         next.forEach { (item, at) -> TodayPlanCard(item, at, undoable[item.id], onOpen, onUndo) { removing = item } }
         OutlinedButton(onClick = onAllPlans, modifier = Modifier.fillMaxWidth().heightIn(min = SimpleTarget).testTag("today-all-plans")) {
-            Text("See all plans", style = MaterialTheme.typography.titleMedium)
+            Text(tr(R.string.see_all_plans), style = MaterialTheme.typography.titleMedium)
         }
     }
     removing?.let { item ->
-        AlertDialog(onDismissRequest = { removing = null }, title = { Text("Remove this plan?") },
-            text = { Text("“${item.title}” and its reminder are removed. You can restore it from Plans → Past.") },
-            confirmButton = { TextButton(onClick = { onRemove(item); removing = null }, modifier = Modifier.heightIn(min = SimpleTarget).testTag("confirm-remove")) { Text("Remove") } },
-            dismissButton = { TextButton(onClick = { removing = null }, modifier = Modifier.heightIn(min = SimpleTarget)) { Text("Keep it") } })
+        AlertDialog(onDismissRequest = { removing = null }, title = { Text(tr(R.string.remove_this_plan)) },
+            text = { Text(tr(R.string.n_1_s_and_its_reminder_are, item.title)) },
+            confirmButton = { TextButton(onClick = { onRemove(item); removing = null }, modifier = Modifier.heightIn(min = SimpleTarget).testTag("confirm-remove")) { Text(tr(R.string.remove)) } },
+            dismissButton = { TextButton(onClick = { removing = null }, modifier = Modifier.heightIn(min = SimpleTarget)) { Text(tr(R.string.keep_it)) } })
     }
 }
 
@@ -128,26 +129,26 @@ private fun TodayPlanCard(item: CommitmentEntity, at: Long, undo: RecentAutomati
     val zone = runCatching { ZoneId.of(item.zoneId) }.getOrDefault(ZoneId.systemDefault())
     val time = Instant.ofEpochMilli(at).atZone(zone)
     val day = when (time.toLocalDate()) {
-        LocalDate.now(zone) -> "Today"
-        LocalDate.now(zone).plusDays(1) -> "Tomorrow"
+        LocalDate.now(zone) -> tr(R.string.today)
+        LocalDate.now(zone).plusDays(1) -> tr(R.string.tomorrow)
         else -> time.format(DateTimeFormatter.ofPattern("EEEE, MMMM d"))
     }
-    val whenText = "$day at ${time.format(DateTimeFormatter.ofPattern("h:mm a"))}"
+    val whenText = tr(R.string.n_1_s_at_2_s, day, time.format(DateTimeFormatter.ofPattern("h:mm a")))
     val where = listOfNotNull(item.placeName, item.placeAddress).filter { it.isNotBlank() }.joinToString(", ")
     OutlinedCard(Modifier.fillMaxWidth().testTag("today-plan-${item.id}"), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(item.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
             Text(whenText, style = MaterialTheme.typography.bodyLarge)
-            if (where.isNotEmpty()) Text("At $where", style = MaterialTheme.typography.bodyLarge)
-            if (item.informational) Text("For your information: you may not be going", style = MaterialTheme.typography.bodyMedium,
+            if (where.isNotEmpty()) Text(tr(R.string.at_1_s, where), style = MaterialTheme.typography.bodyLarge)
+            if (item.informational) Text(tr(R.string.for_your_information_you_may_not), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 OutlinedButton(onClick = { onOpen(item) }, modifier = Modifier.weight(1f).heightIn(min = SimpleTarget).testTag("today-change-${item.id}")
-                    .semantics { contentDescription = "Change ${item.title}" }) { Text("Change") }
+                    .semantics { contentDescription = tr(R.string.change_1_s, item.title) }) { Text(tr(R.string.change)) }
                 if (undo != null) OutlinedButton(onClick = { onUndo(undo) }, modifier = Modifier.weight(1f).heightIn(min = SimpleTarget).testTag("today-undo-${item.id}")
-                    .semantics { contentDescription = "Undo ${undo.action.lowercase()} ${item.title}" }) { Text("Undo") }
+                    .semantics { contentDescription = tr(R.string.undo_1_s_2_s, undo.action.lowercase(), item.title) }) { Text(tr(R.string.undo)) }
                 else OutlinedButton(onClick = onRemove, modifier = Modifier.weight(1f).heightIn(min = SimpleTarget).testTag("today-remove-${item.id}")
-                    .semantics { contentDescription = "Remove ${item.title}" }) { Text("Remove") }
+                    .semantics { contentDescription = tr(R.string.remove_1_s, item.title) }) { Text(tr(R.string.remove)) }
             }
         }
     }
@@ -159,13 +160,13 @@ internal fun SimpleMore(manualNotes: Boolean, onSummary: () -> Unit, onConversat
                         onSettings: () -> Unit, onDetailed: () -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp).testTag("more-content"),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("More", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.semantics { heading() })
-        MoreItem("Day summary", "Your plans for any day.", "more-summary", onSummary)
-        MoreItem(if (manualNotes) "What was heard & notes" else "What was heard",
-            if (manualNotes) "Recent words and notes." else "Recent words.", "more-conversation", onConversation)
-        MoreItem("Setup", "Speech, your voice, permissions.", "get-started", onSetup)
-        MoreItem("Settings", "Screen, listening, voice, reminders, privacy.", "more-settings", onSettings)
-        MoreItem("Detailed screen", "Shows every tool. Switch back in Settings.", "more-detailed", onDetailed)
+        Text(tr(R.string.more), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.semantics { heading() })
+        MoreItem(tr(R.string.day_summary), tr(R.string.your_plans_for_any_day), "more-summary", onSummary)
+        MoreItem(if (manualNotes) tr(R.string.what_was_heard_notes) else tr(R.string.what_was_heard),
+            if (manualNotes) tr(R.string.recent_words_and_notes) else tr(R.string.recent_words), "more-conversation", onConversation)
+        MoreItem(tr(R.string.setup), tr(R.string.speech_your_voice_permissions), "get-started", onSetup)
+        MoreItem(tr(R.string.settings), tr(R.string.screen_listening_voice_reminders_privacy), "more-settings", onSettings)
+        MoreItem(tr(R.string.detailed_screen), tr(R.string.shows_every_tool_switch_back_in), "more-detailed", onDetailed)
     }
 }
 
@@ -191,10 +192,10 @@ internal fun AskHint() {
     val codes = askLanguages(language, detect)
     var all by remember { mutableStateOf(false) }
     Column(Modifier.testTag("ask-hint")) {
-        Text("Try saying: “${com.sidekick.core.PlanQuestion.examples(codes.first()).first()}”", style = MaterialTheme.typography.bodyLarge)
-        TextButton(onClick = { all = true }, modifier = Modifier.heightIn(min = 48.dp).testTag("ask-more")) { Text("More questions") }
+        Text(tr(R.string.try_saying_1_s, com.sidekick.core.PlanQuestion.examples(codes.first()).first()), style = MaterialTheme.typography.bodyLarge)
+        TextButton(onClick = { all = true }, modifier = Modifier.heightIn(min = 48.dp).testTag("ask-more")) { Text(tr(R.string.more_questions)) }
     }
-    if (all) AlertDialog(onDismissRequest = { all = false }, title = { Text("Ask SideKick") },
+    if (all) AlertDialog(onDismissRequest = { all = false }, title = { Text(tr(R.string.ask_sidekick)) },
         text = { Column(Modifier.verticalScroll(rememberScrollState())) { AskExamples(codes) } },
-        confirmButton = { TextButton(onClick = { all = false }) { Text("Close") } })
+        confirmButton = { TextButton(onClick = { all = false }) { Text(tr(R.string.close)) } })
 }

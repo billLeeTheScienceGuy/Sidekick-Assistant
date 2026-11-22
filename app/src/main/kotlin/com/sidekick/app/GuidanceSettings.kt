@@ -27,6 +27,14 @@ class GuidanceSettings(context: Context) {
     private val interfaceSizeValue = MutableStateFlow(preference("interface_size", InterfaceSize.PHONE))
     val interfaceSize = interfaceSizeValue.asStateFlow()
     fun setInterfaceSize(value: InterfaceSize) { preferences.edit().putString("interface_size", value.name).apply(); interfaceSizeValue.value = value }
+    /** Offer to send a small local crash report after a crash. Off: nothing is saved and saved reports are deleted. */
+    private val crashReportsValue = MutableStateFlow(preferences.getBoolean(CrashReports.PREFERENCE, true))
+    val crashReports = crashReportsValue.asStateFlow()
+    fun setCrashReports(value: Boolean) {
+        preferences.edit().putBoolean(CrashReports.PREFERENCE, value).apply(); crashReportsValue.value = value
+        if (!value) CrashReports.deleteAll(appContext)
+    }
+    private val appContext: Context = context.applicationContext
     private val manualNotesValue = MutableStateFlow(preferences.getBoolean("manual_notes", true))
     val manualNotes = manualNotesValue.asStateFlow()
     fun setManualNotes(value: Boolean) { preferences.edit().putBoolean("manual_notes", value).apply(); manualNotesValue.value = value }

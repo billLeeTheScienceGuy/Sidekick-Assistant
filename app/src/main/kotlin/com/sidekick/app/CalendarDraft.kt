@@ -7,9 +7,9 @@ import com.sidekick.app.data.CommitmentEntity
 /** Explicit handoff to the user's calendar editor; no account access or background writes. */
 object CalendarDraft {
     fun intent(item: CommitmentEntity): Intent {
-        require(item.state == "ACCEPTED") { "Choose an active saved event." }
-        val start = requireNotNull(item.activityStartAt) { "Choose an activity start first." }
-        item.activityEndAt?.let { require(it > start) { "End must follow start." } }
+        require(item.state == "ACCEPTED") { tr(R.string.choose_an_active_saved_event) }
+        val start = requireNotNull(item.activityStartAt) { tr(R.string.choose_an_activity_start_first) }
+        item.activityEndAt?.let { require(it > start) { tr(R.string.end_must_follow_start) } }
         return Intent(Intent.ACTION_INSERT, CalendarContract.Events.CONTENT_URI)
             .putExtra(CalendarContract.Events.TITLE, item.title)
             .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, start)

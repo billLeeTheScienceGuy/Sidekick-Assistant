@@ -18,25 +18,25 @@ internal fun ConsentRulesSection(settings: GuidanceSettings) {
     val listening by ListeningService.state.collectAsState()
     val alwaysAnnounce by settings.alwaysShowAnnounce.collectAsState()
     val autoAnnounce by settings.autoAnnounce.collectAsState()
-    Text("Conversation rules", style = MaterialTheme.typography.titleMedium)
-    QuietLabel("Follows the stricter of nearby states' recording and voice rules. Not legal advice.")
-    SettingsToggle("Treat every place as the strictest state",
-        "No location checks. Notice always needed; voices never grouped.", strictest, settings::setStrictestEverywhere, "strictest-everywhere")
-    SettingsToggle("Group voices only after notice, in every state",
-        "The notice always mentions voice analysis. With this on, voices are grouped only after it, everywhere.", voiceLine, settings::setVoiceLineEverywhere,
+    Text(tr(R.string.conversation_rules), style = MaterialTheme.typography.titleMedium)
+    QuietLabel(tr(R.string.follows_the_stricter_of_nearby_states))
+    SettingsToggle(tr(R.string.treat_every_place_as_the_strictest),
+        tr(R.string.no_location_checks_notice_always_needed), strictest, settings::setStrictestEverywhere, "strictest-everywhere")
+    SettingsToggle(tr(R.string.group_voices_only_after_notice_in),
+        tr(R.string.the_notice_always_mentions_voice_analysis), voiceLine, settings::setVoiceLineEverywhere,
         "voice-line-everywhere", !strictest)
-    SettingsToggle("Always show the Announce button",
-        "Announce note-taking anytime while listening.", alwaysAnnounce,
+    SettingsToggle(tr(R.string.always_show_the_announce_button),
+        tr(R.string.announce_note_taking_anytime_while_listening), alwaysAnnounce,
         settings::setAlwaysShowAnnounce, "always-show-announce")
-    SettingsToggle("Announce automatically when a new conversation starts",
-        "Plays the notice when a new voice is heard. That first phrase isn’t kept. Can speak up in quiet places.", autoAnnounce,
+    SettingsToggle(tr(R.string.announce_automatically_when_a_new_conversation),
+        tr(R.string.plays_the_notice_when_a_new), autoAnnounce,
         settings::setAutoAnnounce, "auto-announce")
-    QuietLabel("The notice must play at half volume or more to count.")
-    QuietLabel("A notice lasts one conversation: until 30 minutes without other voices, or 2 hours at most.")
-    if (listening.recording) QuietLabel("Changes apply now; turning off \"strictest\" applies the next time you start listening.")
+    QuietLabel(tr(R.string.the_notice_must_play_at_half))
+    QuietLabel(tr(R.string.a_notice_lasts_one_conversation_until))
+    if (listening.recording) QuietLabel(tr(R.string.changes_apply_now_turning_off_strictest))
     TextButton(onClick = {
         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-    }, modifier = Modifier.testTag("privacy-policy")) { Text("Privacy policy") }
+    }, modifier = Modifier.testTag("privacy-policy")) { Text(tr(R.string.privacy_policy)) }
 }
 
 const val PRIVACY_POLICY_URL = "https://github.com/billLeeTheScienceGuy/Sidekick-Assistant/blob/main/docs/PRIVACY_POLICY.md"

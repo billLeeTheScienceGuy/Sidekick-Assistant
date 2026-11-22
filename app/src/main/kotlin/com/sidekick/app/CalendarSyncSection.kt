@@ -29,28 +29,28 @@ internal fun CalendarSyncSection() {
         loading = true
         try {
             calendars = withContext(Dispatchers.IO) { AndroidCalendarGateway(context).calendars() }
-            note = if (calendars.isEmpty()) "No calendar available. Add an account in Android, or use SideKick reminders." else "Choose where new plans will be copied."
+            note = if (calendars.isEmpty()) tr(R.string.no_calendar_available_add_an_account) else tr(R.string.choose_where_new_plans_will_be)
             choosing = calendars.isNotEmpty()
         } catch (e: CancellationException) { throw e }
-        catch (_: Exception) { note = "Can’t open your calendar. SideKick plans and reminders still work." }
+        catch (_: Exception) { note = tr(R.string.can_t_open_your_calendar_sidekick) }
         finally { loading = false }
     } }
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         if (AndroidCalendarGateway(context).permitted()) {
             if (enablingAfterPermission) confirming = true
-            else if (config.enabled) { app.calendarMirror.requestSync(); note = "Calendar access restored." }
+            else if (config.enabled) { app.calendarMirror.requestSync(); note = tr(R.string.calendar_access_restored) }
             else load()
-        } else note = "Allow calendar access to copy plans. SideKick reminders still work."
+        } else note = tr(R.string.allow_calendar_access_to_copy_plans)
         enablingAfterPermission = false
     }
     HorizontalDivider()
-    Text("Calendar", style = MaterialTheme.typography.titleMedium)
-    QuietLabel("Copies upcoming plans to your calendar. Your calendar account may send titles, times and places online.")
-    QuietLabel("Plans need a start and end time to appear.")
+    Text(tr(R.string.calendar), style = MaterialTheme.typography.titleMedium)
+    QuietLabel(tr(R.string.copies_upcoming_plans_to_your_calendar))
+    QuietLabel(tr(R.string.plans_need_a_start_and_end))
     Box {
     TextButton(enabled = !loading && !config.enabled, modifier = Modifier.testTag("choose-sync-calendar"), onClick = {
         if (AndroidCalendarGateway(context).permitted()) load() else permissions.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
-    }) { Text(if (config.calendarId == null) "Choose a calendar" else "Change calendar") }
+    }) { Text(if (config.calendarId == null) tr(R.string.choose_a_calendar) else tr(R.string.change_calendar)) }
     DropdownMenu(choosing, { choosing = false }) {
         calendars.forEach { calendar -> DropdownMenuItem(text = { Text("${calendar.name} · ${calendar.account}") }, onClick = {
             app.guidance.setCalendarSync(config.copy(calendarId = calendar.id)); choosing = false
@@ -61,27 +61,27 @@ internal fun CalendarSyncSection() {
         Switch(config.enabled, { enabled -> if (!enabled) app.guidance.setCalendarSync(config.copy(enabled = false))
             else if (AndroidCalendarGateway(context).permitted()) confirming = true
             else { enablingAfterPermission = true; permissions.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)) } },
-            enabled = config.calendarId != null, modifier = Modifier.testTag("calendar-sync-setting").controlLabel("Copy plans automatically to my selected calendar"))
-        Text("Copy plans automatically", Modifier.padding(start = 8.dp))
+            enabled = config.calendarId != null, modifier = Modifier.testTag("calendar-sync-setting").controlLabel(tr(R.string.copy_plans_automatically_to_my_selected)))
+        Text(tr(R.string.copy_plans_automatically), Modifier.padding(start = 8.dp))
     }
     Row {
         Checkbox(config.includeInformational, { app.guidance.setCalendarSync(config.copy(includeInformational = it)) },
-            modifier = Modifier.testTag("sync-informational").controlLabel("Include plans I’m not attending"))
-        Text("Include plans I’m not attending", Modifier.padding(start = 8.dp))
+            modifier = Modifier.testTag("sync-informational").controlLabel(tr(R.string.include_plans_i_m_not_attending)))
+        Text(tr(R.string.include_plans_i_m_not_attending), Modifier.padding(start = 8.dp))
     }
-    QuietLabel("Turning sync off keeps existing copies. Plans you aren’t attending show as free.")
-    SettingsDetails("How calendar updates work") {
-        QuietLabel("Changes update copies you haven’t edited in your calendar. Copies you edited are left alone.")
+    QuietLabel(tr(R.string.turning_sync_off_keeps_existing_copies))
+    SettingsDetails(tr(R.string.how_calendar_updates_work)) {
+        QuietLabel(tr(R.string.changes_update_copies_you_haven_t))
     }
     Text(status.note, modifier = Modifier.testTag("calendar-sync-status"))
-    if (config.enabled) TextButton(onClick = { app.calendarMirror.requestSync() }, modifier = Modifier.testTag("retry-calendar-sync")) { Text("Retry calendar sync") }
+    if (config.enabled) TextButton(onClick = { app.calendarMirror.requestSync() }, modifier = Modifier.testTag("retry-calendar-sync")) { Text(tr(R.string.retry_calendar_sync)) }
     if (config.enabled && !AndroidCalendarGateway(context).permitted()) TextButton(onClick = {
         permissions.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
-    }) { Text("Restore calendar access") }
+    }) { Text(tr(R.string.restore_calendar_access)) }
     if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
     if (note.isNotBlank()) Text(note)
-    if (confirming) AlertDialog(onDismissRequest = { confirming = false }, title = { Text("Copy plans to your calendar?") },
-        text = { Text("Copies plans with start and end times. Your calendar account may send titles, times and places online. No invitations are sent.") },
-        confirmButton = { TextButton(onClick = { app.guidance.setCalendarSync(config.copy(enabled = true)); confirming = false }) { Text("Enable sync") } },
-        dismissButton = { TextButton(onClick = { confirming = false }) { Text("Cancel") } })
+    if (confirming) AlertDialog(onDismissRequest = { confirming = false }, title = { Text(tr(R.string.copy_plans_to_your_calendar)) },
+        text = { Text(tr(R.string.copies_plans_with_start_and_end)) },
+        confirmButton = { TextButton(onClick = { app.guidance.setCalendarSync(config.copy(enabled = true)); confirming = false }) { Text(tr(R.string.enable_sync)) } },
+        dismissButton = { TextButton(onClick = { confirming = false }) { Text(tr(R.string.cancel)) } })
 }

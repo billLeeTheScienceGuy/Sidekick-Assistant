@@ -1,5 +1,8 @@
 package com.sidekick.app.speech
 
+import com.sidekick.app.R
+import com.sidekick.app.tr
+
 import android.content.Context
 import android.net.Uri
 import com.sidekick.core.*
@@ -13,15 +16,15 @@ import kotlinx.coroutines.sync.withLock
 object ModelPacks {
     val revision = MutableStateFlow(0)
     private val gate = Mutex()
-    val labels = linkedMapOf("whisper" to "Whisper languages", "sensevoice" to "Korean & Chinese", "omni" to "Auto-detect & multilingual", "english" to "English accuracy (Auto-detect)", "russian" to "Russian accuracy (Auto-detect)", "korean" to "Korean names & time check")
+    val labels: Map<String, String> get() = linkedMapOf("whisper" to tr(R.string.whisper_languages), "sensevoice" to tr(R.string.korean_chinese), "omni" to tr(R.string.auto_detect_multilingual), "english" to tr(R.string.english_accuracy_auto_detect), "russian" to tr(R.string.russian_accuracy_auto_detect), "korean" to tr(R.string.korean_names_time_check))
     /** What each speech file is for, shown next to its size. "Base" packs make a language work; the rest improve it. */
-    val usedFor = mapOf(
-        "whisper" to "Base: French, German, Russian, Arabic; English Recommended",
-        "sensevoice" to "Base: Korean, Chinese; also used by Auto-detect",
-        "omni" to "Base: Arabic and Auto-detect; French, German, Russian Recommended",
-        "english" to "Better accuracy: English in Auto-detect",
-        "russian" to "Better accuracy: Russian",
-        "korean" to "Better accuracy: Korean names and times")
+    val usedFor: Map<String, String> get() = mapOf(
+        "whisper" to tr(R.string.base_french_german_russian_arabic_english),
+        "sensevoice" to tr(R.string.base_korean_chinese_also_used_by),
+        "omni" to tr(R.string.base_arabic_and_auto_detect_french),
+        "english" to tr(R.string.better_accuracy_english_in_auto_detect),
+        "russian" to tr(R.string.better_accuracy_russian),
+        "korean" to tr(R.string.better_accuracy_korean_names_and_times))
     @Volatile private var catalogCache: List<PackAsset>? = null
     fun catalog(context: Context) = catalogCache ?: context.assets.open("model-packs.tsv").bufferedReader().use { ModelPackCatalog.parse(it.readText()) }.also { catalogCache = it }
     private fun store(context: Context) = ModelPackStore(File(context.noBackupFilesDir, "model-packs"), catalog(context))
@@ -75,7 +78,7 @@ object ModelPacks {
         catalog(context).filter { it.pack == id }.any { !available(context, it.name) }
     }.toSet()
     suspend fun importPack(context: Context, uri: Uri): String = gate.withLock { SpeechEngine.modelMaintenance { withContext(Dispatchers.IO) {
-        val input = context.contentResolver.openInputStream(uri) ?: error("Could not open model pack.")
+        val input = context.contentResolver.openInputStream(uri) ?: error(tr(R.string.could_not_open_model_pack))
         val id = input.use { store(context).install(it) { ensureActive() } }
         revision.value++; id
     } } }
@@ -97,11 +100,11 @@ object ModelPacks {
         } }
         val temporary = File(context.noBackupFilesDir, "$name.install")
         try {
-            check(assetModel(context, name)) { "Missing speech model. Import its model pack in Get started or Settings, or choose English Fast." }
+            check(assetModel(context, name)) { tr(R.string.missing_speech_model_import_its_model) }
             try { context.assets.open("models/$name").use { input -> temporary.outputStream().use(input::copyTo) } }
-            catch (_: java.io.FileNotFoundException) { error("Missing speech model. Import its model pack in Get started or Settings, or choose English Fast.") }
-            check(hash(temporary) == expected) { "Speech model checksum mismatch." }
-            check(temporary.renameTo(old)) { "Could not install speech model." }
+            catch (_: java.io.FileNotFoundException) { error(tr(R.string.missing_speech_model_import_its_model)) }
+            check(hash(temporary) == expected) { tr(R.string.speech_model_checksum_mismatch) }
+            check(temporary.renameTo(old)) { tr(R.string.could_not_install_speech_model) }
             return old
         } finally { temporary.delete() }
     }

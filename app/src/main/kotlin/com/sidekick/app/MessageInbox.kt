@@ -60,7 +60,7 @@ class MessageInbox(private val settings: GuidanceSettings, private val temporary
             onRisk(context.text)
             val source = Transcript(context.text, context.capturedAt, ZoneId.systemDefault(), Speaker.OTHER, true)
             val proposals = AnalysisContext.others(source).map {
-                it.copy(sourceKey = key, needsReview = "Incoming message: sender attendance does not imply yours. " + it.needsReview)
+                it.copy(sourceKey = key, needsReview = tr(R.string.incoming_message_sender_attendance_does_not) + it.needsReview)
             }
             temporary.addProposals(proposals, messageAt)
             onDetected() // Finish each message before a later message can change its reference context.

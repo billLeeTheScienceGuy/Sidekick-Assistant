@@ -697,3 +697,17 @@ on the phone while every laptop test passed. The rules now spell letters as \p{L
 fails if the flag comes back. The owner's app had the faulty build for about an hour but was not listening (checked: no
 crash in its log). Rerun: full phone suite 131 of 131; test copy removed. Lesson: core changes that use regex features
 need a phone run before release, not only laptop tests.
+
+**T92 App language and local crash reports (November 22).** All screens, notifications and the widget now read their words
+from string resources in 8 choices (Same as phone, English, Korean, Chinese, Arabic, Russian, French, German); Settings →
+Screen & text size → App language is separate from the speech language. New `AppLanguageScreensTest` sets each of the 8
+choices, opens simple home, Plans, More, quick start, every Settings section and both voice-setup screens, and checks key
+nodes and no crash; it passed on the Pixel. Opt-in crash reports: core `CrashReportTest` (5 tests: no exception message or
+user text in the report, labels cannot carry sentences, 5 newest kept, 30 days) and phone `CrashReportCardTest` (card
+appears, Don't send deletes, off saves nothing, only 5 kept; the writer is called directly, the test process never crashes).
+Results: core 339 tests, 0 failures; lint 0 errors; full phone suite 135 of 135 (first run 1 failure: an older test matched
+the English "proposal(s)" wording, now a proper plural; the new language test failed once because it closed quick start with
+Back instead of Done, a test bug). Limits: translations are drafts written without native-speaker review; layout in Arabic
+(right to left) and long German/Russian text was checked only by the node-level test, not by eye on every screen; scam-warning
+wording and a few diagnostic lines stay English; the Android 12-and-older fallback path compiles but was not run (phone is
+Android 17 / API 37).
