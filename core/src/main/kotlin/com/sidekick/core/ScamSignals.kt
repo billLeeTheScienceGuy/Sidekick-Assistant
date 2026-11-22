@@ -27,6 +27,9 @@ enum class ScamSignal(val label: String, val pretext: Boolean = false, val ask: 
     REMOTE("asked for remote access to your device", ask = true, strong = true),
     SAFE_ACCOUNT("moving money to a “safe” account", ask = true, strong = true),
     LINK("a suspicious link", ask = true),
+    NOTICE("a fake notice (fine, refund, check-up, parcel) that points to a link", pretext = true),
+    PERSONAL_INFO("asked for ID, card or account details", ask = true),
+    CLAIM("told to call, text or click to claim a prize", ask = true),
 }
 
 object ScamSignals {
@@ -59,10 +62,18 @@ object ScamSignals {
             ScamSignal.CODE to rx("""\b(?:send|read|tell|give|share|text)\b.{0,60}\b(?:(?:verification|one[ -]time|security|login|authentication|6[- ]digit)\s+codes?|passwords?|pins?)\b|\b(?:you want me to|why do you need)\b.{0,20}\b(?:the )?(?:code|password|pin)\b|\b(?:need|confirm|verify|provide|enter)\b.{0,25}\b(?:(?:one[ -]time|verification|security|6[- ]digit)\s+codes?|(?:your )?(?:pin|password))\b"""),
             ScamSignal.REMOTE to rx("""\b(?:install|download|open)\b.{0,70}\b(?:anydesk|teamviewer|quick ?support|ultraviewer|rustdesk|supremo|screenconnect|logmein)\b|\b(?:allow|grant|give|let)\b.{0,40}\bremote (?:access|control)\b|\byou want me to install\b"""),
             ScamSignal.SAFE_ACCOUNT to rx("""\b(?:safe|secure|protected|safety)\s+account\b"""),
+            ScamSignal.AUTHORITY to rx("""\bsocial security administration\b|\b(?:department of (?:justice|homeland security)|u\.?s\.? marshals?)\b|\b(?:officer|agent|detective|deputy)\s+\w+\s+(?:from|with|of)\s+the\b"""),
+            ScamSignal.TECH_SUPPORT to rx("""\b(?:microsoft|apple|windows|amazon|paypal|google|netflix|walmart|geek squad|norton|mcafee|best buy)\s+(?:customer (?:service|support|care)|billing|fraud|(?:security|support) (?:team|department))\b|\b(?:geek squad|norton|mcafee|antivirus)\s+(?:subscription|membership|license)\b"""),
+            ScamSignal.OVERPAYMENT to rx("""\b(?:charged you (?:twice|double)|double[- ]charged|overcharged|accidentally charged)\b"""),
+            ScamSignal.ACCOUNT_PROBLEM to rx("""\bsuspicious (?:activity|charges?|transactions?|log-?ins?)\b|\bunauthori[sz]ed (?:charges?|transactions?|purchases?|access)\b|\b(?:ssn|social security number|account|identity|information) (?:has been|was|is being|have been) (?:compromised|stolen|hacked|used)\b|\bidentity theft\b"""),
+            ScamSignal.PRIZE to rx("""\b(?:you(?:'ve| have)? been selected|congratulations|you(?:'re| are) eligible)\b.{0,80}\b(?:gift ?cards?|prize|cash|rewards?|free (?:cruise|vacation|trip)|\$\d)"""),
+            ScamSignal.NOTICE to rx("""\b(?:unpaid|outstanding|overdue)\s+(?:toll|fine|ticket|balance|invoice|bill)\b|\b(?:tax|irs) refund\b.{0,40}\b(?:claim|pending|available|eligible)\b|\bunable to deliver\b|\bdelivery (?:attempt )?(?:failed|unsuccessful)\b|\b(?:could not|couldn'?t|cannot|can'?t) be delivered\b|\bparking (?:ticket|violation)\b"""),
+            ScamSignal.PERSONAL_INFO to rx("""\b(?:verify|confirm|provide|give|read|tell|share|need|send|enter|update)\b.{0,50}\b(?:social security number|ssn|(?:credit|debit|bank) (?:card )?(?:number|details|information)|card number|account number|routing number|date of birth|personal (?:information|details|data)|banking (?:information|details)|log-?in (?:details|credentials)|medicare number)\b"""),
+            ScamSignal.CLAIM to rx("""\b(?:call|text|reply|click|visit|press)\b.{0,40}\bto (?:claim|collect|redeem)\b|\bclaim (?:your|the|my) (?:prize|reward|gift|winnings|cash|refund)\b"""),
         ))
 
     private val KO = Rules(
-        rx("""(?:사기|보이스\s?피싱)(?:야|이야|입니다|조심|주의|일 수)|절대.{0,15}(?:알려\s?주지|보내지|송금하지|이체하지)\s?(?:마세요|마|말아)"""),
+        rx("""(?:사기|보이스\s?피싱)(?:야|이야|입니다|조심|주의|일 수)|절대.{0,15}(?:알려\s?주지|보내지|송금하지|이체하지)\s?(?:마세요|마|말아)|사칭.{0,40}(?:주의|조심|예방|유의|피해)|(?:피싱|스미싱|사기).{0,12}(?:주의|예방|유의|안내)|(?:공유|알려\s?주지|노출)하지\s?(?:마세요|말|마십시오)"""),
         listOf(
             ScamSignal.AUTHORITY to rx("""검찰|검사(?:님|입니다)|수사관|금융감독원|금감원|경찰청|사이버\s?수사대|국세청|금융위원회|(?:본인|명의)(?:가|이)?.{0,15}(?:도용|연루|사건)"""),
             ScamSignal.FAMILY_EMERGENCY to rx("""(?:아들|딸|손자|손녀|조카).{0,20}(?:사고|합의금|구속|납치|병원)|합의금|납치"""),
@@ -73,14 +84,25 @@ object ScamSignals {
             ScamSignal.ACCOUNT_PROBLEM to rx("""(?:계좌|카드|계정).{0,15}(?:정지|차단|동결)|해외\s?결제.{0,20}(?:승인|완료)"""),
             ScamSignal.URGENCY to rx("""지금\s?(?:바로|당장)|오늘\s?안에|즉시|급하게|급히"""),
             ScamSignal.SECRECY to rx("""(?:아무|누구)(?:한테|에게)도\s?(?:말하지|얘기하지)|비밀로|(?:전화\s?)?끊지\s?마"""),
-            ScamSignal.GIFT_CARD to rx("""(?:문화\s?상품권|상품권|기프트\s?카드).{0,20}(?:구매|사서|사\s?와|핀\s?번호|번호|사진)"""),
+            ScamSignal.GIFT_CARD to rx("""(?:문화\s?상품권|상품권|기프트\s?카드).{0,20}(?:구매|사서|사\s?와|핀\s?번호|번호.{0,6}(?:알려|불러|말해|보내|찍어)|사진)"""),
             ScamSignal.CRYPTO to rx("""(?:비트코인|코인|가상\s?화폐|테더|usdt).{0,20}(?:송금하세요|보내세요|입금하세요|사서 보내)|코인\s?atm"""),
             ScamSignal.WIRE to rx("""(?:송금|이체|입금)\s?(?:해|하세요|해\s?주세요|해줘)"""),
             ScamSignal.CASH_COURIER to rx("""(?:현금|돈).{0,20}(?:전달|인출해|찾아서|뽑아서|건네|수거)|직원.{0,10}(?:만나서|에게)\s?(?:전달|건네)"""),
             // A request ("알려 주세요", "불러 줘"), not the speaker offering to tell later ("알려 줄게").
-            ScamSignal.CODE to rx("""(?:인증\s?번호|비밀\s?번호|otp|보안\s?카드).{0,20}(?:(?:알려|불러|말해|보내)\s?(?:주세요|줘|주실|달라|주시면)|입력하세요|입력해\s?주세요)"""),
+            ScamSignal.CODE to rx("""(?:인증\s?번호|비밀\s?번호|otp|보안\s?카드).{0,20}(?:알려|불러|말해|보내)\s?(?:주세요|줘|주실|달라|주시면)"""),
+            // "Please enter the code" with no digits in the sentence is a request; with the digits it is a code message being delivered.
+            ScamSignal.CODE to rx("""^(?![\s\S]*\d{4})[\s\S]*?(?:인증\s?번호|비밀\s?번호|otp|보안\s?카드).{0,20}(?:입력하세요|입력해\s?주세요)"""),
             ScamSignal.REMOTE to rx("""팀뷰어|애니데스크|원격\s?(?:제어|조종|지원)|(?:보안|백신|금융감독원|검찰)\s?(?:앱|어플)"""),
             ScamSignal.SAFE_ACCOUNT to rx("""(?:안전|보호|국가\s?안전)\s?계좌"""),
+            ScamSignal.AUTHORITY to rx("""검찰청|담당\s?검사|특별\s?수사|수사\s?(?:협조|과정|중)|연루|연류|(?:구속|체포)\s?영장|피해자\s?(?:입증|구제)|(?:은행|카드사|캐피탈|금융)\s?(?:직원|상담원)|명의\s?도용"""),
+            ScamSignal.NOTICE to rx("""과태료|범칙금|벌칙금|위반\s?(?:사실|통지|통보)|통지서|통보서|(?:건강\s?검진|검진).{0,10}(?:통지|안내|결과)|미수령|부고|청첩장|배송\s?불가|(?:주소지?|도로명)\s?(?:확인|불일치)|해외\s?(?:ip|로그인)|민원\s?24|교통\s?24|환급\s?(?:금|안내|대상)"""),
+            ScamSignal.NEW_NUMBER to rx("""(?:엄마|아빠|어머니|아버지)\s?(?:바빠|나야|저야).{0,60}(?:폰|핸드폰|휴대폰)|(?:폰|핸드폰|휴대폰).{0,15}(?:고장|수리|파손|액정).{0,40}(?:문자|메신저|부탁)"""),
+            ScamSignal.ACCOUNT_PROBLEM to rx("""(?:계좌|통장|카드|자산|금융권|예금).{0,15}(?:동결|지급\s?정지)|개인\s?정보.{0,10}(?:유출|도용|침해)|(?:대출|카드).{0,10}(?:연체|미납)"""),
+            ScamSignal.WIRE to rx("""(?:계좌|통장|돈|자금|잔액|예금).{0,12}(?:옮겨|옮기시|이체\s?(?:해|하)|보내\s?(?:주|야)|입금\s?(?:해|하)|인출\s?(?:해|하))"""),
+            ScamSignal.DELIVERY_FEE to rx("""(?:택배|배송|송장|물품|상품).{0,40}(?:주소\s?불일치|물품\s?보관|반송)"""),
+            ScamSignal.INVESTMENT to rx("""(?:상승|급등)\s?(?:정보|종목)|종목\s?(?:추천|상담)|주식.{0,10}(?:리딩|추천)|(?:무료|vip)\s?(?:리딩|입장)"""),
+            ScamSignal.NOTICE to rx("""결혼\s?(?:식|을)?.{0,30}(?:참석|초대|알려)|(?:신체|건강)\s?검사.{0,10}(?:통보|통지)"""),
+            ScamSignal.PERSONAL_INFO to rx("""(?:주민\s?(?:등록)?\s?번호|카드\s?번호|계좌\s?번호|보안\s?코드|cvc|생년\s?월일).{0,15}(?:알려|불러|말씀|말해|보내|확인\s?(?:해|하)|입력\s?(?:해|하))"""),
         ))
 
     private val ZH = Rules(
@@ -101,6 +123,11 @@ object ScamSignals {
             ScamSignal.CODE to rx("""(?:验证码|密码).{0,10}(?:告诉|发给|报给|说给)"""),
             ScamSignal.REMOTE to rx("""屏幕共享|共享屏幕|远程(?:控制|协助)"""),
             ScamSignal.SAFE_ACCOUNT to rx("""安全账户"""),
+            ScamSignal.AUTHORITY to rx("""(?:客服|电话)专员|专属客服|平台(?:的)?工作人员|(?:银行|医保|社保)(?:局|客服|工作人员)"""),
+            ScamSignal.PRIZE to rx("""彩金|体验金|红包.{0,6}(?:抽奖|活动|领取)|抽奖|领取.{0,8}(?:福利|奖励|礼品|会员|优惠|红包)|免费.{0,6}(?:福利|会员|体验)"""),
+            ScamSignal.ACCOUNT_PROBLEM to rx("""(?:借款|贷款|欠款).{0,12}(?:到期|逾期|还款)|逾期|征信|催收"""),
+            ScamSignal.INVESTMENT to rx("""(?:投资|理财).{0,10}(?:平台|群|老师)|带单|喊单|内幕"""),
+            ScamSignal.CLAIM to rx("""网址|(?:[a-z0-9]{3,})\s?点\s?(?:com|cc|vip|top|xyz|net|cn|me|co)\b|(?:加|添加).{0,4}(?:微信|客服|好友)|扫(?:码|一扫)|下载.{0,6}(?:app|软件|应用)"""),
         ))
 
     private val RU = Rules(
@@ -187,12 +214,21 @@ object ScamSignals {
 
     private val ALL = listOf(EN, KO, ZH, RU, AR, FR, DE)
 
+    /**
+     * A sentence that tells you to open a web address ("click", "tap", "verify at", "확인", "点击"...). With a story ("your parcel is held")
+     * this is how most scam texts work, whatever the web address looks like, so it counts as an ask. A bare address does not.
+     */
+    private val URL_WORD = """(?:https?://|www\.)\S+"""
+    private val OPEN_VERB = """(?:click|tap|open|visit|follow|log ?in|sign ?in|verify|confirm|update|track|reschedule|claim|download|install|확인|조회|접속|클릭|바로가기|보러가기|내용\s?보기|열람|다운로드|설치|신청|点击|点开|打开|访问|登录|查看|下载|领取|нажмите|перейдите|откройте|зайдите|cliquez|ouvrez|connectez|accédez|klicken|öffnen|anmelden|انقر|اضغط|افتح)"""
+    private val OPEN_LINK = Regex("$OPEN_VERB.{0,80}$URL_WORD|$URL_WORD.{0,40}$OPEN_VERB", RegexOption.IGNORE_CASE)
+
     /** Signs in [text], every language at once; sentences that warn against the scam ("never send gift cards") don't count. */
     fun find(text: String): Set<ScamSignal> {
         val found = linkedSetOf<ScamSignal>()
         for (sentence in Sentences.split(text.takeLast(4000))) {
             if (ALL.any { it.defensive?.containsMatchIn(sentence) == true }) continue
             for (rules in ALL) for ((signal, pattern) in rules.signs) if (pattern.containsMatchIn(sentence)) found += signal
+            if (OPEN_LINK.containsMatchIn(sentence)) found += ScamSignal.LINK
         }
         if (LinkCheck.suspicious(text).isNotEmpty()) found += ScamSignal.LINK
         return found
@@ -213,6 +249,7 @@ data class ScamAssessment(val level: ScamLevel, val signals: List<ScamSignal>) {
         ScamSignal.CODE in signals -> "Don't share the code. Hang up and call the company on the number on your card or their website."
         ScamSignal.REMOTE in signals -> "Don't install anything or give access. Hang up."
         signals.any { it in MONEY } -> "Don't pay or move money. Hang up and call back on a number you already know."
+        ScamSignal.PERSONAL_INFO in signals -> "Don't give out ID, card or account details. Hang up and call back on a number you already know."
         ScamSignal.LINK in signals || ScamSignal.DELIVERY_FEE in signals || ScamSignal.ACCOUNT_PROBLEM in signals ->
             "Don't tap the link. Open the company's app or website yourself."
         ScamSignal.FAMILY_EMERGENCY in signals || ScamSignal.NEW_NUMBER in signals -> "Call your family member on their usual number first."
@@ -236,7 +273,7 @@ data class ScamAssessment(val level: ScamLevel, val signals: List<ScamSignal>) {
                 ScamSignal.SAFE_ACCOUNT in s -> ScamLevel.STOP
                 s.size >= 3 && ask -> ScamLevel.STOP
                 s.any { it.strong } -> ScamLevel.CAUTION
-                ask && s.size >= 2 -> ScamLevel.CAUTION
+                ask && s.size >= 2 && s != setOf(ScamSignal.LINK, ScamSignal.URGENCY) -> ScamLevel.CAUTION  // a link plus pressure is an advertisement
                 story && ScamSignal.SECRECY in s -> ScamLevel.CAUTION
                 else -> ScamLevel.NONE
             }
@@ -274,9 +311,12 @@ object ScamCheck {
 object LinkCheck {
     private val url = Regex("""(?i)\b(?:https?://)?((?:[a-z0-9\-]+\.)+[a-z]{2,}|\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?(?:/[^\s]*)?""")
     private val brands = listOf("paypal", "amazon", "apple", "icloud", "google", "microsoft", "netflix", "usps", "fedex", "ups", "dhl",
-        "irs", "chase", "wellsfargo", "bankofamerica", "citibank", "coinbase", "binance", "naver", "kakao", "coupang", "toss", "facebook", "instagram", "whatsapp")
+        "irs", "chase", "wellsfargo", "bankofamerica", "citibank", "coinbase", "binance", "naver", "kakao", "coupang", "toss", "gov", "nhis", "police", "customs", "kbstar", "shinhan", "facebook", "instagram", "whatsapp")
     private val shorteners = setOf("bit.ly", "tinyurl.com", "t.co", "is.gd", "cutt.ly", "rb.gy", "han.gl", "me2.kr", "goo.gl", "ow.ly", "shorturl.at", "tiny.cc", "s.id", "t.ly")
-    private val riskyEndings = setOf("top", "xyz", "click", "icu", "buzz", "vip", "live", "shop", "rest", "cfd", "sbs", "cyou", "mom", "lol", "zip", "mov")
+    private val riskyEndings = setOf("top", "xyz", "click", "icu", "buzz", "vip", "live", "shop", "rest", "cfd", "sbs", "cyou", "mom", "lol", "zip", "mov",
+        "golf", "wtf", "black", "pet", "monster", "fun", "wang", "bond", "quest", "hair", "skin", "boats", "autos", "yachts", "makeup", "cam", "gq", "tk", "ml", "ga", "cf")
+    /** A made-up looking name such as "ab3d" in front of a common ending ("gov.ab3d.me"): letters and digits mixed, short. */
+    private val randomName = Regex("""[a-z]{1,4}\d[a-z0-9]{1,4}""")
     private fun deLeet(s: String) = s.replace('0', 'o').replace('1', 'l').replace('3', 'e').replace('5', 's').replace("rn", "m").replace("vv", "w")
 
     /** The suspicious hosts in [text] (empty when none). Bare words with dots such as "e.g." are ignored. */
@@ -291,6 +331,7 @@ object LinkCheck {
             labels.any { it.startsWith("xn--") } -> true
             registrable in shorteners || host in shorteners -> true
             labels.last() in riskyEndings -> true
+            labels.size >= 3 && name.length in 4..7 && randomName.matches(name) -> true
             // a lookalike: not the brand itself, but the same after undoing digit swaps, or the brand with extra words
             brands.any { b -> name != b && (deLeet(name) == b || (name.contains('-') && name.split('-').any { it == b || deLeet(it) == b })) } -> true
             // a brand in front of someone else's domain: paypal.com.example.net
