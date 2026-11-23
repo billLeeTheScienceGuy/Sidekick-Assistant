@@ -84,4 +84,16 @@ class ScamSignalsTest {
         assertTrue(ScamQuestion.answer(ScamAssessment.of(listOf(ScamSignal.AUTHORITY, ScamSignal.CODE)), "ko").startsWith("사기일"))
         assertTrue(ScamQuestion.answer(null, "fr").contains("désactivées"))
     }
+
+    @Test fun ownerSideWeakSignsNeedACallOrCompany() {
+        val lines = listOf("You're from the Social Security Administration? Why do you need my social security number?", "Okay, let me get my card. I'm at the Bitcoin machine.")
+        val calm = ScamMonitor(); val call = ScamMonitor()
+        lines.forEachIndexed { i, l -> calm.add(l, i * 5_000L); call.add(l, i * 5_000L, inCall = true) }
+        assertEquals(ScamLevel.NONE, ScamMonitor().add("Why do you need my social security number?", 0L).level)
+        assertTrue(call.assessment(10_000L, inCall = true).level != ScamLevel.NONE)
+        // Hearing the same sentence again does not add up.
+        val again = ScamMonitor(); repeat(5) { again.add("Why do you need my social security number?", it * 5_000L, inCall = true) }
+        assertEquals(ScamMonitor().add("Why do you need my social security number?", 0L, inCall = true).level, again.assessment(30_000L, inCall = true).level)
+        assertEquals(1, ScamAssessment.of(listOf(ScamSignal.OWNER_ASK, ScamSignal.OWNER_ASK), inCall = true).signals.size)
+    }
 }

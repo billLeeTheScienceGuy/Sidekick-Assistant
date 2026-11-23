@@ -6,7 +6,7 @@ package com.sidekick.core
  * card, read out a code). [ScamMonitor] scores the signs of the last minutes of a conversation; [ScamCheck] checks one
  * message, including its links. Rules only: no audio or text is kept, only which signs were seen and when.
  */
-enum class ScamSignal(val label: String, val pretext: Boolean = false, val ask: Boolean = false, val strong: Boolean = false) {
+enum class ScamSignal(val label: String, val pretext: Boolean = false, val ask: Boolean = false, val strong: Boolean = false, val weak: Boolean = false) {
     AUTHORITY("claimed to be a government office, the police or your bank", pretext = true),
     TECH_SUPPORT("claimed to be tech support", pretext = true),
     FAMILY_EMERGENCY("a family member in trouble", pretext = true),
@@ -30,6 +30,9 @@ enum class ScamSignal(val label: String, val pretext: Boolean = false, val ask: 
     NOTICE("a fake notice (fine, refund, check-up, parcel) that points to a link", pretext = true),
     PERSONAL_INFO("asked for ID, card or account details", ask = true),
     CLAIM("told to call, text or click to claim a prize", ask = true),
+    /** Weak signs, what the phone owner says on a call: they alone never warn outside a call, and need company inside one. */
+    OWNER_STORY("you repeated a claim that sounds like a scam story", weak = true),
+    OWNER_ASK("you asked about handing over details or money", weak = true),
 }
 
 object ScamSignals {
@@ -70,6 +73,21 @@ object ScamSignals {
             ScamSignal.NOTICE to rx("""\b(?:unpaid|outstanding|overdue)\s+(?:toll|fine|ticket|balance|invoice|bill)\b|\b(?:tax|irs) refund\b.{0,40}\b(?:claim|pending|available|eligible)\b|\bunable to deliver\b|\bdelivery (?:attempt )?(?:failed|unsuccessful)\b|\b(?:could not|couldn'?t|cannot|can'?t) be delivered\b|\bparking (?:ticket|violation)\b"""),
             ScamSignal.PERSONAL_INFO to rx("""\b(?:verify|confirm|provide|give|read|tell|share|need|send|enter|update)\b.{0,50}\b(?:social security number|ssn|(?:credit|debit|bank) (?:card )?(?:number|details|information)|card number|account number|routing number|date of birth|personal (?:information|details|data)|banking (?:information|details)|log-?in (?:details|credentials)|medicare number)\b"""),
             ScamSignal.CLAIM to rx("""\b(?:call|text|reply|click|visit|press)\b.{0,40}\bto (?:claim|collect|redeem)\b|\bclaim (?:your|the|my) (?:prize|reward|gift|winnings|cash|refund)\b"""),
+            // What the phone owner says on a call: repeating the caller's claim, asking why details or money are needed, going along. One of these means little; they are weak signs (see ScamAssessment).
+            ScamSignal.OWNER_STORY to rx("""\bmy (?:account|card|social security number|ssn|identity|bank account|computer|laptop|phone)\b.{0,40}\b(?:compromised|locked|suspended|blocked|frozen|hacked|infected|stolen|deactivated|fraud\w*|used (?:for|in))"""),
+            ScamSignal.OWNER_STORY to rx("""\bmalware\b|(?:^|\s)viruses?\s.{0,30}\b(?:on|in|my)\b|\b(?:on|in) my (?:computer|laptop|phone)\b.{0,30}\bvirus"""),
+            ScamSignal.OWNER_STORY to rx("""\byou(?:'re| are)\b.{0,12}\b(?:from|with|calling from)\b.{0,12}(?:the )?(?:bank|irs|social security|police|fbi|microsoft|amazon|apple|medicare|court|government|paypal|walmart|tech)"""),
+            ScamSignal.OWNER_ASK to rx("""\b(?:why|what) (?:do|would|does) (?:you|he|she|they) (?:need|want)\b.{0,30}\b(?:social security|ssn|credit card|card number|account number|bank (?:account|details)|password|address|date of birth|routing|pin|my (?:info|information|details))\b"""),
+            ScamSignal.OWNER_ASK to rx("""\byou (?:need|want|require)\b.{0,12}\bmy (?:social security|ssn|credit card|card|account number|bank|password|pin|information)\b"""),
+            ScamSignal.OWNER_ASK to rx("""\bwhat (?:kind of |sort of )?(?:information|details|info) (?:do you|would you|will you|does he|do they) (?:need|want|require)\b"""),
+            ScamSignal.OWNER_ASK to rx("""\bgift ?cards?\b"""),
+            ScamSignal.OWNER_ASK to rx("""\b(?:bitcoin|crypto\w*|western union|wire (?:transfer|money|it)|moneygram|zelle|cash app)\b"""),
+            ScamSignal.OWNER_ASK to rx("""\blet me (?:get|grab|find|check|look for) (?:my|the) (?:card|credit card|debit card|checkbook|wallet|bank|phone|computer|laptop)\b"""),
+            ScamSignal.OWNER_ASK to rx("""\b(?:verification|security|confirmation|one[- ]time|6[- ]digit|authentication)\s+(?:code|number)\b|\bmy (?:password|pin)\b"""),
+            ScamSignal.OWNER_ASK to rx("""\bwhat'?s the (?:website|link|url)\b|\b(?:any ?desk|team ?viewer|remote access)\b"""),
+            ScamSignal.OWNER_ASK to rx("""\b(?:which|what) account (?:do|should) i (?:send|transfer|wire|pay|deposit)\b|\bhow much (?:money )?(?:do|should) i (?:need to |have to )?(?:send|wire|transfer)\b|\bi(?:'ll| will| can) (?:read|tell|give) you the (?:code|numbers?|digits)\b|\bi(?:'m| am) (?:going|heading) to (?:the )?(?:store|walmart|target|cvs|walgreens)\b.{0,50}\bgift ?cards?\b"""),
+            ScamSignal.OWNER_ASK to rx("""\bi don'?t understand why (?:i|you|they) (?:need|have to|must|can'?t|should)\b"""),
+            ScamSignal.SECRECY to rx("""\bwhy (?:do i|must i|should i) (?:need to |have to )?keep (?:this|it) (?:a )?secret\b"""),
         ))
 
     private val KO = Rules(
@@ -103,6 +121,10 @@ object ScamSignals {
             ScamSignal.INVESTMENT to rx("""(?:상승|급등)\s?(?:정보|종목)|종목\s?(?:추천|상담)|주식.{0,10}(?:리딩|추천)|(?:무료|vip)\s?(?:리딩|입장)"""),
             ScamSignal.NOTICE to rx("""결혼\s?(?:식|을)?.{0,30}(?:참석|초대|알려)|(?:신체|건강)\s?검사.{0,10}(?:통보|통지)"""),
             ScamSignal.PERSONAL_INFO to rx("""(?:주민\s?(?:등록)?\s?번호|카드\s?번호|계좌\s?번호|보안\s?코드|cvc|생년\s?월일).{0,15}(?:알려|불러|말씀|말해|보내|확인\s?(?:해|하)|입력\s?(?:해|하))"""),
+            ScamSignal.OWNER_STORY to rx("""(?:검찰|경찰|금감원|금융감독원|국세청|은행).{0,6}(?:이라고요|이시라고요|에서요|에서\s?전화|이세요\?)|(?:제|내)\s?(?:계좌|통장|명의|카드).{0,10}(?:도용|정지|동결|연루).{0,6}(?:됐|되었|된다|이라고|됐다고|되다니)"""),
+            ScamSignal.OWNER_ASK to rx("""(?:왜|무슨\s?이유로).{0,10}(?:주민\s?(?:등록)?\s?번호|계좌\s?번호|카드\s?번호|비밀\s?번호|인증\s?번호|개인\s?정보).{0,10}(?:필요|알려|말해|불러)"""),
+            ScamSignal.OWNER_ASK to rx("""(?:어디|어느\s?계좌)(?:로|에)\s?(?:송금|이체|입금)|(?:왜|어째서)\s?(?:전화를\s?)?끊으면\s?안|(?:왜|어째서)\s?비밀"""),
+            ScamSignal.OWNER_ASK to rx("""(?:인증\s?번호|비밀\s?번호|otp).{0,10}(?:불러|알려)\s?드릴게|(?:문화\s?)?상품권.{0,10}(?:사러|사 올게|사야)"""),
         ))
 
     private val ZH = Rules(
@@ -128,6 +150,8 @@ object ScamSignals {
             ScamSignal.ACCOUNT_PROBLEM to rx("""(?:借款|贷款|欠款).{0,12}(?:到期|逾期|还款)|逾期|征信|催收"""),
             ScamSignal.INVESTMENT to rx("""(?:投资|理财).{0,10}(?:平台|群|老师)|带单|喊单|内幕"""),
             ScamSignal.CLAIM to rx("""网址|(?:[a-z0-9]{3,})\s?点\s?(?:com|cc|vip|top|xyz|net|cn|me|co)\b|(?:加|添加).{0,4}(?:微信|客服|好友)|扫(?:码|一扫)|下载.{0,6}(?:app|软件|应用)"""),
+            ScamSignal.OWNER_STORY to rx("""(?:你们|你|您)是(?:公安|警察|检察院|法院|银行|海关|税务|社保)|我的(?:账户|银行卡|账号|身份证|名义).{0,8}(?:被冻结|涉嫌|涉案|被盗|洗钱)|我涉嫌"""),
+            ScamSignal.OWNER_ASK to rx("""为什么(?:要|需要).{0,6}(?:我的)?(?:身份证|银行卡|卡号|密码|验证码|账号)|转到(?:哪个|什么)(?:账户|账号|卡)|为什么不能挂(?:电话|断)|为什么要保密|(?:要|需要)(?:转|汇|打)多少钱"""),
         ))
 
     private val RU = Rules(
@@ -149,6 +173,8 @@ object ScamSignals {
             ScamSignal.CODE to rx("""(?:код|пароль|пин)\w*.{0,20}(?:из смс|скажите|назовите|продиктуйте|сообщите)|(?:скажите|назовите|продиктуйте|сообщите).{0,20}(?:код|пароль)"""),
             ScamSignal.REMOTE to rx("""anydesk|teamviewer|rustdesk|удал[её]нн\w*\s+доступ"""),
             ScamSignal.SAFE_ACCOUNT to rx("""(?:безопасн|резервн)\w*\s+сч[её]т"""),
+            ScamSignal.OWNER_STORY to rx("""вы из (?:банка|полиции|фсб|налоговой|следственного)|мо[йе][йм]?\s(?:сч[её]т|аккаунт|карт\w*).{0,15}(?:заблокирован|взломан|скомпрометирован)"""),
+            ScamSignal.OWNER_ASK to rx("""зачем (?:вам|вы)\s.{0,15}(?:код|пароль|номер карты|паспорт|снилс)|куда (?:мне )?(?:перевести|переводить|отправить)\s?(?:деньги)?|почему (?:мне )?нельзя (?:положить|вешать) трубку|почему (?:это )?(?:нужно|надо) (?:держать в тайне|хранить в секрете)"""),
         ))
 
     private val AR = Rules(
@@ -168,6 +194,8 @@ object ScamSignals {
             ScamSignal.CODE to rx("""(?:رمز|كود|كلمة السر|الرقم السري|رمز التحقق).{0,20}(?:أرسل|أعطني|قل|أخبرني|اخبرني)|(?:أرسل|أعطني|أخبرني|اخبرني).{0,20}(?:رمز|كود|كلمة السر|الرقم السري)"""),
             ScamSignal.REMOTE to rx("""anydesk|teamviewer|التحكم عن بعد|الوصول عن بعد"""),
             ScamSignal.SAFE_ACCOUNT to rx("""حساب\s+آمن"""),
+            ScamSignal.OWNER_STORY to rx("""هل أنت من (?:البنك|الشرطة|الضرائب|المصرف)|حسابي.{0,15}(?:مجمد|محظور|مغلق|مخترق)"""),
+            ScamSignal.OWNER_ASK to rx("""لماذا (?:تحتاج|تريد|تطلب).{0,15}(?:رقم|كلمة|رمز|بطاقتي|حسابي)|إلى أي حساب (?:أرسل|أحول)|لماذا لا (?:أستطيع|يمكنني) (?:إغلاق|إنهاء) المكالمة"""),
         ))
 
     private val FR = Rules(
@@ -189,6 +217,8 @@ object ScamSignals {
             ScamSignal.CODE to rx("""(?:code|mot de passe).{0,30}(?:donnez|dites|communiquez|lisez|envoyez)|(?:donnez|dites|communiquez|lisez)(?:-moi)?.{0,30}(?:le code|mot de passe)"""),
             ScamSignal.REMOTE to rx("""anydesk|teamviewer|prise en main à distance|accès à distance"""),
             ScamSignal.SAFE_ACCOUNT to rx("""compte\s+(?:sécurisé|de sécurité|sûr|protégé)"""),
+            ScamSignal.OWNER_STORY to rx("""vous (?:êtes|appelez) de la (?:banque|police|gendarmerie|sécurité sociale)|mon compte.{0,20}(?:bloqué|piraté|suspendu|compromis)"""),
+            ScamSignal.OWNER_ASK to rx("""pourquoi (?:avez-vous|vous avez|me demandez-vous).{0,15}(?:besoin|mon numéro|mon code|mon mot de passe)|sur quel compte (?:dois-je|je dois) (?:envoyer|virer|transférer)|pourquoi (?:je dois|dois-je) garder (?:ça|cela) secret"""),
         ))
 
     private val DE = Rules(
@@ -210,8 +240,12 @@ object ScamSignals {
             ScamSignal.CODE to rx("""(?:tan|code|passwort|pin|bestätigungscode)\b.{0,30}(?:nennen|sagen|durchgeben|vorlesen|schicken)|(?:nennen|sagen|geben|lesen)\w*\s.{0,30}\b(?:tan|code|passwort|pin|bestätigungscode)\b"""),
             ScamSignal.REMOTE to rx("""anydesk|teamviewer|fernzugriff|fernwartung"""),
             ScamSignal.SAFE_ACCOUNT to rx("""sicherheitskonto|sicheres konto"""),
+            ScamSignal.OWNER_STORY to rx("""sie sind (?:von|bei) der (?:bank|polizei|steuer)|mein konto.{0,20}(?:gesperrt|gehackt|kompromittiert)"""),
+            ScamSignal.OWNER_ASK to rx("""warum (?:brauchen|wollen) sie (?:meine|mein)\s.{0,20}(?:nummer|passwort|code|pin|daten|karte)|auf welches konto (?:soll|muss) ich (?:überweisen|senden|schicken)|warum soll ich (?:das )?geheim halten"""),
         ))
 
+    /** "I was expecting you to ask for my number", "if I were to sign up": talking about a scam, not living one. Weak signs ignore such sentences. */
+    private val HEDGE = rx("""\b(?:expect(?:ed|ing)|thought|figured|assumed) you(?:'d| would| were going to| to)\b|\bif i (?:were|was) to\b|\b(?:not|n't) (?:trying|going) to\b""")
     private val ALL = listOf(EN, KO, ZH, RU, AR, FR, DE)
 
     /**
@@ -223,15 +257,19 @@ object ScamSignals {
     private val OPEN_LINK = Regex("$OPEN_VERB.{0,80}$URL_WORD|$URL_WORD.{0,40}$OPEN_VERB", RegexOption.IGNORE_CASE)
 
     /** Signs in [text], every language at once; sentences that warn against the scam ("never send gift cards") don't count. */
-    fun find(text: String): Set<ScamSignal> {
-        val found = linkedSetOf<ScamSignal>()
+    fun find(text: String): Set<ScamSignal> = hits(text).mapTo(linkedSetOf()) { it.first }
+
+    /** Each sign with the sentence it was found in (the monitor counts a weak sign once per sentence, however often the text is seen again). */
+    fun hits(text: String): List<Pair<ScamSignal, String>> {
+        val found = linkedSetOf<Pair<ScamSignal, String>>()
         for (sentence in Sentences.split(text.takeLast(4000))) {
             if (ALL.any { it.defensive?.containsMatchIn(sentence) == true }) continue
-            for (rules in ALL) for ((signal, pattern) in rules.signs) if (pattern.containsMatchIn(sentence)) found += signal
-            if (OPEN_LINK.containsMatchIn(sentence)) found += ScamSignal.LINK
+            val hedged = HEDGE.containsMatchIn(sentence)
+            for (rules in ALL) for ((signal, pattern) in rules.signs) if ((!hedged || !signal.weak) && pattern.containsMatchIn(sentence)) found += signal to sentence
+            if (OPEN_LINK.containsMatchIn(sentence)) found += ScamSignal.LINK to sentence
         }
-        if (LinkCheck.suspicious(text).isNotEmpty()) found += ScamSignal.LINK
-        return found
+        if (LinkCheck.suspicious(text).isNotEmpty()) found += ScamSignal.LINK to ""
+        return found.toList()
     }
 }
 
@@ -258,16 +296,19 @@ data class ScamAssessment(val level: ScamLevel, val signals: List<ScamSignal>) {
     val reasons: String get() = signals.joinToString("; ") { it.label }
 
     companion object {
+        private const val WEAK_ALONE = 4
         private val MONEY = setOf(ScamSignal.GIFT_CARD, ScamSignal.CRYPTO, ScamSignal.WIRE, ScamSignal.CASH_COURIER, ScamSignal.SAFE_ACCOUNT)
         /**
          * STOP: a story plus an ask (the shape of nearly every scam), a "safe account", or three signs including an ask.
          * CAUTION: one strong ask (gift-card payment, a code, remote access...), an ask with another sign, or a story told in secret.
          * Urgency and secrecy alone never warn: they are common in everyday talk.
          */
-        fun of(signals: Collection<ScamSignal>): ScamAssessment {
-            val s = signals.toSet()
-            val ordered = ScamSignal.entries.filter { it in s }
+        fun of(signals: Collection<ScamSignal>, inCall: Boolean = false): ScamAssessment {
+            val weakHits = signals.count { it.weak }
+            val s = signals.filter { !it.weak }.toSet()
             val story = s.any { it.pretext }; val ask = s.any { it.ask }
+            val weakCounts = weakHits >= 1 && (inCall && (weakHits >= 2 || story || ask) || weakHits >= WEAK_ALONE)
+            val ordered = ScamSignal.entries.filter { it in s || (weakCounts && it.weak && it in signals) }
             val level = when {
                 story && ask -> ScamLevel.STOP
                 ScamSignal.SAFE_ACCOUNT in s -> ScamLevel.STOP
@@ -275,6 +316,9 @@ data class ScamAssessment(val level: ScamLevel, val signals: List<ScamSignal>) {
                 s.any { it.strong } -> ScamLevel.CAUTION
                 ask && s.size >= 2 && s != setOf(ScamSignal.LINK, ScamSignal.URGENCY) -> ScamLevel.CAUTION  // a link plus pressure is an advertisement
                 story && ScamSignal.SECRECY in s -> ScamLevel.CAUTION
+                // Weak owner-side signs add up: during a call two are enough (or one next to a story or an ask); otherwise it takes many.
+                inCall && (weakHits >= 2 || weakHits >= 1 && (story || ask)) -> ScamLevel.CAUTION
+                weakHits >= WEAK_ALONE -> ScamLevel.CAUTION
                 else -> ScamLevel.NONE
             }
             return ScamAssessment(level, ordered)
@@ -285,17 +329,25 @@ data class ScamAssessment(val level: ScamLevel, val signals: List<ScamSignal>) {
 /** A conversation: the signs of the last [windowMs] (a scam call unfolds over minutes), scored together. */
 class ScamMonitor(private val windowMs: Long = 10 * 60_000L) {
     private val seen = ArrayDeque<Pair<ScamSignal, Long>>()
-    private fun prune(now: Long) { while (seen.isNotEmpty() && now - seen.first().second > windowMs) seen.removeFirst() }
-    /** Adds the signs in [text] and returns the conversation's assessment now. */
-    @Synchronized fun add(text: String, now: Long): ScamAssessment {
-        prune(now)
-        ScamSignals.find(text).forEach { seen.addLast(it to now) }
-        return assessment(now)
+    private val weakSeen = HashMap<String, Long>()
+    private fun prune(now: Long) {
+        while (seen.isNotEmpty() && now - seen.first().second > windowMs) seen.removeFirst()
+        if (weakSeen.isNotEmpty()) weakSeen.values.removeAll { now - it > windowMs }
     }
-    @Synchronized fun assessment(now: Long): ScamAssessment { prune(now); return ScamAssessment.of(seen.map { it.first }) }
+    /** Adds the signs in [text] and returns the conversation's assessment now. */
+    @Synchronized fun add(text: String, now: Long, inCall: Boolean = false): ScamAssessment {
+        prune(now)
+        for ((signal, sentence) in ScamSignals.hits(text)) {
+            if (signal.weak) { val key = signal.name + sentence.trim().lowercase(); if (key in weakSeen) continue; weakSeen[key] = now }
+            seen.addLast(signal to now)
+        }
+        return assessment(now, inCall)
+    }
+    /** [inCall]: a phone call is going on, so weak signs of what the owner says count sooner. */
+    @Synchronized fun assessment(now: Long, inCall: Boolean = false): ScamAssessment { prune(now); return ScamAssessment.of(seen.map { it.first }, inCall) }
     /** Signs seen since [startMs] (for example, during a call), whatever the window. */
     @Synchronized fun since(startMs: Long): ScamAssessment = ScamAssessment.of(seen.filter { it.second >= startMs }.map { it.first })
-    @Synchronized fun clear() = seen.clear()
+    @Synchronized fun clear() { seen.clear(); weakSeen.clear() }
 }
 
 /** One message on its own (texts, shared text): its signs and links. */

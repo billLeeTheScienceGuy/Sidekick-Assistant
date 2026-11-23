@@ -54,6 +54,33 @@ Dev numbers were the same within noise (for example Korean smishing 45.0% recall
 - No real data for ru, ar, fr, de scams, so those languages are untested for recall and were not tuned. Chinese has only 49 test calls. The dialogue sets are LLM-written; the owner-only view (the app hears one side) is much worse, about 15%.
 - Short transcript chunks, machine-translated SMS and the shared dev/test near-duplicates limit how far these numbers generalise. Rules are regexes and are conservative by design.
 
+## Owner's side only: second round (phone calls)
+
+On a call the app hears only the phone owner, so the rules were extended to what the owner says: repeating the caller's claim ("you're from the bank?", "my account is locked?"), asking why a number, code or money is needed ("why do you need my social security number?"), mentioning gift cards, crypto or a code, going along ("let me get my card", "which account do I send it to?") and confusion about secrecy ("why do I have to keep it secret?"). Patterns are in `ScamSignals.kt`, in all seven languages; only English was tuned on data (dev), the other six are short and conservative and have no recall data.
+
+What changed in the code:
+- Two new weak signs, `OWNER_STORY` and `OWNER_ASK`. They never count as a story or an ask, never give STOP, and each sentence counts once however often it is heard again (the app re-sends recent text). Sentences that only talk about a scam ("I was expecting you to ask for my number", "if I were to sign up") are ignored by weak signs.
+- `ScamAssessment.of(signals, inCall)` and `ScamMonitor.add/assessment(..., inCall)`: in a call, two weak signs, or one weak sign next to a real story or ask, give CAUTION; outside a call it takes four weak signs in the 10-minute window. Existing rules are untouched.
+- App: `LocalRiskAlerts.inspect(text, inCall)`; `ListeningService` passes `callActive`. No new user-visible text (the reasons are the existing English labels).
+
+Dev was used for all tuning (weak patterns, threshold, hedged-sentence filter, removing "money order", "prepaid" and "taxes" after they alarmed on DailyDialog); TEST was run once at the end.
+
+| TEST, owner's side only | Baseline | Final, no call flag | Final, call mode |
+|---|---|---|---|
+| LLM scam dialogues (en, 426), recall any | 15.3% (65) | 19.7% (84) | 59.4% (253) |
+| same, recall STOP | 8.0% | 8.0% | 8.0% |
+| Real scam-baiting calls (en, 13), recall any | 23.1% (3) | 23.1% (3) | 38.5% (5) |
+| LLM Scammer-Conversation (en, 153) | 0% | 0% | 0% |
+| False alarms, ordinary LLM dialogues (371), owner side | 0 | 0 | 1 (0.3%) |
+| False alarms, DailyDialog one speaker (5,565), "normal call" proxy | 2 | 2 | 2 |
+
+Everyday false alarms on TEST (default, no call flag), before -> after: English 5/10173 -> 5, Korean 23/14657 -> 23, Chinese 1/3525 -> 1, Russian 1/5931 -> 1, Arabic, French, German 0 -> 0. The same everyday lines run as one utterance with the call flag on: unchanged except one French synthetic "ham" line (1/267, not an everyday set). Whole dialogues with the call flag (both speakers, which the app does not hear on a call): DailyDialog 5 -> 7 of 5,565. Dev: owner recall 15.8% -> 19.0% (call 58.4%), DailyDialog owner 4 -> 4.
+The DailyDialog 2 owner-side false alarms were already there before this round (existing rules).
+
+Adopted: call mode, because it gave 3.9 times the owner-side recall with no everyday false alarm in the measured sets.
+
+Gaps: the LLM victims are mostly sceptical ("how do I know this is legit?") so the best recall is still on dialogues where the owner mentions the ask; the Scammer-Conversation owner side stays at 0% (the owner only questions the caller). The 1 extra false alarm in call mode is an ordinary dialogue where the owner discusses a credit card. In a real call the owner may speak about their own bank in good faith, so call-mode cautions will occur in genuine bank calls (a caution, never STOP). Real data exists only for English dialogues, Korean and Chinese (not as two-sided calls), so the six other languages are untested for owner-side recall; the LLM dialogues are written, not recorded; 13 real calls is a very small sample.
+
 ## Rerun
 ```
 .deps/python312/python.exe -I scripts/laptop-eval/scam_prepare.py   # needs the downloads in .deps/scam-data

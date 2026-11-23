@@ -609,10 +609,10 @@ class ListeningService : Service() {
                         // A question to SideKick is answered, not saved as conversation text or a plan.
                         answerQuestion(question, com.sidekick.core.WakeVoice.asker(identified, wakeScore))
                     } else if (!discard && holdNext && text.isNotBlank()) {
-                        app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text)
+                        app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text, mutableState.value.callActive)
                         heldText = HeldText(text, started.plusMillis(startSample * 1000 / 16000), continuation, !app.speech.lastUncertain, app.speech.lastTimeChoices)
                     } else if (!discard) {
-                        app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text)
+                        app.risk.inspect(app.temporary.text.value.takeLast(1000) + " " + text, mutableState.value.callActive)
                         app.temporary.appendAttributedLive(text, started.plusMillis(startSample * 1000 / 16000), zone, identified, continuation, voiceTrack, voiceLabel, recognitionReliable = !app.speech.lastUncertain, timeChoices = app.speech.lastTimeChoices,
                             speakerName = voiceName, grouped = voiceGrouped && consent.groupingAllowed())
                         app.automation.process()

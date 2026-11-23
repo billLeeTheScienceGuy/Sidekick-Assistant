@@ -30,9 +30,9 @@ class LocalRiskAlerts(private val context: Context, private val enabled: () -> B
     }
 
     /** Conversation text: warns when the level rises or a new strong sign appears. */
-    @Synchronized fun inspect(text: String) {
+    @Synchronized fun inspect(text: String, inCall: Boolean = false) {
         if (!enabled()) return
-        val a = monitor.add(text, now())
+        val a = monitor.add(text, now(), inCall)
         if (a.level == ScamLevel.NONE) { shownLevel = ScamLevel.NONE; shownSignals = emptySet(); return }
         val newStrong = a.signals.any { it.strong && it !in shownSignals }
         if (a.level <= shownLevel && !newStrong) return

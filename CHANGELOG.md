@@ -4,6 +4,7 @@ Version notes for SideKick, newest first. Links point to the measurements and li
 
 ## Unreleased (privacy, consent and location work package)
 
+- Scam warnings hear the phone owner's side better: repeating a caller's claim ("you're from the bank?"), asking why ID, a code or money is needed, or going along ("let me get my card") now count as weak signs in all seven languages. During a call two of them, or one next to a real sign, give a caution; outside a call it takes four. Owner-side recall on the test dialogues 15.3% to 19.7% (59.4% in a call) with no new false alarms on everyday text.
 - App language, separate from the speech language: Settings → Screen & text size → App language ("Same as phone", English,
   한국어, 中文, العربية, Русский, Français, Deutsch). All screens, notifications and the widget are translated (translations
   are machine-assisted drafts, not yet reviewed by native speakers); Arabic lays out right to left. Spoken answers and the
