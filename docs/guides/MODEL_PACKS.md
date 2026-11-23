@@ -23,6 +23,39 @@ quality choices and installed weights are retained on upgrade; a fresh install
 starts with English Fast. Choosing a mode with missing weights disables Start
 until the needed packs are installed. Text, Planner and Summary remain available.
 
+## Every language: base and better-accuracy files (November 18, 2026)
+
+Sizes are the download size (MB = 1,000,000 bytes) and the space used on the phone. Built in means it is part of
+the app itself.
+
+| Language | Faster mode | Recommended mode | Better accuracy (optional) |
+|---|---|---|---|
+| English | Built in (78 MB) | Whisper languages, 226 MB | English accuracy (Parakeet), 137 MB, used by Auto-detect |
+| Korean | Whisper languages, 226 MB | Korean & Chinese (SenseVoice), 240 MB | Korean names & time check, 76 MB (not offered for download yet) |
+| Chinese | Whisper languages, 226 MB | SenseVoice, 240 MB | none |
+| French, German | Whisper languages, 226 MB | Whisper + Omni (366 MB) | none |
+| Russian | Whisper languages, 226 MB | Whisper + Omni | Russian accuracy (GigaAM), 229 MB |
+| Arabic | Whisper languages, 226 MB | Omni, 366 MB | none |
+| Auto-detect | Whisper languages, 226 MB | Omni (+ SenseVoice and Whisper for short phrases) | English 137 MB, Russian 229 MB |
+
+Files are shared: Whisper alone makes every language work in Faster mode; Whisper + Omni + SenseVoice (about 830 MB)
+make every language work in Recommended mode. The app's Speech files screen shows, for each language, exactly what is
+still missing (only that is downloaded), which other languages the same download makes ready, and, before removing or
+switching off a file, which languages stop working and which keep working in Faster mode (`LanguageReadiness`).
+
+Always built in: voice matching (CAM++, 28 MB), speaker turns (1.5 MB) and speech detection (0.9 MB). Everything
+for every language together: about 1,274 MB of speech files plus the built-in 109 MB. (The retired ResNet voice model, 27 MB, is still bundled for older voice setups.)
+
+**In the app (Settings > Listening > Speech files):** each file shows its size, what it is for, and whether it is on
+the phone. Installed files can be switched off without deleting them (SideKick then works as if they were not
+there), removed to free their space (a confirmation shows how much), or downloaded (the button shows the download size
+and opens SideKick's release page in the browser). Settings > Listening > Languages to detect limits Auto-detect to
+the languages you choose; one language means no guessing.
+
+**Security.** SideKick has no internet permission. Files are downloaded by the browser from SideKick's own release
+page only, and each file is installed only if its exact size and SHA-256 fingerprint match the list built into the
+app; any other file is refused before it is read.
+
 ## Build without optional weights
 
 Normal debug/release and compactTest builds need only
@@ -57,7 +90,7 @@ Finishing listening before import is required by the UI.
 
 Installing all packs still uses substantial storage. A smaller APK does not imply
 lower inference memory, better accuracy or lower battery consumption. Speaker
-profiles and the separate optional Qwen intent model are not part of these packs.
+profiles are not part of these packs.
 
 ## Verification
 

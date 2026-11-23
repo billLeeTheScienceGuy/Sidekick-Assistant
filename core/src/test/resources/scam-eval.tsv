@@ -1,0 +1,70 @@
+# expected	language	text   (expected: STOP, CAUTION or NONE; scam scripts must reach at least their level, everyday talk must stay NONE)
+# Written for this test in the style of well-known scam scripts (FTC and Korean FSS warnings) and of everyday talk that uses the same words.
+STOP	en	This is Officer Daniels from the sheriff's office. There is a warrant out for your arrest for missed jury duty. You can settle it today by paying the fine with gift cards. Don't tell anyone and stay on the line.
+STOP	en	Hello, this is the fraud department at your bank. We saw suspicious charges. To protect your savings, move your money to a safe account we set up for you.
+STOP	en	I'm calling from Microsoft support. Your computer has a virus. Please install AnyDesk so our technician can fix it.
+STOP	en	Grandma, it's me. I was in a car accident and I've been arrested. I need bail money right away. Please don't tell mom.
+STOP	en	This is the IRS. You owe back taxes. To avoid arrest, pay at a Bitcoin ATM within the next hour.
+STOP	en	We are from your bank's fraud team. To verify it's you, read me the verification code we just texted you.
+STOP	en	Congratulations, you've won the sweepstakes! To release the prize you just need to pay the processing fee by wire transfer of 500 dollars.
+STOP	en	We accidentally refunded too much to your account. Please send the difference back through Zelle, 900 dollars.
+STOP	en	Join our trading platform. Guaranteed returns of 20 percent a week. Just send USDT to this wallet to start.
+STOP	en	Your package is on hold because of an unpaid delivery fee. Pay now at usps-redelivery.top/pay
+STOP	en	Hi mom, this is my new number, my phone broke. Can you send me 400 dollars on Venmo for a bill? I'll pay you back.
+STOP	en	A courier will come by to pick up the cash this afternoon. Put the money in an envelope. This is the police, the case is confidential.
+STOP	en	You want me to buy gift cards? Why do I have to stay on the line? You're from the IRS?
+CAUTION	en	Read me the gift card numbers.
+CAUTION	en	Tell me the verification code 123456.
+CAUTION	en	Install AnyDesk so I can help.
+CAUTION	en	Your account has been locked. Verify it at paypa1-secure.com/login
+STOP	ko	안녕하세요, 서울중앙지검 수사관입니다. 고객님 명의가 범죄에 도용되어 사건에 연루되셨습니다. 지금 바로 안전계좌로 돈을 옮기셔야 합니다. 아무한테도 말하지 마세요.
+STOP	ko	금융감독원입니다. 고객님 계좌가 정지될 수 있습니다. 인증번호를 불러 주세요.
+STOP	ko	엄마 나 폰 고장나서 이 번호로 연락해. 급하게 돈 좀 송금해 줘.
+STOP	ko	저금리 대환대출 가능합니다. 기존 대출을 갚으려면 현금을 인출해서 저희 직원에게 전달해 주세요.
+STOP	ko	검찰입니다. 수사를 위해 보안 앱을 설치하시고 전화 끊지 마세요.
+STOP	ko	원금 보장 고수익 코인 투자입니다. 테더로 보내세요.
+CAUTION	ko	문화상품권 사서 핀번호 사진 보내 줘.
+STOP	zh	我是公安局的，你的银行卡涉嫌洗钱，已被冻结。请把钱转到安全账户，不要告诉任何人。
+STOP	zh	您好，我是银行客服。请把手机收到的验证码告诉我，我帮您解冻账户。
+STOP	zh	刷单兼职，日赚五百，先垫付押金再返利。
+CAUTION	zh	请开启屏幕共享，我帮你远程协助。
+STOP	ru	Здравствуйте, это служба безопасности банка. Ваш счёт заблокирован. Продиктуйте код из смс и переведите деньги на безопасный счёт.
+STOP	ru	Мама, я попал в аварию, меня задержали. Срочно переведите деньги, никому не говорите.
+STOP	ru	Гарантированный доход на нашей инвестиционной платформе. Переведите USDT сегодня.
+STOP	ar	مرحبا، أنا موظف البنك. حسابك موقوف. أرسل لي رمز التحقق الذي وصلك الآن.
+STOP	ar	ابنك تعرض لحادث وهو في المستشفى. حول المبلغ فورا ولا تخبر أحد.
+CAUTION	ar	ثبّت anydesk حتى أساعدك.
+STOP	fr	Bonjour, ici le service des fraudes de votre banque. Votre carte est bloquée. Donnez-moi le code que vous venez de recevoir.
+STOP	fr	Maman, c'est mon nouveau numéro, mon téléphone est cassé. Tu peux me faire un virement de 300 euros tout de suite ?
+STOP	fr	Votre colis est bloqué, des frais de livraison sont à payer : colis-suivi.xyz/paiement
+STOP	de	Hier ist die Polizei. Ihr Geld ist bei der Bank nicht sicher. Ein Kurier holt das Bargeld heute noch ab. Sagen Sie niemandem etwas.
+STOP	de	Hallo Mama, das ist meine neue Nummer. Kannst du mir dringend 500 Euro überweisen? Geld brauche ich heute noch.
+CAUTION	de	Bitte nennen Sie mir die TAN, die Sie gerade bekommen haben.
+NONE	en	I'll buy Maya a gift card for her birthday.
+NONE	en	I forgot my password again, I'll reset it later.
+NONE	en	Never share a verification code with anyone, the bank will never ask for it.
+NONE	en	Do not pay the fine with gift cards, that's a classic scam.
+NONE	en	Don't install AnyDesk for strangers.
+NONE	en	I'll Venmo you 20 dollars for lunch.
+NONE	en	The police came to the house next door immediately after the alarm went off.
+NONE	en	My bank called about my new card; it arrives on Friday.
+NONE	en	Can you send me the link to the meeting? It's zoom.us/j/123
+NONE	en	We need to leave right away or we'll miss the train.
+NONE	en	My grandson is coming to visit next week, don't tell mom it's a surprise party.
+NONE	en	I bought some bitcoin years ago and forgot about it.
+NONE	en	Our team meeting is at 3, and I'll share the agenda on google.com/docs
+NONE	en	Let's keep it a secret until the party.
+NONE	en	I paid the electric bill online this morning.
+NONE	en	The package arrived yesterday, thanks.
+NONE	ko	내일 엄마 생신이라 상품권 하나 사 드리려고.
+NONE	ko	절대 인증번호 알려 주지 마세요, 그건 보이스피싱이에요.
+NONE	ko	월세 이체했어. 확인해 줘.
+NONE	ko	지금 바로 출발하면 늦지 않을 거야.
+NONE	ko	경찰청 앞에서 만나자.
+NONE	zh	我明天给你转账，别担心。
+NONE	zh	我们马上出发。
+NONE	ru	Я завтра переведу тебе деньги за обед.
+NONE	ar	سأحول لك المبلغ غدا.
+NONE	fr	Je t'envoie le lien de la réunion tout de suite.
+NONE	de	Ich überweise dir morgen das Geld fürs Essen.
+NONE	de	Die Polizei war sofort da.

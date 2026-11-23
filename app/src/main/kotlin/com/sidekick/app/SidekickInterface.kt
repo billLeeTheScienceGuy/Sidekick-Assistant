@@ -73,9 +73,12 @@ internal fun SidekickTheme(appearance: AppearanceMode = AppearanceMode.SYSTEM, d
 
 /** Navigation uses the current app window, including split-screen, rather than a device model. */
 @Composable
-internal fun SidekickFrame(selected: Int, onSelect: (Int) -> Unit, onSettings: () -> Unit, content: @Composable () -> Unit) {
-    val labels = listOf("Capture", "Planner", "Summary")
-    val tags = listOf("capture-tab", "planner-tab", "summary-tab")
+internal fun SidekickFrame(selected: Int, onSelect: (Int) -> Unit, onSettings: () -> Unit, simple: Boolean = false, content: @Composable () -> Unit) {
+    // Simple layout: two main destinations plus a clearly labelled More. Detailed keeps the three original tabs.
+    val labels = if (simple) listOf(tr(R.string.today), tr(R.string.plans), tr(R.string.more)) else listOf(tr(R.string.capture), tr(R.string.planner), tr(R.string.summary))
+    val tags = if (simple) listOf("today-tab", "planner-tab", "more-tab") else listOf("capture-tab", "planner-tab", "summary-tab")
+    val symbols = if (simple) listOf(0, 1, 3) else listOf(0, 1, 2)
+    val labelStyle = if (simple) MaterialTheme.typography.titleSmall else MaterialTheme.typography.labelMedium
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().imePadding()) {
         val rail = maxWidth >= 600.dp
         val keyboard = WindowInsets.ime.getBottom(LocalDensity.current) > 0
@@ -84,15 +87,17 @@ internal fun SidekickFrame(selected: Int, onSelect: (Int) -> Unit, onSettings: (
             topBar = {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("SideKick", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                        TextButton(onClick = onSettings, modifier = Modifier.testTag("settings").heightIn(min = 48.dp)) { Text("Settings") }
+                        Text(tr(R.string.sidekick), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                        if (simple) OutlinedButton(onClick = onSettings, modifier = Modifier.testTag("settings").heightIn(min = 56.dp)) {
+                            Text(tr(R.string.settings), style = MaterialTheme.typography.titleMedium)
+                        } else TextButton(onClick = onSettings, modifier = Modifier.testTag("settings").heightIn(min = 48.dp)) { Text(tr(R.string.settings)) }
                     }
                 }
             }, bottomBar = {
                 if (!rail && !keyboard) NavigationBar(windowInsets = WindowInsets(0, 0, 0, 0), modifier = Modifier.testTag("bottom-navigation")) {
                     labels.forEachIndexed { index, label ->
                         NavigationBarItem(selected = selected == index, onClick = { onSelect(index) },
-                            icon = { DestinationSymbol(index) }, label = { Text(label) }, modifier = Modifier.testTag(tags[index]))
+                            icon = { DestinationSymbol(symbols[index]) }, label = { Text(label, style = labelStyle) }, modifier = Modifier.testTag(tags[index]))
                     }
                 }
             }) { padding ->
@@ -102,7 +107,7 @@ internal fun SidekickFrame(selected: Int, onSelect: (Int) -> Unit, onSettings: (
                     Spacer(Modifier.height(12.dp))
                     labels.forEachIndexed { index, label ->
                         NavigationRailItem(selected = selected == index, onClick = { onSelect(index) },
-                            icon = { DestinationSymbol(index) }, label = { Text(label) }, modifier = Modifier.testTag(tags[index]))
+                            icon = { DestinationSymbol(symbols[index]) }, label = { Text(label, style = labelStyle) }, modifier = Modifier.testTag(tags[index]))
                         Spacer(Modifier.height(12.dp))
                     }
                 }
@@ -121,7 +126,10 @@ internal fun SidekickFrame(selected: Int, onSelect: (Int) -> Unit, onSettings: (
         val u = size.width / 24f
         fun point(x: Float, y: Float) = Offset(x * u, y * u)
         fun line(x1: Float, y1: Float, x2: Float, y2: Float) = drawLine(color, point(x1, y1), point(x2, y2), 1.8f * u, StrokeCap.Round)
-        if (index == 0) {
+        if (index == 3) {
+            // tr(R.string.more): three dots.
+            for (x in listOf(5f, 12f, 19f)) drawCircle(color, 2f * u, point(x, 12f))
+        } else if (index == 0) {
             drawRoundRect(color, point(9f, 2f), Size(6f * u, 12f * u), CornerRadius(3f * u), style = Stroke(1.8f * u))
             drawArc(color, 0f, 180f, false, point(5f, 9f), Size(14f * u, 10f * u), style = Stroke(1.8f * u))
             line(12f, 19f, 12f, 22f); line(8f, 22f, 16f, 22f)

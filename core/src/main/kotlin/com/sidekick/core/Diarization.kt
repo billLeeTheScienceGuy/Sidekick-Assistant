@@ -43,15 +43,29 @@ object Diarization {
 
 data class SessionVoice(val key: String, val label: String)
 
-/** Anonymous, bounded, session-only clustering. It never establishes USER ownership or consent. */
+/**
+ * Anonymous, bounded, session-only clustering. It never establishes USER ownership or consent.
+ * A voice may carry a name for this session only (in memory): never persisted, logged or exported, and cleared by [clear].
+ */
 class SessionVoices(private val session: String = java.util.UUID.randomUUID().toString().replace("-", "")) {
-    private data class Cluster(val voice: SessionVoice, var vector: FloatArray, var seen: Long)
+    private data class Cluster(val voice: SessionVoice, var vector: FloatArray, var seen: Long, var name: String? = null)
+    val size: Int get() = clusters.size
+    fun nameOf(key: String): String? = clusters.firstOrNull { it.voice.key == key }?.name
+    /** Names a known voice; returns false for an unknown key or an invalid name. */
+    fun name(key: String, name: String?): Boolean {
+        val cluster = clusters.firstOrNull { it.voice.key == key } ?: return false
+        val clean = name?.let(::cleanName)
+        if (name != null && clean == null) return false
+        cluster.name = clean
+        return true
+    }
+    fun names(): Map<String, String> = clusters.mapNotNull { c -> c.name?.let { c.voice.key to it } }.toMap()
     private val clusters = mutableListOf<Cluster>()
     private var next = 0
     fun observe(vector: FloatArray, now: Long): SessionVoice? {
         val normalized = VoiceMatch.normalized(vector)
         try {
-            clusters.filter { now - it.seen !in 0..900_000 }.toList().forEach { it.vector.fill(0f); clusters.remove(it) }
+            clusters.filter { now - it.seen !in 0..KEEP_MS }.toList().forEach { it.vector.fill(0f); clusters.remove(it) }
             val ranked = clusters.map { it to VoiceMatch.similarity(it.vector, normalized) }.sortedByDescending { it.second }
             val best = ranked.firstOrNull()
             if (best != null && best.second >= .75f && best.second - (ranked.getOrNull(1)?.second ?: -1f) >= .12f) {
@@ -66,7 +80,14 @@ class SessionVoices(private val session: String = java.util.UUID.randomUUID().to
             return voice
         } finally { normalized.fill(0f) }
     }
-    fun clear() { clusters.forEach { it.vector.fill(0f) }; clusters.clear() }
+    fun clear() { clusters.forEach { it.vector.fill(0f); it.name = null }; clusters.clear() }
+    companion object {
+        /** A voice group (and its session name) is forgotten after this long without that voice. */
+        const val KEEP_MS = 30 * 60_000L
+        /** Short plain names only: letters, spaces, apostrophes, hyphens and dots, up to 40 characters. */
+        fun cleanName(value: String): String? = value.trim().replace(Regex("\\s+"), " ")
+            .takeIf { it.length in 1..40 && it.all { c -> c.isLetter() || c in " '’-." } && it.any(Char::isLetter) }
+    }
 }
 
 object VoiceSource {

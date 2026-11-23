@@ -43,7 +43,8 @@ SideKick's controls are app-local and never change Android's display preferences
 - Settings open to six short categories: Display, Listening, Plans & reminders,
   Messages & places, Privacy & saved data, and Advanced & help. Each category
   has its own scrollable page and fixed Back/Close controls. Technical model
-  choices and phone diagnostics are kept in Advanced.
+  choices and phone diagnostics are kept in Advanced. (Superseded on November 17,
+  2026 by four sections; see "Simple by default" at the end.)
 - Listening exposes an Auto-detect language switch for language changes throughout
   the day. Turning it on selects the existing Adaptive recognition route; turning
   it off restores the previous manual language. Changes wait until listening ends.
@@ -117,3 +118,38 @@ Model selection shows Recommended / Faster / Larger model, with an explicit
 warning that a larger model can be slower without always improving accuracy.
 Auto-detect also selects Recommended when chosen in setup, matching Listening.
 Saved preference codes and functionality remain compatible with existing data.
+
+## Simple by default — November 17, 2026
+
+Owner decision: the simple layout is the default, for older adults who are not used
+to smartphones. Existing installs that never chose a layout also get it; Settings →
+Screen → Detailed (or More → Use the detailed screen) restores the earlier view.
+
+- Bottom bar: Today, Plans and a labelled More. Summary, notes, listening and voice
+  details, setup and the detailed view are under More.
+- Today: Start/Stop listening button at least 64 dp tall (72 dp minimum, full width,
+  red while listening), a "Listening" / "Not listening" status line announced to
+  TalkBack, the rules line, notice buttons while listening, a "plans to check" button
+  only when something waits, and up to five next plans as cards with Change and
+  Undo (automatic changes) or Remove (archives after a confirmation). The page
+  scrolls, so 200% system font does not clip.
+- Simple-screen buttons are at least 56 dp; settings rows and chips at least 48 dp.
+- Settings: Screen choices (Simple/Detailed, text size; more screen options folded)
+  then four sections — Listening, Your voice, Reminders & calendar, Privacy. The
+  Display, Messages & places and Advanced pages were merged into these; every
+  setting stayed. Consent, privacy and legal texts are unchanged.
+
+| Before | Now |
+|---|---|
+| Capture / Planner / Summary | Today / Plans / More (simple); unchanged in detailed |
+| Session details | Listening details |
+| Speech chunks | Phrases |
+| Voice diagnostics | Voice details |
+| Label different speakers (diarization) | Tell different voices apart |
+| Update my voice profiles | Update my voice setup |
+| Voice model | Voice matching method |
+| Model pack | Speech file |
+| Verify speaker attribution | Check who said it |
+| Review / History filters | To check / Past |
+| Search commitments | Search plans |
+| Proposed / Accepted | Needs checking / Saved |

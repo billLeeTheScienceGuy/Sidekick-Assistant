@@ -60,14 +60,34 @@ class ResponsiveInterfaceTest {
         compose.onNodeWithTag("transcript").assertTextContains("Interface draft, not an event.")
         assertFalse(ListeningService.state.value.recording)
     }
+    @Test fun simpleHomeIsTheDefaultAndDetailedStaysAvailable() {
+        val stored = app.getSharedPreferences("guidance", android.content.Context.MODE_PRIVATE)
+        val had = stored.contains("one_screen_home"); val old = stored.getBoolean("one_screen_home", true)
+        try {
+            stored.edit().remove("one_screen_home").commit()
+            assertTrue("A phone that never chose a layout gets the simple home", GuidanceSettings(app).oneScreenHome.value)
+        } finally { if (had) stored.edit().putBoolean("one_screen_home", old).commit() }
+        app.guidance.setOneScreenHome(true)
+        compose.waitForIdle()
+        compose.onNodeWithTag("compact-listen").assertIsDisplayed().assertHeightIsAtLeast(64.dp)
+        compose.onNodeWithTag("compact-status").assertTextEquals("Not listening")
+        compose.onNodeWithTag("summary-tab").assertDoesNotExist()
+        compose.onNodeWithTag("settings").performClick()
+        compose.onNodeWithTag("settings-page-SCREEN").performScrollTo().performClick()
+        compose.onNodeWithTag("home-detailed").performScrollTo().performClick().assertIsSelected()
+        compose.onNodeWithText("Close").performClick()
+        compose.onNodeWithTag("summary-tab").assertIsDisplayed()
+        assertFalse(GuidanceSettings(app).oneScreenHome.value)
+        assertFalse(ListeningService.state.value.recording)
+    }
     @Test fun appearancePersistsAndCanFollowTheSystemAgain() {
         compose.onNodeWithTag("settings").performClick()
-        compose.onNodeWithTag("settings-page-DISPLAY").performScrollTo().performClick()
+        compose.onNodeWithTag("settings-page-SCREEN").performScrollTo().performClick()
         compose.onNodeWithTag("appearance-DARK").performClick().assertIsSelected()
         assertEquals(AppearanceMode.DARK, GuidanceSettings(app).appearance.value)
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithTag("settings").performClick()
-        compose.onNodeWithTag("settings-page-DISPLAY").performScrollTo().performClick()
+        compose.onNodeWithTag("settings-page-SCREEN").performScrollTo().performClick()
         compose.onNodeWithTag("appearance-DARK").assertIsSelected()
         compose.onNodeWithTag("appearance-SYSTEM").performClick().assertIsSelected()
         assertEquals(AppearanceMode.SYSTEM, GuidanceSettings(app).appearance.value)
@@ -80,7 +100,7 @@ class ResponsiveInterfaceTest {
         compose.onNodeWithText("New times use phone timezone:", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("note-tools"))
         compose.onNodeWithTag("note-tools").performClick()
-        compose.onNode(hasText("Import local intent model (484 MB)") or hasText("Replace local intent model")).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Notes and live speech use the same local rules", substring = true).performScrollTo().assertIsDisplayed()
         assertFalse(ListeningService.state.value.recording)
     }
     @Test fun actualWindowLayoutAndControlsRemainUsable() {
@@ -98,12 +118,17 @@ class ResponsiveInterfaceTest {
         compose.onNodeWithTag(if (wide) "bottom-navigation" else "navigation-rail").assertDoesNotExist()
         compose.onNodeWithTag("settings").assertHeightIsAtLeast(48.dp).assertIsDisplayed()
         compose.onNodeWithTag("planner-tab").assertIsDisplayed().performClick()
-        compose.onNodeWithTag("summary-tab").assertIsDisplayed().performClick()
-        compose.onNodeWithTag("capture-tab").assertIsDisplayed().performClick()
         if (simpleHome) {
-            compose.onNodeWithTag("compact-listen").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
-            compose.onNodeWithTag("compact-details").assertIsDisplayed()
+            // Simple: Today / Plans / More, a 56 dp Settings button and a 64 dp+ listening button.
+            compose.onNodeWithTag("settings").assertHeightIsAtLeast(56.dp)
+            compose.onNodeWithTag("more-tab").assertIsDisplayed().performClick()
+            compose.onNodeWithTag("more-content").assertIsDisplayed()
+            compose.onNodeWithTag("today-tab").assertIsDisplayed().performClick()
+            compose.onNodeWithTag("compact-listen").assertIsDisplayed().assertHeightIsAtLeast(64.dp)
+            compose.onNodeWithTag("compact-rules").performScrollTo().assertIsDisplayed()
         } else {
+            compose.onNodeWithTag("summary-tab").assertIsDisplayed().performClick()
+            compose.onNodeWithTag("capture-tab").assertIsDisplayed().performClick()
             compose.onNodeWithTag("main-list").performScrollToNode(hasText("Start listening"))
             compose.onNodeWithText("Start listening").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
         }

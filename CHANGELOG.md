@@ -2,6 +2,121 @@
 
 Version notes for SideKick, newest first. Links point to the measurements and limits behind each change.
 
+## Unreleased (privacy, consent and location work package)
+
+- Scam warnings hear the phone owner's side better: repeating a caller's claim ("you're from the bank?"), asking why ID, a code or money is needed, or going along ("let me get my card") now count as weak signs in all seven languages. During a call two of them, or one next to a real sign, give a caution; outside a call it takes four. Owner-side recall on the test dialogues 15.3% to 19.7% (59.4% in a call) with no new false alarms on everyday text.
+- App language, separate from the speech language: Settings → Screen & text size → App language ("Same as phone", English,
+  한국어, 中文, العربية, Русский, Français, Deutsch). All screens, notifications and the widget are translated (translations
+  are machine-assisted drafts, not yet reviewed by native speakers); Arabic lays out right to left. Spoken answers and the
+  voice-setup reading passages still follow the speech language. Recording-rule texts from the core module are translated by
+  phrase; scam-warning wording is still English.
+- Optional crash reports, no network: after a crash SideKick keeps a small local report (time, versions, device model,
+  exception type and stack; never messages or anything you said) and on the next start offers to send it through Android's
+  share sheet, or delete it. Settings → Privacy → Offer to send crash reports (on by default) and View crash reports.
+  At most 5 reports for 30 days. See docs/PRIVACY_POLICY.md.
+- Scam warnings, much wider: about 20 kinds of warning sign (impersonation, family emergency, prize and job fees,
+  investment, overpayment, gift cards, crypto, cash couriers, codes, remote access, "safe" accounts...) in all 7 languages,
+  scored together over the last 10 minutes ("Be careful" or "Stop now" with one plain step); "Stop now" vibrates.
+  Texts and shared text are checked on their own, including lookalike and throwaway links (no lookup online). During a
+  call SideKick hears only your side, so it also recognizes you repeating the request; a summary follows the call. Ask
+  "SideKick, is this a scam?". Tested on 40 scam scripts and 28 everyday lines, plus a held-out set (TEST_HISTORY T90).
+- Simpler screens and wording: a "Try saying" hint while listening until your first question; shorter small print.
+- Example questions to read off the screen, in your language: Settings → Listening → What you can ask SideKick, and
+  numbered on the SideKick voice check screen. Every example is checked to be understood (PlanQuestionTest).
+- Settings: Screen & text size is its own section, listed first.
+- Optional SideKick voice check (off by default; Settings → Your voice, its own screen): say five "SideKick, ..." questions and SideKick
+  recognizes you by how you say its name, so answers to your questions are spoken even when your voice was otherwise
+  unclear. Never overrides another person's voice. Its stranger rate is not yet measured (docs/evaluation/SPEAKER_TUNING.md).
+  Three other owner-recognition ideas were tested and not adopted (same document).
+- Reliability fixes from a code review: muting the microphone pauses listening instead of stopping it; a phrase the
+  recognizer fails on is retried or skipped without stopping; other errors restart listening (at most 5 times an hour);
+  listening resumes by itself after an app update; reminders ring on time (exact alarms); faster start with large
+  speech packs (docs/evaluation/TEST_HISTORY.md T87).
+- Battery and reliability: listening's own power in silence is about 42 mW, down from 117 mW (speech detector once a
+  second on the efficient cores, microphone read once a second, low-power location away from state borders, call
+  events instead of polling). A full day of listening used 21% of the battery over 14 hours, SideKick itself about 4%
+  (docs/evaluation/TEST_HISTORY.md T81, T86). Listening no longer stops when busy (a waiting line sized by free memory,
+  faster recognition to catch up, nothing skipped), pauses while another app uses the microphone and carries on
+  afterwards, and logs any stop reason. Optional "Pause when the phone is resting", suggested once after 3 hours.
+- Korean: a lone hesitation sound the recognizer writes as its own word ("회의가 어 있어요") is dropped between Korean
+  words; "어" at the start of a sentence ("yeah") is kept. Fixes the last failing phone test (124 of 124).
+- Voice matching: the quiet-room bar now depends on how long and how clean the speech is (.58-.65): owner turns
+  62% -> 69% at the base rule, 0 of 409,213 stranger turns (454 voices). A larger test (1,813 voices in all
+  seven app languages) found 17 pairs of near-identical voices that can pass as each other (97 of about 6.6 million
+  stranger turns), so a very similar voice, such as a close relative, can occasionally be taken for the owner. Your saved voice also slowly adapts
+  across sessions from moments SideKick is very sure it is you, never far from your setup; the voice consent notice
+  says so (version 2), so it asks again once.
+- Hands-off saving needs Review far less. Your own plan with a clear day but no time ("I have a dentist appointment
+  on Friday") now saves as an all-day plan instead of being missed. Every guess is written on the saved plan
+  ("Assumed: all day (time assumed)", "Fri 27 Nov (assumed from 'next friday')", "1 hour (length assumed)"), and
+  when the real time or day is said later the plan is updated and the "assumed" note disappears. Common plans get
+  sensible defaults: birthdays and anniversaries (day-before reminder, yearly repeat noted), days off and vacations
+  (multi-day, no reminder), flights (number, cities, arrival; reminder 3 hours before), trains/buses/ferries (1 hour
+  before), doctor and dentist (1 hour long; reminders the day before and 1 hour before), meetings (1 hour) and calls
+  (30 minutes), deadlines and bills (morning reminder; bills 2 days before), pickups (15 minutes before), restaurant
+  tables (party size and place) and repair or delivery windows ("between 9 and 11"). Repeats ("every Tuesday",
+  "first Monday of the month") save the first date and say so. Other people's plans ("Mom lands at 5") are saved as
+  information only. Only real conflicts go to Review: "maybe"/"if" plans and two different times for the same plan.
+  Your own voice naming a plan ("the dentist appointment is cancelled") cancels it with Undo; a bare "that's
+  cancelled" with nothing to point at does nothing; another voice or a message saying something is cancelled only
+  adds a Review item, never removes a plan. The same plan said twice merges, a clash is saved and flagged ("May
+  overlap with ..."), and Review items whose date has passed clear themselves. No database change. See
+  `docs/guides/HANDS_OFF.md`.
+- Simple home is now the default, for older adults and people new to smartphones: Today (one large Start/Stop
+  listening button, a Listening/Not listening line, the rules line, and the next plans as large cards with Change and
+  Undo/Remove buttons), Plans, and a labelled More (summary, notes and listening details, setup, detailed view). A
+  "plans to check" button appears only when something needs checking. Settings now open with Simple/Detailed and text
+  size, then four sections: Listening, Your voice, Reminders & calendar, Privacy. Recommended choices are labelled and
+  jargon (session, model, profile, chunk, diarization, attribution) is replaced with plain words. The detailed view
+  stays available in Settings; consent and privacy texts are unchanged. See `docs/guides/TRY_IT.md`.
+- Removed the optional Qwen3-0.6B model ("smart analysis" for typed notes), its llama.cpp native build and import
+  screen. On the phone over the 92-case corpus it found 19 of 83 events (rules: 82), took 14.4 s per sentence (rules:
+  7 ms) and found nothing the rules missed. The app deletes a previously imported model file (484 MB) on start. Typed
+  notes and live speech now use the same local rules. See `docs/guides/INTENT_MODEL.md`.
+- Owner voice matching retuned on 381 public stranger voices (about 160,000 stranger turns in quiet, noisy, far and
+  echo rooms; laptop evaluation in `scripts/laptop-eval/`, checked against the phone's own library). Owner turns
+  recognised: 82% (was 54%); strangers accepted: 0. Through the phone microphone with setup on the phone: 73% at the
+  quiet bar, 0 of 1,460 stranger turns. Every bar sits at least .08 above the closest stranger seen.
+  Before notice in all-party places nothing is loosened. See `docs/evaluation/SPEAKER_TUNING.md`.
+- Your voice from earlier in the same session counts: once a long turn matches your saved profile, later chunks that
+  sound like those turns (.74) count as you; never overrides "someone else", off before notice in all-party places.
+- During a session, your profile is nudged toward how you sound today (memory only; bar .67), and an unassigned
+  chunk between two of your chunks that sounds like both counts as you (.72). Such a chunk's text appears once the
+  next chunk is decided (a few seconds). Both are off before notice in all-party places.
+- Noise removal before voice matching (GTCRN, DPDFNet) was tested and not adopted: it brought strangers closer.
+- Voice setup can be recorded in a quiet room, with background noise, or with the phone on a table; each is its own
+  profile. The quiet-room profile uses a bar of .64, the others .71.
+- A stranger cohort (198 public LibriSpeech signatures, 150 KB, CC BY 4.0) adds a check that every matching window is
+  well above how strangers score. It never rejected an owner turn in the evaluation and guards against outliers.
+- The ResNet ("Standard") voice model is no longer offered: in the evaluation strangers scored as high as the owner.
+  A saved ResNet choice moves to CAM++ and needs voice setup again. TitaNet-small, ERes2Net and ERes2NetV2 were
+  compared and did not beat CAM++ at the same safety margin.
+- Two independent rules per state: recording (one-party / all-party) and voice (none / notice in TX and WA / strict in IL).
+  SideKick takes the strictest of the containing state and every state within the location error margin; anything
+  unknown (no fix, stale fix, abroad, lookup error, phone call) is all-party + strict. Borders updated to Census 1:500k.
+- Rules follow you during a session (location updates every 500 m / 60 s plus a 5-minute check). Moving somewhere
+  stricter asks for a new notice; entering a strict place forgets every other voice at once.
+- The spoken notice now always includes a voice-analysis line, in every state; each notice is recorded per session
+  (time, state, rules, text version, spoken or attested), with no audio or voice data.
+- A notice covers one conversation: it ends after 30 minutes without other voices, or after 2 hours. Voice groups now last
+  30 minutes without that voice (was 15). Optional "Always show the Announce button" (on by default).
+- The spoken notice plays at least at half volume (raised and restored) and counts only if the microphone measured it
+  as loud enough; volume, loudness and the result go into the notice record (Room v8). Optional "Announce automatically
+  when a new conversation starts" (off by default).
+- A location from a mock-location app (Developer options) gets the strictest rules; the city in Settings never sets them.
+  The "Listening & privacy" panel now says what SideKick does while listening, and links the Wisconsin statute (968.31).
+- Settings: "Treat every place as the strictest state", "Group voices only after notice, in every state", privacy policy link.
+- Owner voice setup asks for written consent first (name, checkbox, optional signature; guardian for under-18s);
+  profiles without a consent record stop matching until accepted; profiles unused for 12 months are deleted.
+- Name a voice for one session only; invitations from named voices ("meet me at 5") become information-only events;
+  a short "sure" from you goes to Review.
+- Stricter owner matching before notice in all-party places; threshold-tuning script and scaffold
+  ([speaker tuning](docs/evaluation/SPEAKER_TUNING.md)). Test report: [privacy work package](docs/evaluation/PRIVACY_WORKPACKAGE_TEST_REPORT.md).
+- Fix: a finished session no longer waits on the background location loop.
+- Fix: recognizer loops ("thank you" ×12) keep one copy (RepeatFilter; no change to about 20,000 human transcripts,
+  34 real loops caught in saved recognizer output). Whisper decodes a looping reading once more with a little randomness
+  and caps output length; ordinary phrases are decoded exactly once, as before.
+
 ## 0.35.0
 
 - Auto-detect routing rebuilt around a benchmark of 16 open speech models: SenseVoice tags the language first,

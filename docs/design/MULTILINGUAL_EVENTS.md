@@ -22,8 +22,7 @@ no suggestion. Another event topic interrupts pronoun-based end association. Cha
 the venue clears the previous address unless a new explicit address is available.
 
 Typed/shared/notification and live attributed text use the same event extraction
-path. Recognized local event statements have a fast path in smart analysis, so they
-do not require loading or importing Qwen. Existing English model behavior remains
+path, with no language model. Existing English behavior remains
 separate. Generic non-English promises, complex grammar, local month-name formats,
 every number-word form, cancellation/rescheduling and arbitrary coreference are not
 comprehensively supported. This is a bounded baseline, not general fluent reasoning.
@@ -52,6 +51,6 @@ this grammar change does not restore its discarded audio or establish an ASR fix
 forms, negations, uncertain/ambiguous times, midnight rollover, ownership, literal
 evidence/venue/address corrections, cross-language endings, durations, next-week
 dates and DST/invalid-date rejection. Device regressions exercise live draft updates,
-message ownership, no automatic persistence and a typed local event with no Qwen
-model installed in its isolated test context. No automated test uses the physical mic.
+message ownership, no automatic persistence and a typed local event through the
+local rules. No automated test uses the physical mic.
 Six Pixel event-flow tests passed in 0.281 seconds; both builds and lint passed.

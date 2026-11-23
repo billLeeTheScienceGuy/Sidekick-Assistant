@@ -17,14 +17,14 @@ internal fun RiskSection() {
     val alerts by risk.alerts.collectAsState()
     if (alerts.isNotEmpty()) Card(Modifier.fillMaxWidth().testTag("risk-advisories")) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Pause & verify", style = MaterialTheme.typography.titleMedium)
-            Text("Local English warning-sign rules can miss risks or flag legitimate requests. These advisories do not identify a person as a scammer.")
+            Text(tr(R.string.pause_check), style = MaterialTheme.typography.titleMedium)
+            QuietLabel(tr(R.string.based_on_common_warning_signs_can))
             alerts.forEach { alert ->
                 Text(alert.title, style = MaterialTheme.typography.titleSmall)
                 Text(alert.explanation)
-                TextButton(onClick = { risk.dismiss(alert.id) }, modifier = Modifier.testTag("dismiss-risk-${alert.id}")) { Text("Dismiss") }
+                TextButton(onClick = { risk.dismiss(alert.id) }, modifier = Modifier.testTag("dismiss-risk-${alert.id}")) { Text(tr(R.string.dismiss)) }
             }
-            TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://consumer.ftc.gov/scams"))) }) { Text("FTC scam information") }
+            TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://consumer.ftc.gov/scams"))) }) { Text(tr(R.string.ftc_scam_information)) }
         }
     }
 }

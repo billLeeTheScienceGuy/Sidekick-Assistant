@@ -88,8 +88,9 @@ class LocalizedChangesTest {
             send("B", "取消会议。", 1); assertEquals(original, db.commitments().all().single())
             send("A", "把会议改到明天晚上9点。", 2)
             assertEquals(original.activityStartAt!! + 3_600_000L, db.commitments().all().single().activityStartAt)
-            send("A", "取消会议。", 3)
-            assertEquals("CANCELLED", db.commitments().all().single().state)
+            send("A", "取消会议。", 3) // another person's cancellation waits in Review
+            assertEquals("ACCEPTED", db.commitments().all().single().state)
+            assertTrue(memory.drafts.value.any { it.sourceKey == "review:cancel:${original.id}" })
             assertTrue(db.commitments().all().single().informational)
         } finally {
             scope.cancel(); reminders.deleteAll(); db.close(); settings.setHandsOff(previous)

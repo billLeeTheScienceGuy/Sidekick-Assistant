@@ -22,10 +22,10 @@ class PhoneCalendar(private val context: Context) {
     suspend fun check(start: Long, end: Long, zone: ZoneId, memoryId: String? = null): CalendarCheck = withContext(Dispatchers.IO) {
         CalendarOverlap.validate(start, end)
         if (context.checkSelfPermission(Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED)
-            return@withContext CalendarCheck.Unavailable("Calendar permission is off. No events were checked.")
+            return@withContext CalendarCheck.Unavailable(tr(R.string.calendar_permission_is_off_no_events))
         try { read(context.contentResolver, start, end, zone, memoryId?.let { CalendarTarget.uri(context.packageName, it) }, context.packageName) }
-        catch (_: SecurityException) { CalendarCheck.Unavailable("Calendar permission changed. Check permission and try again.") }
-        catch (_: Exception) { CalendarCheck.Unavailable("Calendar could not be read. Try again; availability is unknown.") }
+        catch (_: SecurityException) { CalendarCheck.Unavailable(tr(R.string.calendar_permission_changed_check_permission_and)) }
+        catch (_: Exception) { CalendarCheck.Unavailable(tr(R.string.calendar_could_not_be_read_try)) }
     }
 
     companion object {
@@ -42,7 +42,7 @@ class PhoneCalendar(private val context: Context) {
             val args = arrayOf(I.STATUS_CANCELED.toString(), android.provider.CalendarContract.Attendees.ATTENDEE_STATUS_DECLINED.toString(), I.AVAILABILITY_FREE.toString())
             val clashes = mutableListOf<CalendarClash>()
             val cursor = resolver.query(uri, columns, selection, args, "${I.BEGIN} ASC")
-                ?: return CalendarCheck.Unavailable("Calendar provider is unavailable. Availability is unknown.")
+                ?: return CalendarCheck.Unavailable(tr(R.string.calendar_provider_is_unavailable_availability_is))
             cursor.use {
                 while (it.moveToNext()) {
                     if (excludeMarker != null && it.getString(4) == excludeMarker && it.getString(5) == ownerPackage) continue
@@ -50,7 +50,7 @@ class PhoneCalendar(private val context: Context) {
                     val from = if (allDay) CalendarOverlap.allDayBoundary(it.getLong(1), zone) else it.getLong(1)
                     val until = if (allDay) CalendarOverlap.allDayBoundary(it.getLong(2), zone) else it.getLong(2)
                     if (CalendarOverlap.overlaps(start, end, from, until)) {
-                        clashes += CalendarClash(it.getString(0)?.take(200)?.ifBlank { null } ?: "Untitled event", from, until, allDay)
+                        clashes += CalendarClash(it.getString(0)?.take(200)?.ifBlank { null } ?: tr(R.string.untitled_event), from, until, allDay)
                         if (clashes.size == 50) break
                     }
                 }

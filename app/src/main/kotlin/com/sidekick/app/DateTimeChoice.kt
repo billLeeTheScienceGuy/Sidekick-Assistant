@@ -20,7 +20,7 @@ internal fun DateTimeChoice(label: String, value: String, zone: ZoneId, tag: Str
     val context = LocalContext.current
     Column(Modifier.fillMaxWidth()) {
         Text(label)
-        Text(value.ifBlank { "Not set" }, Modifier.testTag(tag))
+        Text(value.ifBlank { tr(R.string.not_set) }, Modifier.testTag(tag))
         OutlinedButton(modifier = Modifier.fillMaxWidth().testTag(pickerTag), onClick = {
             val format = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm").withResolverStyle(ResolverStyle.STRICT)
             val initial = runCatching { LocalDateTime.parse(value, format) }
@@ -30,6 +30,6 @@ internal fun DateTimeChoice(label: String, value: String, zone: ZoneId, tag: Str
                     onChange(LocalDateTime.of(year, month + 1, day, hour, minute).format(format))
                 }, initial.hour, initial.minute, true).show()
             }, initial.year, initial.monthValue - 1, initial.dayOfMonth).show()
-        }) { Text("Choose date & time", maxLines = 1) }
+        }) { Text(tr(R.string.choose_date_time), maxLines = 1) }
     }
 }

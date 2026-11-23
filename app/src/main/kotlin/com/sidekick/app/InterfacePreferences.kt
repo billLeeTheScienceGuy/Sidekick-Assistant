@@ -13,12 +13,17 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 
-enum class InterfaceDesign(val label: String) { CALM("Calm"), CLASSIC("Classic"), WARM("Warm") }
-enum class NoteTextSize(val label: String, val factor: Float) {
-    SMALL("Smaller", .9f), PHONE("Phone default", 1f), LARGE("Larger", 1.15f), EXTRA_LARGE("Largest", 1.3f)
+enum class InterfaceDesign {
+    CALM, CLASSIC, WARM;
+    val label: String get() = when (this) { CALM -> tr(R.string.calm); CLASSIC -> tr(R.string.classic); WARM -> tr(R.string.warm) }
 }
-enum class InterfaceSize(val label: String, val factor: Float) {
-    PHONE("Phone default", 1f), LARGE("Larger", 1.1f), EXTRA_LARGE("Largest", 1.25f)
+enum class NoteTextSize(val factor: Float) {
+    SMALL(.9f), PHONE(1f), LARGE(1.15f), EXTRA_LARGE(1.3f);
+    val label: String get() = when (this) { SMALL -> tr(R.string.smaller); PHONE -> tr(R.string.phone_default); LARGE -> tr(R.string.larger); EXTRA_LARGE -> tr(R.string.largest) }
+}
+enum class InterfaceSize(val factor: Float) {
+    PHONE(1f), LARGE(1.1f), EXTRA_LARGE(1.25f);
+    val label: String get() = when (this) { PHONE -> tr(R.string.phone_default); LARGE -> tr(R.string.larger); EXTRA_LARGE -> tr(R.string.largest) }
 }
 
 internal val LocalNoteTextFactor = staticCompositionLocalOf { 1f }

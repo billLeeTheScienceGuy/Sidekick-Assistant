@@ -20,22 +20,22 @@ internal fun CalendarSection(start: String, end: String, zone: ZoneId, informati
     var expanded by remember { mutableStateOf(askAboutEnd && end.isBlank()) }
     var acknowledgedUnknown by remember { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("optional-activity")) {
-        Text(if (expanded) "Hide optional activity times & calendar" else "Optional activity times & calendar")
+        Text(if (expanded) tr(R.string.hide_optional_activity_times_calendar) else tr(R.string.optional_activity_times_calendar))
     }
     if (!expanded) {
-        if (start.isNotBlank() || end.isNotBlank()) Text("Activity: ${start.ifBlank { "Unknown" }} – ${end.ifBlank { "Unknown" }}")
+        if (start.isNotBlank() || end.isNotBlank()) Text(tr(R.string.activity_1_s_2_s, start.ifBlank { tr(R.string.unknown) }, end.ifBlank { tr(R.string.unknown) }))
         return
     }
     if (askAboutEnd && end.isBlank() && !acknowledgedUnknown)
-        Text("When do you think this will last till?", style = MaterialTheme.typography.titleMedium)
-    Text("Activity times are optional and separate from reminders. Start or end can stay unknown; a calendar overlap check needs both.")
-    DateTimeChoice("Activity start", start, zone, "activity-start", onChange = onStart)
-    DateTimeChoice("Activity end", end, zone, "activity-end", onChange = onEnd)
-    TextButton(onClick = { onEnd(""); acknowledgedUnknown = true }) { Text("I don’t know") }
-    TextButton(onClick = { onStart(""); onEnd("") }) { Text("Clear activity time") }
-    if (informational) Text("Information-only event: overlaps do not block your calendar.")
+        Text(tr(R.string.when_do_you_think_this_will), style = MaterialTheme.typography.titleMedium)
+    Text(tr(R.string.optional_separate_from_reminders_checking_your))
+    DateTimeChoice(tr(R.string.activity_start), start, zone, "activity-start", onChange = onStart)
+    DateTimeChoice(tr(R.string.activity_end), end, zone, "activity-end", onChange = onEnd)
+    TextButton(onClick = { onEnd(""); acknowledgedUnknown = true }) { Text(tr(R.string.i_don_t_know)) }
+    TextButton(onClick = { onStart(""); onEnd("") }) { Text(tr(R.string.clear_activity_time)) }
+    if (informational) Text(tr(R.string.information_only_event_overlaps_do_not))
     else {
-        Text("Check visible calendars stored on this phone. Read access is optional; no calendar events are changed or copied into saved memory.")
+        Text(tr(R.string.checks_calendars_on_this_phone_nothing))
         key(start, end, zone) { CalendarQuery(start, end, zone, memoryId) }
     }
 }
@@ -55,7 +55,7 @@ private fun CalendarQuery(start: String, end: String, zone: ZoneId, memoryId: St
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) request++
-        else result = CalendarCheck.Unavailable("Calendar access was not allowed. You can still save; availability is unknown.")
+        else result = CalendarCheck.Unavailable(tr(R.string.calendar_access_was_not_allowed_you))
     }
     LaunchedEffect(request) {
         if (request > 0) window.getOrNull()?.let { (from, until) ->
@@ -65,24 +65,24 @@ private fun CalendarQuery(start: String, end: String, zone: ZoneId, memoryId: St
         }
     }
     TextButton(enabled = !running, modifier = Modifier.testTag("check-calendar"), onClick = {
-        if (window.isFailure) validation = "Enter valid start and end times in the displayed timezone, with end after start (maximum seven days)."
+        if (window.isFailure) validation = tr(R.string.enter_valid_start_and_end_times)
         else {
             validation = null
             if (context.checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED) request++
             else permission.launch(Manifest.permission.READ_CALENDAR)
         }
-    }) { Text(if (running) "Checking…" else "Check phone calendar") }
+    }) { Text(if (running) tr(R.string.checking) else tr(R.string.check_phone_calendar)) }
     validation?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     when (val checked = result) {
         is CalendarCheck.Unavailable -> Text(checked.reason)
         is CalendarCheck.Available -> Column {
-            Text(if (checked.clashes.isEmpty()) "No busy overlaps found in visible phone calendars at this check."
-                else "${if (checked.clashes.size == 50) "50+" else checked.clashes.size} possible calendar overlap(s).")
+            Text(if (checked.clashes.isEmpty()) tr(R.string.no_busy_overlaps_found_in_visible)
+                else trn(R.plurals.calendar_overlaps, checked.clashes.size, if (checked.clashes.size == 50) "50+" else checked.clashes.size))
             checked.clashes.take(10).forEach { event ->
                 Text("${event.title} · ${if (event.allDay) "All day" else "${TimeResolver.format(Instant.ofEpochMilli(event.start), zone)} – ${TimeResolver.format(Instant.ofEpochMilli(event.end), zone)}"}")
             }
-            Text("Includes recurring and all-day events; ignores free, cancelled and declined events. Calendars may be out of sync. Recheck after calendar changes. Saving does not reserve this time.", style = MaterialTheme.typography.bodySmall)
+            Text(tr(R.string.ignores_free_cancelled_and_declined_events), style = MaterialTheme.typography.bodySmall)
         }
-        null -> Text("Calendar not checked for these times.", style = MaterialTheme.typography.bodySmall)
+        null -> Text(tr(R.string.calendar_not_checked_for_these_times), style = MaterialTheme.typography.bodySmall)
     }
 }

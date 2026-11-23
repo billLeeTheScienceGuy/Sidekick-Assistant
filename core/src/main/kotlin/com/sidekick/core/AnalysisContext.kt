@@ -6,12 +6,20 @@ object AnalysisContext {
         val omitted = source.text.dropLast(4000)
         val quoted = omitted.count { it == '"' } % 2 == 1 || omitted.lastIndexOf('“') > omitted.lastIndexOf('”')
         val validationSource = source.copy(text = if (quoted) "\"" + source.text.takeLast(3999) else source.text.takeLast(4000))
-        return ActivityTiming.merge(source, RuleIntentExtractor().extract(source)).filter {
+        val validated = ActivityTiming.merge(source, RuleIntentExtractor().extract(source)).filter {
         it.informational || LocalizedActivities.hasEvent(it.evidence) ||
             it.evidence.lines().any { line -> ConversationActivities.attendanceValue(line) == true &&
                 IntentValidation.validate(validationSource, listOf(IntentCandidate(line, line, ""))).isNotEmpty() } ||
             IntentValidation.validate(validationSource, listOf(IntentCandidate(it.title, it.evidence.substringBefore('\n'), ""))).isNotEmpty()
         }
+        // Hands-off completion: all-day plans, plan kinds the older rules miss, and owner wording. Review-only
+        // hedges are not plans and stay out of this list.
+        return HandsOffPlans.complete(source, validated, includeReview = false)
+    }
+    /** Another person's words (or shared/message text): information-only plans, including all-day and kind rules. */
+    fun others(source: Transcript): List<ProposedCommitment> {
+        val other = source.copy(speaker = Speaker.OTHER)
+        return HandsOffPlans.complete(other, ActivityTiming.extract(other, informationalOnly = true), includeReview = false)
     }
     fun unresolved(source: Transcript, local: List<ProposedCommitment>): String = Sentences.split(source.text)
         .filter { sentence -> !reported(sentence) && local.none { it.evidence.contains(sentence.trimEnd('.', '!'), true) } }

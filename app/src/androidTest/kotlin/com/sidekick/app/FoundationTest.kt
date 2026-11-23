@@ -18,25 +18,30 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class FoundationTest {
     private var handsOff = false
+    private var simpleHome = true
     @org.junit.Before fun reviewMode() {
         val app = compose.activity.application as SidekickApplication
         org.junit.Assume.assumeTrue(app.packageName.endsWith(".benchmark"))
         handsOff = app.guidance.handsOffMode.value; app.guidance.setHandsOff(false); app.temporary.discard()
+        simpleHome = app.guidance.oneScreenHome.value; app.guidance.setOneScreenHome(true)
     }
     @org.junit.After fun restoreMode() {
         val app = compose.activity.application as SidekickApplication
-        app.temporary.discard(); app.guidance.setHandsOff(handsOff)
+        app.temporary.discard(); app.guidance.setHandsOff(handsOff); app.guidance.setOneScreenHome(simpleHome)
     }
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun textRequiresConsentAndCreatesReviewableMemory() {
+        // Simple layout: typing a note is under More → What was heard & notes.
+        compose.onNodeWithTag("more-tab").performClick()
+        compose.onNodeWithTag("more-conversation").performScrollTo().performClick()
         compose.onNodeWithTag("main-list").performScrollToNode(hasText("Use an example"))
         compose.onNodeWithText("Use an example").performClick()
         compose.onNodeWithText("Find commitments").assertIsNotEnabled()
         compose.onNodeWithTag("consent").performScrollTo().performClick()
         compose.onNodeWithText("Find commitments").performScrollTo().performClick()
         compose.waitUntil(10_000) {
-            compose.onAllNodesWithText("2 temporary proposal(s) ready for review. Approve to save.")
+            compose.onAllNodesWithText("2 temporary proposals ready for review. Approve to save.")
                 .fetchSemanticsNodes().isNotEmpty()
         }
         // The text flow works without asking for microphone access.

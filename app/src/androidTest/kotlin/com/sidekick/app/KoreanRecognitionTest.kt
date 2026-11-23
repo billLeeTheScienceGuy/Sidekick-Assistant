@@ -69,7 +69,9 @@ class KoreanRecognitionTest {
                         processor.finish(); withTimeout(20_000) { worker.join() }
                     }
                     val item = db.commitments().all().single()
-                    assertEquals(outputs.joinToString(" | "), "CANCELLED", item.state)
+                    // An unassigned voice saying "cancel" never removes a plan: it waits in Review.
+                    assertEquals(outputs.joinToString(" | "), "ACCEPTED", item.state)
+                    assertTrue(memory.drafts.value.any { it.sourceKey == "review:cancel:${item.id}" })
                     assertEquals(19, Instant.ofEpochMilli(item.activityStartAt!!).atZone(zone).hour)
                     assertNull(item.dueAt); assertTrue(item.informational)
                     assertTrue(memory.text.value.lines().size >= 4)

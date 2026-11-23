@@ -35,7 +35,8 @@ class AutomaticMemoryTest {
         assertTrue(db.commitments().get(alex.id)!!.informational)
     } }
     @Test fun laterExplicitDateRefinesInferredDateOnSameSavedEvent() = runBlocking { fixture { _, memory, db, _, auto ->
-        val now = Instant.now().atZone(zone).toLocalDate().atTime(12, 0).atZone(zone).toInstant()
+        // Tomorrow at noon, so "8pm" is still ahead whenever the test runs (at night, 8 pm today has already passed).
+        val now = Instant.now().atZone(zone).toLocalDate().plusDays(1).atTime(12, 0).atZone(zone).toInstant()
         memory.appendAttributedLive("There's a party at 8pm.", now, zone, Speaker.UNKNOWN, false); auto.process()
         val original = db.commitments().all().single()
         memory.appendAttributedLive("Tomorrow.", now.plusSeconds(5), zone, Speaker.UNKNOWN, false); auto.process()
@@ -96,7 +97,8 @@ class AutomaticMemoryTest {
         memory.appendAttributedLive("회의 를 내일 오후 7 시로 변경 해줘.", now.plusSeconds(10), zone, Speaker.UNKNOWN, false); auto.process()
         assertEquals(19, Instant.ofEpochMilli(db.commitments().get(current.id)!!.activityStartAt!!).atZone(zone).hour)
         memory.appendAttributedLive("회의의 를 취소 해줘.", now.plusSeconds(20), zone, Speaker.UNKNOWN, false); auto.process()
-        assertEquals("CANCELLED", db.commitments().get(current.id)!!.state)
+        assertEquals("ACCEPTED", db.commitments().get(current.id)!!.state) // unassigned voice: Review only
+        assertTrue(memory.drafts.value.any { it.sourceKey == "review:cancel:${current.id}" })
         old.forEach { assertEquals(it, db.commitments().get(it.id)) }
     } }
     @Test fun koreanAmbiguityWithoutRecentContextStillLeavesEventsAlone() = runBlocking { fixture { _, memory, db, _, auto ->
@@ -124,29 +126,6 @@ class AutomaticMemoryTest {
         memory.appendAttributedLive("There's a workshop tomorrow at 8pm at Test Hall A. There's a workshop tomorrow at 8pm at Test Hall B.", now.plusSeconds(10), zone, Speaker.UNKNOWN); auto.process()
         assertEquals(4, db.commitments().all().size)
     } }
-    @Test fun smartAnalysisSkipsKnownPlans() = runBlocking {
-        val engine = com.sidekick.app.intent.IntentEngine(context)
-        val now = Instant.now()
-        val known = com.sidekick.core.Transcript("I'll attend a workshop tomorrow at 8pm.", now, zone, Speaker.USER, true)
-        assertTrue(withTimeout(5000) { engine.extract(known) }.any { !it.informational })
-        assertNull(engine.notice.value)
-    }
-    @Test fun tokenLimitFailureKeepsKnownPlansAndCancellationStillPropagates() = runBlocking {
-        val source = com.sidekick.core.Transcript("I'll attend the workshop tomorrow at 8pm. I intend to organize my bookshelf tomorrow.", Instant.now(), zone, Speaker.USER, true)
-        val failing = com.sidekick.app.intent.IntentEngine(context) { throw IllegalStateException("Analysis exceeded its token limit") }
-        val proposals = failing.extract(source)
-        assertTrue(proposals.any { !it.informational && it.title.contains("workshop", true) })
-        assertTrue(failing.notice.value!!.contains("local rules"))
-        val cancelled = com.sidekick.app.intent.IntentEngine(context) { throw CancellationException("test cancellation") }
-        try { cancelled.extract(source); fail("Cancellation must propagate") } catch (_: CancellationException) { }
-    }
-    @Test fun smartSubsetIsStillValidatedAgainstFullOriginalContext() = runBlocking {
-        val source = com.sidekick.core.Transcript("Emma said. I'll organize my bookshelf tomorrow.", Instant.now(), zone, Speaker.USER, true)
-        val engine = com.sidekick.app.intent.IntentEngine(context) {
-            listOf(com.sidekick.core.IntentCandidate("Organize my bookshelf", "I'll organize my bookshelf tomorrow.", "tomorrow"))
-        }
-        assertTrue(engine.extract(source).isEmpty())
-    }
     @Test fun oldAutomaticAnnouncementIsArchivedWithUndoWhenOnePersonalEventAlreadyExists() = runBlocking { fixture { _, _, db, reminders, auto ->
         val now = Instant.now().toEpochMilli()
         val start = now + 86_400_000

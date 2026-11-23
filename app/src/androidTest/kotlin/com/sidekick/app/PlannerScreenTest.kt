@@ -11,14 +11,16 @@ import org.junit.Test
 
 class PlannerScreenTest {
     private var handsOff = false
+    private var simpleHome = true
     @org.junit.Before fun reviewMode() {
         val app = compose.activity.application as SidekickApplication
         assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         handsOff = app.guidance.handsOffMode.value; app.guidance.setHandsOff(false); app.temporary.discard()
+        simpleHome = app.guidance.oneScreenHome.value; app.guidance.setOneScreenHome(true)
     }
     @org.junit.After fun restoreMode() {
         val app = compose.activity.application as SidekickApplication
-        app.temporary.discard(); app.guidance.setHandsOff(handsOff)
+        app.temporary.discard(); app.guidance.setHandsOff(handsOff); app.guidance.setOneScreenHome(simpleHome)
     }
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     @Test fun speechLanguagePersistsAndShowsItsLocalTranscriptionScope() {
@@ -32,16 +34,22 @@ class PlannerScreenTest {
             compose.onNodeWithTag("speech-language-ko").performScrollTo().performClick()
             assertEquals(com.sidekick.core.SpeechLanguage.KOREAN, GuidanceSettings(app).speechLanguage.value)
             compose.onNodeWithText("Close").performClick()
-            compose.onNodeWithText("한국어 · Korean · On-device").performScrollTo().assertIsDisplayed()
+            // Simple layout: the language shows on More → What was heard & notes.
+            compose.onNodeWithTag("more-tab").performClick()
+            compose.onNodeWithTag("more-conversation").performScrollTo().performClick()
+            compose.onNodeWithTag("main-list").performScrollToNode(hasText("한국어 · Korean · On-device"))
+            compose.onNodeWithText("한국어 · Korean · On-device").assertIsDisplayed()
         } finally { app.guidance.setSpeechLanguage(previous) }
     }
     @Test fun voiceSetupIsReachableWithoutOpeningMicrophone() {
         val app = compose.activity.application as SidekickApplication
         assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         compose.onNodeWithTag("settings").performClick()
-        compose.onNodeWithTag("settings-page-LISTENING").performScrollTo().performClick()
-        compose.onNodeWithText("Set up my voice").performScrollTo().performClick()
-        compose.onNodeWithText("Start voice setup").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("settings-page-VOICE").performScrollTo().performClick()
+        compose.onNodeWithTag("voice-setup").performScrollTo().performClick()
+        // Without a consent record the written-consent notice comes first; with one, the start button.
+        if (app.voiceProfile.consent.value?.valid == true) compose.onNodeWithText("Start voice setup").performScrollTo().assertIsDisplayed()
+        else compose.onNodeWithTag("voice-consent").performScrollTo().assertIsDisplayed()
         assertFalse(com.sidekick.app.audio.ListeningService.state.value.recording)
         compose.onNodeWithText("Back to SideKick").performScrollTo().performClick()
     }
@@ -86,7 +94,7 @@ class PlannerScreenTest {
         try {
             app.temporary.add(fixture)
             compose.onNodeWithTag("settings").performClick()
-            compose.onNodeWithTag("settings-page-ADVANCED").performScrollTo().performClick()
+            compose.onNodeWithTag("settings-page-LISTENING").performScrollTo().performClick()
             compose.onNodeWithTag("phone-checks").performScrollTo().performClick()
             val allowed = compose.activity.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
             compose.onNodeWithTag("location-permission-status").performScrollTo().assertTextEquals("Location permission: ${if (allowed) "Allowed" else "Not allowed"}")

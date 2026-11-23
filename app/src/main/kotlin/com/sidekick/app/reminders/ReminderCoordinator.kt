@@ -1,5 +1,8 @@
 package com.sidekick.app.reminders
 
+import com.sidekick.app.R
+import com.sidekick.app.tr
+
 import android.app.*
 import android.content.*
 import android.net.Uri
@@ -17,24 +20,24 @@ import kotlinx.coroutines.sync.withLock
 class ReminderCoordinator(private val context: Context, private val dao: CommitmentDao, private val scheduler: ReminderAlarms = AndroidReminderAlarms(context)) {
     private val gate = Mutex()
     private val manager = context.getSystemService(NotificationManager::class.java)
-    init { manager.createNotificationChannel(NotificationChannel(CHANNEL, "Commitment reminders", NotificationManager.IMPORTANCE_HIGH).apply { enableVibration(true) }) }
+    init { manager.createNotificationChannel(NotificationChannel(CHANNEL, tr(R.string.commitment_reminders), NotificationManager.IMPORTANCE_HIGH).apply { enableVibration(true) }) }
 
     fun notificationsAllowed(): Boolean = manager.areNotificationsEnabled() && manager.getNotificationChannel(CHANNEL)?.importance != NotificationManager.IMPORTANCE_NONE
     fun alertDescription(): String {
-        val channel = manager.getNotificationChannel(CHANNEL) ?: return "Reminder channel unavailable"
+        val channel = manager.getNotificationChannel(CHANNEL) ?: return tr(R.string.reminder_channel_unavailable)
         val audio = context.getSystemService(android.media.AudioManager::class.java)
         val muted = audio.ringerMode != android.media.AudioManager.RINGER_MODE_NORMAL || audio.isStreamMute(android.media.AudioManager.STREAM_NOTIFICATION) || audio.getStreamVolume(android.media.AudioManager.STREAM_NOTIFICATION) == 0
-        return listOf(if (muted || channel.sound == null) "Sound off or muted" else "Sound enabled",
-            if (audio.ringerMode == android.media.AudioManager.RINGER_MODE_SILENT) "Phone is in Silent mode; sound/vibration may be suppressed" else if (audio.ringerMode == android.media.AudioManager.RINGER_MODE_VIBRATE) "Phone is in Vibrate mode" else "Phone is in Ring mode",
-            if (channel.shouldVibrate()) "Vibration enabled" else "Vibration off",
-            if (channel.importance >= NotificationManager.IMPORTANCE_HIGH) "Pop-up enabled" else "Pop-up off",
-            if (manager.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL) "Do Not Disturb may suppress alerts" else "Do Not Disturb off").joinToString(" · ")
+        return listOf(if (muted || channel.sound == null) tr(R.string.sound_off_or_muted) else tr(R.string.sound_enabled),
+            if (audio.ringerMode == android.media.AudioManager.RINGER_MODE_SILENT) tr(R.string.phone_is_in_silent_mode_sound) else if (audio.ringerMode == android.media.AudioManager.RINGER_MODE_VIBRATE) tr(R.string.phone_is_in_vibrate_mode) else tr(R.string.phone_is_in_ring_mode),
+            if (channel.shouldVibrate()) tr(R.string.vibration_enabled) else tr(R.string.vibration_off),
+            if (channel.importance >= NotificationManager.IMPORTANCE_HIGH) tr(R.string.pop_up_enabled) else tr(R.string.pop_up_off),
+            if (manager.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL) tr(R.string.do_not_disturb_may_suppress_alerts) else tr(R.string.do_not_disturb_off)).joinToString(" · ")
     }
     suspend fun scheduleCheck(): Long {
-        check(notificationsAllowed()) { "Enable reminder notifications first." }
+        check(notificationsAllowed()) { tr(R.string.enable_reminder_notifications_first) }
         val now = System.currentTimeMillis(); val due = now + 120_000
         val zone = java.time.ZoneId.systemDefault().id
-        val source = CommitmentEntity(CHECK_ID, "SideKick reminder check", "Reminder delivery check", now, zone, "Test reminder")
+        val source = CommitmentEntity(CHECK_ID, tr(R.string.sidekick_reminder_check), tr(R.string.reminder_delivery_check), now, zone, tr(R.string.test_reminder))
         save(CHECK_ID, source.title, due, zone, source, automatic = true)
         return due
     }
@@ -50,23 +53,27 @@ class ReminderCoordinator(private val context: Context, private val dao: Commitm
     suspend fun save(id: String, title: String, dueAt: Long?, zoneId: String, proposal: CommitmentEntity? = null,
         activityStartAt: Long? = null, activityEndAt: Long? = null, informational: Boolean? = null,
         placeName: String? = null, placeAddress: String? = null, automatic: Boolean = false) = gate.withLock {
-        require(title.isNotBlank() && title.length <= 500) { "Enter a title of 1–500 characters." }
+        require(title.isNotBlank() && title.length <= 500) { tr(R.string.enter_a_title_of_1_500) }
         if (activityStartAt != null && activityEndAt != null) com.sidekick.core.CalendarOverlap.validate(activityStartAt, activityEndAt)
         if (dueAt != null) {
-            require(dueAt > System.currentTimeMillis()) { "Choose a future reminder time." }
-            require(automatic || notificationsAllowed()) { "Enable SideKick notifications in Android settings before scheduling." }
+            require(dueAt > System.currentTimeMillis()) { tr(R.string.choose_a_future_reminder_time) }
+            require(automatic || notificationsAllowed()) { tr(R.string.enable_sidekick_notifications_in_android_settings) }
         }
         val old = dao.get(id)
         val oldChange = dao.change(id)
-        val source = old ?: proposal?.takeIf { it.id == id } ?: error("This commitment was deleted.")
-        require((placeName?.length ?: 0) <= 200 && (placeAddress?.length ?: 0) <= 500) { "Use a shorter place name or address." }
+        val source = old ?: proposal?.takeIf { it.id == id } ?: error(tr(R.string.commitment_was_deleted))
+        require((placeName?.length ?: 0) <= 200 && (placeAddress?.length ?: 0) <= 500) { tr(R.string.use_a_shorter_place_name_or) }
         val updated = source.copy(title = title.trim(), state = "ACCEPTED", dueAt = dueAt, zoneId = zoneId,
             evidence = if (automatic) proposal?.evidence?.take(1200) ?: source.evidence else source.evidence,
             activityStartAt = activityStartAt, activityEndAt = activityEndAt,
             informational = informational ?: source.informational,
             placeName = (placeName ?: source.placeName)?.trim()?.ifBlank { null },
             placeAddress = (placeAddress ?: source.placeAddress)?.trim()?.ifBlank { null },
-            deliveredAt = null, reviewNote = (if (automatic) "Saved automatically. " else "") + if (dueAt == null) "Saved without a reminder." else "Reminder requested. Android may delay delivery to save battery.")
+            deliveredAt = null, reviewNote = listOf(if (automatic) "Saved automatically." else "",
+                // Hands-off assumptions stay visible on automatic saves; a manual save confirms the plan as edited.
+                if (automatic) proposal?.reviewNote?.let(com.sidekick.core.PlanNotes::carry).orEmpty() else "",
+                if (dueAt == null) tr(R.string.saved_without_a_reminder) else tr(R.string.reminder_requested_android_may_delay_delivery))
+                .filter(String::isNotBlank).joinToString(" "))
         val change = if (automatic) AutomaticChange(id, java.util.UUID.randomUUID().toString(), old?.let(MemorySnapshot::encode), MemorySnapshot.encode(updated), System.currentTimeMillis()) else null
         old?.let(::cancel)
         try { dao.write(updated, old != null, change); arm(updated); clearUndo(id) }
@@ -83,19 +90,23 @@ class ReminderCoordinator(private val context: Context, private val dao: Commitm
         val old = dao.get(expected.id)?.takeIf { it == expected && it.state == "ACCEPTED" } ?: return@withLock false
         if (!cancellation) require(start != null && start > System.currentTimeMillis())
         require(!archiveDuplicate || (cancellation && old.informational))
-        val duration = old.activityEndAt?.let { end -> old.activityStartAt?.let { end - it } }
-        val due = if (cancellation) null else old.dueAt?.let { due ->
+        // An all-day plan moved to a stated clock time is no longer all day: its assumption and day-long end go.
+        val nowTimed = !cancellation && com.sidekick.core.PlanNotes.isAllDay(old.reviewNote) &&
+            java.time.Instant.ofEpochMilli(start!!).atZone(java.time.ZoneId.of(old.zoneId)).toLocalTime() != java.time.LocalTime.MIDNIGHT
+        val duration = if (nowTimed) null else old.activityEndAt?.let { end -> old.activityStartAt?.let { end - it } }
+        val due = if (cancellation) null else if (nowTimed) old.dueAt?.let { start } else old.dueAt?.let { due ->
             old.activityStartAt?.let { (start!! - (it - due)).takeIf { value -> value > System.currentTimeMillis() } }
         }
+        val kept = if (nowTimed) old.copy(reviewNote = com.sidekick.core.PlanNotes.sentences(old.reviewNote).filterNot { it.startsWith("Assumed:") }.joinToString(" ")) else old
         val updated = old.copy(title = if (cancellation) old.title else if (com.sidekick.core.LocalizedActivities.hasEvent(old.title)) com.sidekick.core.LocalizedActivities.eventName(old.title) ?: old.title else old.title.replace(
             Regex("\\s+(?:(?:at|on)\\b|" + com.sidekick.core.EnglishDates.pattern.pattern + ").*", RegexOption.IGNORE_CASE), "").trim().ifBlank { old.title },
             state = if (archiveDuplicate) "DISMISSED" else if (cancellation) "CANCELLED" else "ACCEPTED",
             activityStartAt = if (cancellation) old.activityStartAt else start,
             activityEndAt = if (cancellation) old.activityEndAt else duration?.let { start!! + it },
             dueAt = due, deliveredAt = null,
-            reviewNote = if (archiveDuplicate) "Duplicate announcement archived; your personal event remains active. Undo is available in the notification."
-                else if (cancellation) "Cancelled automatically. Reminder removed. Undo is available in the notification."
-                else "Rescheduled automatically. Known duration and reminder lead time retained.")
+            reviewNote = if (archiveDuplicate) tr(R.string.duplicate_announcement_archived_your_personal_event)
+                else if (cancellation) carried(old, tr(R.string.cancelled_automatically_reminder_removed_undo_is))
+                else carried(kept, tr(R.string.rescheduled_automatically_known_duration_and_reminder)))
         if (old.state == updated.state && old.activityStartAt == updated.activityStartAt) return@withLock false
         val previousChange = dao.change(old.id)
         val journal = AutomaticChange(old.id, java.util.UUID.randomUUID().toString(), MemorySnapshot.encode(old), MemorySnapshot.encode(updated), System.currentTimeMillis())
@@ -150,11 +161,22 @@ class ReminderCoordinator(private val context: Context, private val dao: Commitm
         val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         manager.notify(item.id, 10, Notification.Builder(context, CHANNEL)
             .setCategory(Notification.CATEGORY_REMINDER)
-            .setSmallIcon(android.R.drawable.ic_popup_reminder).setContentTitle("SideKick reminder")
-            .setContentText(item.title).setStyle(Notification.BigTextStyle().bigText(item.title))
+            .setSmallIcon(android.R.drawable.ic_popup_reminder).setContentTitle(tr(R.string.sidekick_reminder))
+            .setContentText(text(item)).setStyle(Notification.BigTextStyle().bigText(text(item)))
             .setVisibility(Notification.VISIBILITY_PRIVATE).setContentIntent(open).setOnlyAlertOnce(true).setAutoCancel(true).build())
-        dao.update(item.copy(deliveredAt = System.currentTimeMillis(), reviewNote = "Reminder delivered."))
+        // Optional mode (Settings > Plans): the reminder is also read aloud.
+        if ((context.applicationContext as? com.sidekick.app.SidekickApplication)?.guidance?.readRemindersAloud?.value == true)
+            ReminderVoice.speak(context, tr(R.string.reminder_1_s, text(item)))
+        val now = System.currentTimeMillis()
+        // A second default reminder (medical: 1 hour before) re-arms instead of marking the item delivered.
+        val follow = com.sidekick.core.PlanNotes.followUp(item.reviewNote, item.activityStartAt, now)
+        if (follow != null) item.copy(dueAt = follow.first, reviewNote = follow.second).also { dao.update(it); arm(it) }
+        else dao.update(item.copy(deliveredAt = now, reviewNote = listOf(com.sidekick.core.PlanNotes.carry(item.reviewNote), "Reminder delivered.").filter(String::isNotBlank).joinToString(" ")))
     }
+    private fun text(item: CommitmentEntity) =
+        if (item.reviewNote.contains("leave for the airport")) tr(R.string.leave_for_the_airport_1_s, item.title) else item.title
+    private fun carried(item: CommitmentEntity, sentence: String) =
+        listOf(sentence, com.sidekick.core.PlanNotes.carry(item.reviewNote)).filter(String::isNotBlank).joinToString(" ")
 
     companion object { const val CHANNEL = "commitments"; const val DELIVER = "com.sidekick.REMIND"; const val CHECK_ID = "sidekick-reminder-check" }
 }

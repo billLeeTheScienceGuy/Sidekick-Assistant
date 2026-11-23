@@ -12,7 +12,7 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 class EventChangeTest {
-    @Test fun groupedMessagesApplyCreationMoveAndCancellationInCaptureOrder() = runBlocking { fixture { settings, memory, dao, _, auto ->
+    @Test fun groupedMessagesApplyCreationAndMoveInCaptureOrderAndSendCancellationToReview() = runBlocking { fixture { settings, memory, dao, _, auto ->
         val previous = settings.messageNotifications.value; val apps = settings.messageApps.value
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         try {
@@ -23,7 +23,8 @@ class EventChangeTest {
                 IncomingText("Cancel it.", now + 20_000), IncomingText("There's a party tomorrow at 8pm.", now),
                 IncomingText("Move it to 9pm.", now + 10_000))))
             val saved = dao.all().single()
-            assertEquals("CANCELLED", saved.state)
+            assertEquals("ACCEPTED", saved.state) // a message never removes a plan
+            assertTrue(memory.drafts.value.any { it.sourceKey == "review:cancel:${saved.id}" })
             assertEquals(21, Instant.ofEpochMilli(saved.activityStartAt!!).atZone(ZoneId.systemDefault()).hour)
             assertTrue(saved.informational); assertNull(saved.dueAt)
         } finally {
@@ -40,7 +41,8 @@ class EventChangeTest {
         memory.appendAttributedLive("It ends at midnight.", capture.plusSeconds(15), zone, Speaker.UNKNOWN, false); auto.process()
         assertEquals(original.activityEndAt, dao.all().single().activityEndAt)
         memory.appendAttributedLive("Cancel it.", capture.plusSeconds(20), zone, Speaker.UNKNOWN, false); auto.process()
-        assertEquals("CANCELLED", dao.all().single().state)
+        assertTrue(memory.drafts.value.any { it.sourceKey == "review:cancel:${original.id}" })
+        assertEquals("ACCEPTED", dao.all().single().state) // an unassigned voice never removes a plan
     } }
     @Test fun calendarDateAndRelativeCorrectionPreserveOneEventAndUndo() = runBlocking { fixture { _, memory, dao, _, auto ->
         val now = Instant.now(); val date = now.atZone(zone).toLocalDate().plusDays(3)
@@ -56,10 +58,11 @@ class EventChangeTest {
         assertEquals(moved.activityStartAt, moved.dueAt)
         assertTrue(auto.undo(moved.id, dao.change(moved.id)!!.token)); assertEquals(original, dao.all().single())
     } }
-    @Test fun ambiguousNextWeekdayDoesNotScheduleAnAutomaticReminder() = runBlocking { fixture { _, memory, dao, _, auto ->
+    @Test fun nextWeekdayGuessIsVisibleOnTheSavedPlanAndReminds() = runBlocking { fixture { _, memory, dao, _, auto ->
         memory.appendAttributedLive("I'll attend the workshop next Friday at 8pm.", Instant.now(), zone, Speaker.USER, false); auto.process()
         val item = dao.all().single()
-        assertNotNull(item.activityStartAt); assertFalse(item.informational); assertNull(item.dueAt)
+        assertNotNull(item.activityStartAt); assertFalse(item.informational); assertEquals(item.activityStartAt, item.dueAt)
+        assertTrue(item.reviewNote, item.reviewNote.contains("(assumed from 'next friday')"))
     } }
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private val zone = ZoneId.of("America/Chicago")
@@ -115,7 +118,7 @@ class EventChangeTest {
         val next = TemporaryMemory(); val restarted = AutomaticMemory(context, settings, next, dao, reminders)
         next.appendAttributedLive(party, now.plusSeconds(20), zone, Speaker.UNKNOWN); restarted.process()
         assertEquals(moved, dao.all().single())
-        next.appendAttributedLive("Cancel the party.", now.plusSeconds(30), zone, Speaker.UNKNOWN); restarted.process()
+        next.appendAttributedLive("Cancel the party.", now.plusSeconds(30), zone, Speaker.USER); restarted.process()
         val cancelled = dao.all().single()
         val third = TemporaryMemory()
         third.appendAttributedLive(party, now.plusSeconds(40), zone, Speaker.UNKNOWN)
@@ -140,7 +143,8 @@ class EventChangeTest {
             send("A", "Move the party to 9pm.", now + 2)
             assertEquals(token, dao.change(moved.id)!!.token)
             send("A", "Cancel it.", now + 3)
-            assertEquals("CANCELLED", dao.all().single().state)
+            assertEquals("ACCEPTED", dao.all().single().state)
+            assertTrue(memory.drafts.value.any { it.sourceKey == "review:cancel:${moved.id}" })
             assertNull(dao.all().single().dueAt)
         } finally { scope.cancel(); settings.setMessageNotifications(previous); settings.setMessageApp("synthetic.changes", "synthetic.changes" in apps) }
     } }
@@ -200,7 +204,9 @@ class EventChangeTest {
                 processor.finish(); withTimeout(30_000) { worker.join() }
             }
             val event = dao.all().single()
-            assertEquals(outputs.joinToString(" | "), "CANCELLED", event.state)
+            // An unassigned voice saying "cancel" never removes a plan: it waits in Review.
+            assertEquals(outputs.joinToString(" | "), "ACCEPTED", event.state)
+            assertTrue(memory.drafts.value.any { it.sourceKey == "review:cancel:${event.id}" })
             assertTrue(event.informational); assertNull(event.dueAt)
             assertEquals(21, Instant.ofEpochMilli(event.activityStartAt!!).atZone(zone).hour)
             assertTrue(outputs.any { it.contains("not cancel", true) })

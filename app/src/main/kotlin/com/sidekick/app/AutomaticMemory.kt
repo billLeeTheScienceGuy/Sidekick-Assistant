@@ -18,7 +18,7 @@ import kotlinx.coroutines.sync.withLock
 class AutomaticMemory(private val context: Context, private val settings: GuidanceSettings,
     private val temporary: TemporaryMemory, private val dao: CommitmentDao, private val reminders: ReminderCoordinator) {
     private val gate = Mutex()
-    private val mutableStatus = MutableStateFlow("Automatic saving is ready")
+    private val mutableStatus = MutableStateFlow(tr(R.string.automatic_saving_is_ready))
     val status = mutableStatus.asStateFlow()
     private data class Anchor(val id: String, val at: Instant)
     private val anchors = linkedMapOf<String, Anchor>()
@@ -56,15 +56,26 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
             val operation = pending.change
             val origin = channel(pending.source)
             val track = com.sidekick.core.VoiceSource.track(pending.source)
-            if (pending.speaker != com.sidekick.core.Speaker.USER && track?.contains("_unassigned") == true) {
-                mutableStatus.value = "Speaker uncertain. Saved events were left unchanged."
+            val owner = pending.speaker == com.sidekick.core.Speaker.USER
+            // Cancellations heard from anyone but the owner never remove a plan; they wait in Review (below).
+            val reviewCancel = operation.cancel && !owner
+            if (!owner && !reviewCancel && track?.contains("_unassigned") == true) {
+                mutableStatus.value = tr(R.string.speaker_uncertain_saved_events_were_left)
                 continue
             }
+            // Upcoming: an all-day plan for today is still upcoming until its day ends.
+            fun upcoming(item: com.sidekick.app.data.CommitmentEntity) = item.state == "ACCEPTED" &&
+                (item.activityEndAt?.takeIf { com.sidekick.core.PlanNotes.isAllDay(item.reviewNote) } ?: item.activityStartAt)
+                    ?.let { it > pending.at.toEpochMilli() } == true
             val all = dao.all().filter { item ->
-                item.state == "ACCEPTED" && item.activityStartAt?.let { it > pending.at.toEpochMilli() } == true &&
-                    channel(item.sourceKey) == origin &&
-                    (pending.speaker == com.sidekick.core.Speaker.USER || track == null || com.sidekick.core.VoiceSource.track(item.sourceKey) == track) &&
-                    (item.informational || pending.speaker == com.sidekick.core.Speaker.USER)
+                upcoming(item) && when {
+                    // The owner naming a plan ("the dentist appointment is cancelled") may reach any saved plan,
+                    // and another voice's named cancellation is only offered for review.
+                    operation.cancel && !operation.pronoun -> true
+                    else -> channel(item.sourceKey) == origin &&
+                        (owner || reviewCancel || track == null || com.sidekick.core.VoiceSource.track(item.sourceKey) == track) &&
+                        (item.informational || owner || reviewCancel)
+                }
             }
             val anchor = (if (track != null && pending.speaker != com.sidekick.core.Speaker.USER) voiceAnchors[track] else anchors[origin])
                 ?.takeIf { java.time.Duration.between(it.at, pending.at).seconds in -5..120 }
@@ -76,22 +87,59 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
             val contextual = if (operation.localized && com.sidekick.core.LocalizedActivities.bareEventKey(operation.target) != null)
                 candidates.singleOrNull { it.id == anchor?.id } else null
             val item = contextual ?: candidates.singleOrNull()
-            if (item == null) { mutableStatus.value = "Event change unclear. Saved events were left unchanged."; continue }
+            if (item == null) { mutableStatus.value = tr(R.string.event_change_unclear_saved_events_were); continue }
+            if (reviewCancel) {
+                temporary.addCancelReview(item, operation.evidence, pending.at)
+                mutableStatus.value = tr(R.string.another_voice_said_a_plan_is)
+                continue
+            }
             val start = if (operation.cancel) null else operation.newStart(Instant.ofEpochMilli(item.activityStartAt!!), pending.at, ZoneId.of(item.zoneId))?.toEpochMilli()
-            if (!operation.cancel && start == null) { mutableStatus.value = "New event time is unclear. Saved time was left unchanged."; continue }
+            if (!operation.cancel && start == null) { mutableStatus.value = tr(R.string.new_event_time_is_unclear_saved); continue }
             try {
                 if (reminders.changeEvent(item, start, operation.cancel)) {
                     dao.get(item.id)?.let { saved -> temporary.changedEvent(saved, pending.at); remember(saved, pending.at) }
                     runCatching { notifyChange(item.id, item.title, true) }
-                    mutableStatus.value = if (operation.cancel) "Event cancelled automatically" else "Event rescheduled automatically"
+                    mutableStatus.value = if (operation.cancel) tr(R.string.event_cancelled_automatically) else tr(R.string.event_rescheduled_automatically)
                 }
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { mutableStatus.value = "Could not change the saved event. Try again." }
+            catch (_: Exception) { mutableStatus.value = tr(R.string.could_not_change_the_saved_event) }
         }
     }
+    private fun ref(item: com.sidekick.app.data.CommitmentEntity) = com.sidekick.core.HandsOffPlans.PlanRef(item.title, item.evidence,
+        item.activityStartAt, item.activityEndAt, item.reviewNote, item.informational, item.placeName)
+    /**
+     * A later statement of a saved plan: the real time/day replaces an assumed one (the "assumed" marker goes), and
+     * the same plan said again in other words merges instead of duplicating. True when the draft was handled.
+     */
+    private suspend fun refineOrMerge(candidate: com.sidekick.app.data.CommitmentEntity): Boolean {
+        if (candidate.activityStartAt == null || temporary.updateTarget(candidate.id) != null) return false
+        // A change command ("move the meeting to 7") is handled as a change, never merged as a restatement: merging
+        // would point "the meeting just discussed" at an older plan with the new time.
+        if (com.sidekick.core.EventChange.looksLikeChange(candidate.evidence.substringBefore('\n'))) return false
+        val zone = ZoneId.of(candidate.zoneId)
+        fun opening(text: String) = text.substringBefore('\n').lowercase(java.util.Locale.ROOT).filter { it.isLetterOrDigit() }
+        val saved = dao.all().filter { it.state == "ACCEPTED" && it.id != candidate.id && !com.sidekick.core.VoiceSource.distinctPeople(candidate.sourceKey, it.sourceKey) }
+        val refined = saved.filter { com.sidekick.core.HandsOffPlans.refines(ref(it), ref(candidate), zone) }
+        if (refined.size == 1) {
+            val old = refined.single()
+            val now = System.currentTimeMillis()
+            val due = if (candidate.informational) null else candidate.dueAt?.takeIf { it > now } ?: candidate.activityStartAt.takeIf { it > now && candidate.dueAt == null }
+            reminders.save(old.id, candidate.title, due, candidate.zoneId, candidate.copy(id = old.id), candidate.activityStartAt, candidate.activityEndAt,
+                candidate.informational, candidate.placeName ?: old.placeName.orEmpty(), candidate.placeAddress ?: old.placeAddress.orEmpty(), automatic = true)
+            val updated = dao.get(old.id) ?: return true
+            temporary.approve(candidate.id, updated); remember(updated, temporary.observedAt(candidate))
+            runCatching { notifyChange(old.id, candidate.title, true) }
+            mutableStatus.value = tr(R.string.updated_automatically_the_stated_time_replaced)
+            return true
+        }
+        val same = saved.filter { opening(it.evidence) != opening(candidate.evidence) && com.sidekick.core.HandsOffPlans.samePlan(ref(it), ref(candidate), zone) }
+        if (same.size == 1) { temporary.approve(candidate.id, same.single()); remember(same.single(), temporary.observedAt(candidate)); return true }
+        return false
+    }
     suspend fun process() = gate.withLock {
+        temporary.pruneStale(System.currentTimeMillis())
         if (!settings.handsOffMode.value) {
-            if (temporary.takeChanges().isNotEmpty()) mutableStatus.value = "Event changes require Hands-off mode. Use Edit to change a saved event in Review mode."
+            if (temporary.takeChanges().isNotEmpty()) mutableStatus.value = tr(R.string.event_changes_require_hands_off_mode)
             return@withLock
         }
         if (!cleanupChecked) { consolidateAnnouncements(); cleanupChecked = true }
@@ -100,8 +148,9 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
             currentCoroutineContext().ensureActive()
             if (!settings.handsOffMode.value) break
             if (candidate.evidence == "Manually added") continue
-            if (candidate.sourceKey?.startsWith("confirm:") == true) continue // unclear time: always waits in Review
+            if (candidate.sourceKey?.startsWith("confirm:") == true || candidate.sourceKey?.startsWith("review:") == true) continue // unclear time or weak acceptance: always waits in Review
             try {
+                if (refineOrMerge(candidate)) { wrote = true; continue }
                 var target = temporary.updateTarget(candidate.id) ?: candidate.id
                 var linked = false
                 var attendance = false
@@ -112,11 +161,17 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                     val dateRefinements = mutableSetOf<String>()
                     val matches = dao.all().filter { it.state in setOf("ACCEPTED", "CANCELLED") }.filter {
                         val sameOrigin = channel(candidate.sourceKey) == channel(it.sourceKey) && !com.sidekick.core.VoiceSource.distinctPeople(candidate.sourceKey, it.sourceKey)
-                        val baselineStart = com.sidekick.core.ActivityTiming.extract(com.sidekick.core.Transcript(it.evidence.substringBefore('\n'), Instant.ofEpochMilli(it.capturedAt), ZoneId.of(it.zoneId), com.sidekick.core.Speaker.OTHER, true), informationalOnly = true).singleOrNull()?.activityStartAt?.toEpochMilli()
-                        val inferredDate = it.activityStartAt == baselineStart && com.sidekick.core.ActivityTiming.extract(
-                            com.sidekick.core.Transcript(it.evidence, Instant.ofEpochMilli(it.capturedAt), ZoneId.of(it.zoneId), com.sidekick.core.Speaker.OTHER, true), true).singleOrNull()?.needsReview?.contains("Date inferred") == true
-                        val refinesDate = it.sourceKey == candidate.sourceKey && it.capturedAt == candidate.capturedAt && inferredDate &&
-                            !candidate.reviewNote.contains("Date inferred") && it.informational == candidate.informational && dao.change(it.id) != null
+                        // Re-parsing a saved plan's text is only needed for one from the same moment and source: the cheap
+                        // checks come first, so the parse runs for almost no saved plans (same result as before).
+                        val baselineStart by lazy {
+                            com.sidekick.core.ActivityTiming.extract(com.sidekick.core.Transcript(it.evidence.substringBefore('\n'), Instant.ofEpochMilli(it.capturedAt), ZoneId.of(it.zoneId), com.sidekick.core.Speaker.OTHER, true), informationalOnly = true).singleOrNull()?.activityStartAt?.toEpochMilli()
+                        }
+                        fun inferredDate(): Boolean {
+                            return it.activityStartAt == baselineStart && com.sidekick.core.ActivityTiming.extract(
+                                com.sidekick.core.Transcript(it.evidence, Instant.ofEpochMilli(it.capturedAt), ZoneId.of(it.zoneId), com.sidekick.core.Speaker.OTHER, true), true).singleOrNull()?.needsReview?.contains("Date inferred") == true
+                        }
+                        val refinesDate = it.sourceKey == candidate.sourceKey && it.capturedAt == candidate.capturedAt &&
+                            it.informational == candidate.informational && !candidate.reviewNote.contains("Date inferred") && inferredDate() && dao.change(it.id) != null
                         if (refinesDate) dateRefinements += it.id
                         sameOrigin && opening(it.evidence) == opening(candidate.evidence) &&
                             (it.activityStartAt == candidate.activityStartAt || baselineStart == candidate.activityStartAt ||
@@ -133,7 +188,7 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                             (item.placeName == null || candidate.placeName == null || item.placeName.equals(candidate.placeName, true)) &&
                             (item.placeAddress == null || candidate.placeAddress == null || item.placeAddress.equals(candidate.placeAddress, true))
                     }
-                    if (matches.size > 1) { mutableStatus.value = "Several saved events fit. This suggestion remains in Review."; continue }
+                    if (matches.size > 1) { mutableStatus.value = tr(R.string.several_saved_events_fit_this_suggestion); continue }
                     matches.singleOrNull()?.let { item ->
                         target = item.id; linked = true
                         attendance = item.informational && !candidate.informational &&
@@ -159,7 +214,9 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                 val stalePlace = baseline?.placeName?.let { it == candidate.placeName && it != old?.placeName && !candidate.evidence.contains('\n') } == true
                 val changedPlace = !stalePlace && candidate.placeName != null && old?.placeName != candidate.placeName
                 val source = if (linked && old != null) candidate.copy(id = target, title = if (attendance) candidate.title else old.title,
-                    informational = if (attendance) false else if (withdrawal) true else old.informational, activityStartAt = if (timingUpgrade) candidate.activityStartAt else old.activityStartAt, activityEndAt = if (staleEnd) old.activityEndAt else candidate.activityEndAt ?: old.activityEndAt,
+                    informational = if (attendance) false else if (withdrawal) true else old.informational, activityStartAt = if (timingUpgrade) candidate.activityStartAt else old.activityStartAt,
+                    // An assumed default length on a repeat never replaces the saved plan's own end.
+                    activityEndAt = if (staleEnd || (candidate.reviewNote.contains("(length assumed)") && !timingUpgrade)) old.activityEndAt else candidate.activityEndAt ?: old.activityEndAt,
                     placeName = if (stalePlace) old.placeName else candidate.placeName ?: old.placeName,
                     placeAddress = if (stalePlace) old.placeAddress else candidate.placeAddress ?: if (changedPlace) null else old.placeAddress) else candidate.copy(id = target)
                 if (linked && old != null) {
@@ -169,21 +226,29 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
                     if (dao.change(target) == null) continue
                 }
                 if (old != null && dao.change(target) == null) continue
-                val due = if (withdrawal || source.informational || com.sidekick.core.EnglishDates.hasNextWeekday(source.evidence)) null else if (attendance || timingUpgrade) source.activityStartAt?.takeIf { it > System.currentTimeMillis() } else if (old != null) old.dueAt else
-                    (candidate.activityStartAt ?: TimeResolver.suggest(candidate.evidence, Instant.ofEpochMilli(candidate.capturedAt), ZoneId.of(candidate.zoneId))?.toEpochMilli())
+                // The draft's reminder follows the plan kind's documented default (and an assumed "next Friday" is
+                // visible on the plan, so it reminds too); an all-day plan without a default stays silent.
+                val due = if (withdrawal || source.informational) null else if (attendance || timingUpgrade) source.activityStartAt?.takeIf { it > System.currentTimeMillis() } else if (old != null) old.dueAt else
+                    (if (com.sidekick.core.PlanNotes.isAllDay(candidate.reviewNote)) candidate.dueAt else candidate.dueAt ?: candidate.activityStartAt
+                        ?: TimeResolver.suggest(candidate.evidence, Instant.ofEpochMilli(candidate.capturedAt), ZoneId.of(candidate.zoneId))?.toEpochMilli())
                         ?.takeIf { it > System.currentTimeMillis() }
+                // A clash with another saved plan is saved anyway and flagged on the plan.
+                val flagged = if (old != null || source.informational) source else {
+                    val clashes = com.sidekick.core.HandsOffPlans.clashes(ref(source), dao.all().filter { it.state == "ACCEPTED" && it.id != target }.map(::ref), ZoneId.of(source.zoneId))
+                    if (clashes.isEmpty()) source else source.copy(reviewNote = source.reviewNote + " " + com.sidekick.core.HandsOffPlans.clashNote(clashes.map { it.title }))
+                }
                 reminders.save(target, source.title, due?.takeIf { it > System.currentTimeMillis() }, source.zoneId,
-                    source, source.activityStartAt, source.activityEndAt, source.informational, source.placeName.orEmpty(), source.placeAddress.orEmpty(), automatic = true)
+                    flagged, source.activityStartAt, source.activityEndAt, source.informational, source.placeName.orEmpty(), source.placeAddress.orEmpty(), automatic = true)
                 wrote = true
-                val saved = dao.get(target) ?: error("Automatic save did not complete")
+                val saved = dao.get(target) ?: error(tr(R.string.automatic_save_not_complete))
                 temporary.approve(candidate.id, saved)
                 remember(saved, temporary.observedAt(candidate))
                 try { notifyChange(target, source.title, old != null) }
                 catch (e: CancellationException) { throw e }
                 catch (_: Exception) { /* Saving does not depend on notification permission. */ }
-                mutableStatus.value = if (old == null) "Saved automatically" else "Updated automatically"
+                mutableStatus.value = if (old == null) tr(R.string.saved_automatically) else tr(R.string.updated_automatically)
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { mutableStatus.value = "Automatic save failed. The item remains in Review." }
+            catch (_: Exception) { mutableStatus.value = tr(R.string.automatic_save_failed_the_item_remains) }
         }
         processChanges()
         if (wrote) consolidateAnnouncements()
@@ -198,23 +263,23 @@ class AutomaticMemory(private val context: Context, private val settings: Guidan
     private suspend fun notifyChange(id: String, title: String, updated: Boolean) {
         val change = dao.change(id) ?: return
         val manager = context.getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Automatic event changes", NotificationManager.IMPORTANCE_LOW))
+        manager.createNotificationChannel(NotificationChannel(CHANNEL, tr(R.string.automatic_event_changes), NotificationManager.IMPORTANCE_LOW))
         if (!manager.areNotificationsEnabled()) return
         val undo = PendingIntent.getBroadcast(context, 0,
             Intent(context, AutomaticUndoReceiver::class.java).setData(Uri.parse("sidekick://automatic/$id"))
                 .putExtra("token", change.token), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val open = PendingIntent.getActivity(context, 4, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         manager.notify(id, NOTIFICATION, Notification.Builder(context, CHANNEL).setSmallIcon(android.R.drawable.ic_menu_agenda)
-            .setContentTitle(if (dao.get(id)?.state == "CANCELLED") "SideKick cancelled an event" else if (updated) "SideKick updated an event" else "SideKick saved an event")
+            .setContentTitle(if (dao.get(id)?.state == "CANCELLED") tr(R.string.sidekick_cancelled_an_event) else if (updated) tr(R.string.sidekick_updated_an_event) else tr(R.string.sidekick_saved_an_event))
             .setContentText(title).setVisibility(Notification.VISIBILITY_PRIVATE).setOnlyAlertOnce(true)
-            .setContentIntent(open).setAutoCancel(true).addAction(Notification.Action.Builder(null, "Undo", undo).build()).build())
+            .setContentIntent(open).setAutoCancel(true).addAction(Notification.Action.Builder(null, tr(R.string.undo), undo).build()).build())
     }
     suspend fun undo(id: String, token: String): Boolean = gate.withLock {
         val undone = reminders.undoAutomatic(id, token)
         if (undone) {
             temporary.retire(id)
             context.getSystemService(NotificationManager::class.java).cancel(id, NOTIFICATION)
-            mutableStatus.value = "Automatic change undone"
+            mutableStatus.value = tr(R.string.automatic_change_undone)
         }
         undone
     }

@@ -134,6 +134,18 @@ object LocalizedActivities {
     }
     private fun hasDate(text: String) = nextDay.containsMatchIn(text) || sameDay.containsMatchIn(text) || weekdays.any { it.containsMatchIn(text) } || rx("\\d{4}-\\d{2}-\\d{2}").containsMatchIn(text)
     internal fun hasExplicitDate(text: String) = hasDate(text) || ArabicActivities.hasDate(text)
+
+    /** Hands-off all-day plans: a non-English event sentence with one explicit day and no clock. (key, day, personal) */
+    internal fun undated(sentence: String, today: LocalDate, ownerSpeaking: Boolean): Triple<String, LocalDate, Boolean>? {
+        if (!foreign.containsMatchIn(sentence) || negative.containsMatchIn(sentence) || reported.containsMatchIn(sentence) ||
+            alternatives.containsMatchIn(sentence) || sentence.endsWith('?') || sentence.endsWith('？')) return null
+        val event = events.firstOrNull { it.pattern.containsMatchIn(sentence) } ?: return null
+        val timed = runCatching { clocks(sentence).isNotEmpty() }.getOrDefault(true) ||
+            listOf(hourPattern, colon, midnight, noon).any { it.containsMatchIn(sentence) }
+        if (timed || !hasDate(sentence)) return null
+        val day = date(sentence, today) ?: return null
+        return Triple(event.key, day, ownerSpeaking && personal.containsMatchIn(sentence))
+    }
     internal fun timingFragment(text: String): Boolean {
         if (ArabicActivities.isArabic(text)) return ArabicActivities.timingFragment(text)
         var rest = text

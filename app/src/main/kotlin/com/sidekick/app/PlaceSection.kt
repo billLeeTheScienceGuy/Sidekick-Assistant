@@ -29,24 +29,24 @@ internal fun PlaceSection(name: String, address: String, onName: (String) -> Uni
             finally { working = false }
         }
     }
-    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("optional-place")) { Text("Place (optional): ${name.ifBlank { "Unknown" }}") }
+    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("optional-place")) { Text(tr(R.string.place_optional_1_s, name.ifBlank { tr(R.string.unknown) })) }
     if (address.isNotBlank()) Text(address)
     if (expanded) {
-        Text("Changing the venue clears its old address. Confirm the new address separately.")
-        OutlinedTextField(name, { if (it.length <= 200) onName(it) }, label = { Text("Place as mentioned") }, placeholder = { Text("Unknown") }, modifier = Modifier.testTag("place-name"))
-        OutlinedTextField(address, { if (it.length <= 500) onAddress(it) }, label = { Text("Address, if known") }, placeholder = { Text("Unknown") }, modifier = Modifier.testTag("place-address"))
-        TextButton(onClick = { onName(""); onAddress("") }) { Text("Place unknown") }
+        Text(tr(R.string.changing_the_venue_clears_its_old))
+        OutlinedTextField(name, { if (it.length <= 200) onName(it) }, label = { Text(tr(R.string.place_as_mentioned)) }, placeholder = { Text(tr(R.string.unknown)) }, modifier = Modifier.testTag("place-name"))
+        OutlinedTextField(address, { if (it.length <= 500) onAddress(it) }, label = { Text(tr(R.string.address_if_known)) }, placeholder = { Text(tr(R.string.unknown)) }, modifier = Modifier.testTag("place-address"))
+        TextButton(onClick = { onName(""); onAddress("") }) { Text(tr(R.string.place_unknown)) }
     }
-    if (working) Text("Looking for possible addresses…")
+    if (working) Text(tr(R.string.looking_for_possible_addresses))
     if (!automatic && name.isNotBlank() && address.isBlank())
-        TextButton(enabled = !working, onClick = { manualRequest++ }) { Text("Look up address") }
+        TextButton(enabled = !working, onClick = { manualRequest++ }) { Text(tr(R.string.look_up_address)) }
     if (results.note.isNotBlank()) Text(results.note)
     results.addresses.forEach { candidate ->
         Text(candidate)
-        TextButton(onClick = { onAddress(candidate) }) { Text("Use this address") }
+        TextButton(onClick = { onAddress(candidate) }) { Text(tr(R.string.use_this_address)) }
     }
     if (name.isNotBlank()) TextButton(onClick = {
         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, PlaceLookup.mapsUri(address.ifBlank { name }, if (address.isBlank() && locationMode == PlaceContext.CITY) city else ""))) }
-            .onFailure { results = PlaceResults(note = "No Maps app or browser could open this place.") }
-    }) { Text("Check in Google Maps") }
+            .onFailure { results = PlaceResults(note = tr(R.string.no_maps_app_or_browser_could)) }
+    }) { Text(tr(R.string.check_in_google_maps)) }
 }

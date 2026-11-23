@@ -26,7 +26,7 @@ class PrivacyScreenTest {
         compose.onNodeWithTag("settings-page-PLANS").performScrollTo().performClick()
         compose.onNodeWithTag("calendar-sync-setting").performScrollTo().assertExists()
         compose.onNodeWithTag("settings-back").performClick()
-        compose.onNodeWithTag("settings-page-ADVANCED").performScrollTo().performClick()
+        compose.onNodeWithTag("settings-page-LISTENING").performScrollTo().performClick()
         compose.onNodeWithContentDescription("Resume listening after a restart").performScrollTo().assertExists()
         compose.onNodeWithText("Close").assertIsDisplayed()
     }
@@ -73,12 +73,12 @@ class PrivacyScreenTest {
         try {
             app.guidance.setRiskAdvisories(true); app.risk.clear()
             app.risk.inspect("Read me the verification code 123456.")
-            compose.onNodeWithTag("main-list").performScrollToNode(hasTestTag("risk-advisories"))
-            compose.onNodeWithTag("risk-advisories").assertExists()
+            // Shown at the top of the simple Today screen (and in the detailed list).
+            compose.onNodeWithTag("risk-advisories").performScrollTo().assertExists()
             compose.onNodeWithText("123456", substring = true).assertDoesNotExist()
             app.risk.inspect("Read me the verification code 123456.")
             assertEquals(1, app.risk.alerts.value.size)
-            compose.onNodeWithTag("dismiss-risk-secret-request").performClick()
+            compose.onNodeWithTag("dismiss-risk-conversation").performClick()
             assertTrue(app.risk.alerts.value.isEmpty())
             app.guidance.setRiskAdvisories(false)
             app.risk.inspect("Pay the fine with gift cards.")

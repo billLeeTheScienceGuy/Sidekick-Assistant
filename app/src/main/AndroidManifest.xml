@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Optional: more accurate state detection near borders (smaller buffer). Coarse-only still works. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -17,10 +19,13 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Reminders on time: exact alarms (granted to reminder/calendar apps on Android 13+; user-granted on 12). -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <application android:name=".SidekickApplication" android:allowBackup="false"
         android:fullBackupContent="@xml/backup_rules" android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@drawable/ic_sidekick"
-        android:label="SideKick" android:supportsRtl="true" android:theme="@style/Theme.Sidekick">
+        android:label="SideKick" android:supportsRtl="true" android:localeConfig="@xml/locales_config" android:theme="@style/Theme.Sidekick">
         <activity android:name=".speaker.VoiceEnrollmentActivity" android:exported="false" />
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:resizeableActivity="true">
             <intent-filter>
@@ -68,5 +73,11 @@
             </intent-filter>
         </receiver>
         <receiver android:name=".AutomaticUndoReceiver" android:exported="false" />
+        <receiver android:name=".PlanWidget" android:exported="true" android:label="SideKick next plan">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/plan_widget_info" />
+        </receiver>
     </application>
 </manifest>

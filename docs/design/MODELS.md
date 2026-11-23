@@ -2,12 +2,12 @@
 
 For current routing, packaging and measured limits, use LANGUAGES.md,
 MODEL_PACKS.md and ASR_EVALUATION.md. The original dated shortlist and early
-benchmark notes below are historical; Qwen is now an optional manual-analysis
-integration, and context reuse/adaptive speech routing are implemented.
+benchmark notes below are historical. Context reuse and adaptive speech routing are implemented; Qwen was
+integrated in 0.4 and removed in November 2026 (INTENT_MODEL.md has the comparison).
 
 Researched 2026-10-21; implementation updated 2026-10-22. No inference subscription is needed. Build/download connectivity is different from runtime connectivity. Version 0.3 packages verified Whisper tiny.en and Silero v5.1.2 GGML weights with MIT notices. Other models remain candidates.
 
-Version 0.4 integrates optional Qwen3-0.6B Q4_K_M through llama.cpp b6000. This model
+Historical: version 0.4 integrated optional Qwen3-0.6B Q4_K_M through llama.cpp b6000 (removed November 2026). This model
 is installed separately, never bundled in the APK. See INTENT_MODEL.md for its exact
 hash, license, import instructions, limits and validation. Live audio still uses rules;
 Qwen runs on user-requested text after listening stops.

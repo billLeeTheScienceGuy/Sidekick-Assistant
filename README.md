@@ -11,7 +11,7 @@ Say *“I'll call you at 5”* or *“내일 저녁 8시에 만나요”* in con
 - **Background listening.** Voice detection wakes the pipeline only when someone speaks; audio stays in memory and is never written to storage.
 - **On-device speech recognition in 7 languages:** English, Korean, Chinese, French, German, Russian and Arabic, including Korean–English mixed speech. Each phrase is routed to the best of several open models, chosen by benchmarking 16 models on about 1,380 clips.
 - **Plans, not just transcripts.** Dates, times, places and commitments become events and reminders, with calendar-overlap warnings, corrections (“move it to 7”), Undo, daily summaries and scam advisories.
-- **Privacy by design.** The app has no internet permission. A consent gate applies the recording rule of the US state you are in (detected offline) and drops speech it may not keep before transcribing it. Voice profiles, retention and deletion are under your control.
+- **Privacy by design.** The app has no internet permission. A consent gate applies the stricter of nearby US states' recording and voice (biometric) rules, detected offline, and drops speech it may not keep before transcribing it. Other people's voices are never stored; your own voice signature needs your written consent and is deleted after 12 months unused. See the [privacy policy](docs/PRIVACY_POLICY.md).
 - **Careful about mistakes.** When models disagree about a time, the plan waits in Review instead of being saved automatically.
 
 ## How it works
@@ -56,7 +56,7 @@ docs/       Guides, design notes and evaluation reports (index: docs/README.md)
 
 ## Documentation
 
-Start with the [documentation index](docs/README.md). Version history is in the [changelog](CHANGELOG.md); remaining work and known limitations are in the [roadmap](docs/design/ROADMAP.md).
+Start with the [documentation index](docs/README.md). What the app stores and how to delete it: [privacy policy](docs/PRIVACY_POLICY.md). Version history is in the [changelog](CHANGELOG.md); remaining work and known limitations are in the [roadmap](docs/design/ROADMAP.md).
 
 ## Status and limitations
 

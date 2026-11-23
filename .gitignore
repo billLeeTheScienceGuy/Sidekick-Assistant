@@ -17,3 +17,6 @@ models/
 app/libs/*.aar
 *.bin
 !gradle/wrapper/gradle-wrapper.jar
+
+# Stranger cohort signatures for owner-voice matching (public LibriSpeech, CC BY 4.0; no audio)
+!app/src/main/assets/speaker/*.bin

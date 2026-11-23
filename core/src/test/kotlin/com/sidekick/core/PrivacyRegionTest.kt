@@ -18,10 +18,12 @@ class PrivacyRegionTest {
         assertTrue(hint.fresh(100L)); assertTrue(hint.fresh(86_400_099L))
         assertFalse(hint.fresh(99L)); assertFalse(hint.fresh(86_400_100L))
     }
-    @Test fun everyRegionKeepsTheSameConsentPolicyAndUnknownIsExplicit() {
+    @Test fun everyRegionSaysWhatSideKickDoesWhileListeningAndUnknownIsExplicit() {
+        assertTrue(PrivacyRegions.guidance(null).note.contains("strictest rules"))
+        assertTrue(PrivacyRegions.policy.contains("never changes those rules"))  // the panel's city never decides the listening rules
         for (region in listOf(null, PrivacyRegion("US", "WI"), PrivacyRegion("US", "IL"), PrivacyRegion("US", "CA"), PrivacyRegion("KR"))) {
             val result = PrivacyRegions.guidance(region)
-            assertTrue(result.note.contains("everyone's agreement")); assertFalse(result.note.contains("permitted to record"))
+            assertTrue(result.note.contains("While listening")); assertFalse(result.note.contains("permitted to record"))
         }
         assertNull(PrivacyRegions.guidance(PrivacyRegion("KR")).source)
         assertTrue(PrivacyRegions.guidance(PrivacyRegion("US", "CA")).label.contains("not covered"))

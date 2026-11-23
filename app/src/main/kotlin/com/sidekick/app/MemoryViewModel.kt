@@ -29,21 +29,20 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
             val expected = com.sidekick.app.data.MemorySnapshot.decode(change.after)
             if (!com.sidekick.app.data.MemorySnapshot.matchesForUndo(item, expected)) return@runCatching null
             RecentAutomaticChange(item.id, change.token, item.title, when {
-                item.state == "CANCELLED" -> "Cancelled"
-                item.state == "DISMISSED" -> "Archived"
-                change.before == null -> "Added"
-                else -> "Updated"
+                item.state == "CANCELLED" -> tr(R.string.cancelled)
+                item.state == "DISMISSED" -> tr(R.string.archived)
+                change.before == null -> tr(R.string.added)
+                else -> tr(R.string.updated)
             })
         }.getOrNull() }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     fun undoAutomatic(id: String, token: String) = mutate {
-        message.value = if (container.automation.undo(id, token)) "Automatic change undone"
-            else "This change was already undone or edited."
+        message.value = if (container.automation.undo(id, token)) tr(R.string.automatic_change_undone)
+            else tr(R.string.this_change_was_already_undone_or)
     }
-    val smartReady = container.intent.ready
     val guidance = container.guidance.mode
     fun setGuidance(mode: GuidanceMode) = container.guidance.setMode(mode)
-    val message = MutableStateFlow("Record your voice or type your own words.")
+    val message = MutableStateFlow(tr(R.string.record_your_voice_or_type_your))
     val busy = MutableStateFlow(false)
     val transcript = MutableStateFlow("")
     private var capturedAt = Instant.now()
@@ -52,21 +51,10 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     val editError = MutableStateFlow<String?>(null)
     private var importJob: Job? = null
 
-    fun importIntentModel(uri: Uri) {
-        if (busy.value) return
-        busy.value = true; message.value = "Verifying and installing the local Qwen model…"
-        importJob = viewModelScope.launch {
-            try { container.intent.importModel(uri); message.value = "Qwen installed. Find commitments now uses local smart analysis." }
-            catch (e: CancellationException) { message.value = "Model import cancelled."; throw e }
-            catch (e: Exception) { message.value = e.message ?: "Model import failed." }
-            finally { busy.value = false }
-        }
-    }
-
     fun importWav(uri: Uri) {
         if (busy.value) return
         busy.value = true
-        message.value = "Transcribing WAV locally…"
+        message.value = tr(R.string.transcribing_wav_locally)
         importJob = viewModelScope.launch {
             try {
                 val text = withTimeout(120_000) {
@@ -77,21 +65,21 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
                             while (true) {
                                 val count = input.read(buffer)
                                 if (count < 0) break
-                                require(output.size() + count <= 1_100_000) { "Use a WAV file of at most 30 seconds." }
+                                require(output.size() + count <= 1_100_000) { tr(R.string.use_a_wav_file_of_at) }
                                 output.write(buffer, 0, count)
                             }
                             output.toByteArray()
                         }
-                            ?: error("Could not open audio file.")
+                            ?: error(tr(R.string.could_not_open_audio_file))
                         try { WavAudio.decode(bytes) } finally { bytes.fill(0) }
                     }
                     container.speech.transcribe(audio)
                 }
                 setTranscript(text, Instant.now())
-                message.value = "Imported transcript ready. Check the recording's dates before saving commitments."
-            } catch (e: TimeoutCancellationException) { message.value = "Transcription timed out. Try shorter audio." }
-            catch (e: CancellationException) { message.value = "Audio import cancelled."; throw e }
-            catch (e: Exception) { message.value = e.message ?: "Could not transcribe WAV. Check the format and bundled model." }
+                message.value = tr(R.string.imported_transcript_ready_check_the_recording)
+            } catch (e: TimeoutCancellationException) { message.value = tr(R.string.transcription_timed_out_try_shorter_audio) }
+            catch (e: CancellationException) { message.value = tr(R.string.audio_import_cancelled); throw e }
+            catch (e: Exception) { message.value = e.message ?: tr(R.string.could_not_transcribe_wav_check_the) }
             finally { busy.value = false }
         }
     }
@@ -106,7 +94,7 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
         transcript.value = text
     }
     fun copyLiveText() {
-        setTranscript(liveText.value.takeLast(if (smartReady.value) 4000 else 6000), Instant.now())
+        setTranscript(liveText.value.takeLast(6000), Instant.now())
         analysisSource = "voice:copied"
     }
     fun clearTranscript() { transcript.value = ""; analysisSource = null; container.temporary.clearText() }
@@ -114,42 +102,34 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
     fun analyze() {
         if (busy.value) return
         val origin = analysisSource
-        container.risk.inspect(transcript.value)
+        container.risk.inspectMessage(transcript.value)
         val input = container.temporary.prepareChanges(Transcript(transcript.value.trim(), capturedAt, capturedZone, Speaker.USER, true), origin ?: "typed")
         busy.value = true
         importJob = viewModelScope.launch {
             try {
-                val count = if (input.text.isBlank()) 0 else if (smartReady.value) {
-                    val proposals = withTimeout(90_000) { container.intent.extract(input) }
-                    container.temporary.addProposals(proposals.map { it.copy(sourceKey = origin) })
-                } else withContext(Dispatchers.Default) { container.temporary.propose(input, origin) }
+                val count = if (input.text.isBlank()) 0 else withContext(Dispatchers.Default) { container.temporary.propose(input, origin) }
                 container.automation.process()
                 message.value = if (container.guidance.handsOffMode.value) container.automation.status.value
-                    else if (count > 0) "$count temporary proposal(s) ready for review. Approve to save."
-                    else "No new validated commitment found. Review existing proposals or add one manually."
-                container.intent.notice.value?.let { message.value += " " + it }
-            } catch (_: TimeoutCancellationException) {
-                container.temporary.propose(input, origin); container.automation.process()
-                message.value = "Smart analysis timed out. Used local rules; some plans may be missed."
-            }
-            catch (e: CancellationException) { message.value = "Analysis cancelled."; throw e }
-            catch (e: Exception) { message.value = e.message ?: "Could not analyze. Try a shorter note." }
+                    else if (count > 0) trn(R.plurals.temp_proposals_ready, count, count)
+                    else tr(R.string.no_new_validated_commitment_found_review)
+            } catch (e: CancellationException) { message.value = tr(R.string.analysis_cancelled); throw e }
+            catch (e: Exception) { message.value = e.message ?: tr(R.string.could_not_analyze_try_a_shorter) }
             finally { busy.value = false }
         }
     }
     fun addManual() = mutate {
-        container.temporary.add(CommitmentEntity(UUID.randomUUID().toString(), "New commitment", "Manually added",
-            Instant.now().toEpochMilli(), ZoneId.systemDefault().id, "Temporary proposal. Edit and approve to save."))
+        container.temporary.add(CommitmentEntity(UUID.randomUUID().toString(), tr(R.string.new_commitment), tr(R.string.manually_added),
+            Instant.now().toEpochMilli(), ZoneId.systemDefault().id, tr(R.string.temporary_proposal_edit_and_approve_to)))
     }
     fun analyzeSharedText(text: String) = mutate {
-        if (!container.guidance.sharedMessages.value) { message.value = "Shared-message analysis is disabled in Settings."; return@mutate }
+        if (!container.guidance.sharedMessages.value) { message.value = tr(R.string.shared_message_analysis_is_disabled_in); return@mutate }
         container.risk.inspect(text)
         val input = container.temporary.prepareChanges(Transcript(text.take(6000), Instant.now(), ZoneId.systemDefault(), Speaker.OTHER, true), "shared")
-        val proposals = withContext(Dispatchers.Default) { ActivityTiming.extract(input, informationalOnly = true) }
-            .map { it.copy(sourceKey = "shared", needsReview = "Shared message: attendance is unconfirmed. " + it.needsReview) }
+        val proposals = withContext(Dispatchers.Default) { AnalysisContext.others(input) }
+            .map { it.copy(sourceKey = "shared", needsReview = tr(R.string.shared_message_attendance_is_unconfirmed) + it.needsReview) }
         val count = container.temporary.addProposals(proposals)
         container.automation.process()
-        message.value = if (container.guidance.handsOffMode.value) container.automation.status.value else "$count shared-message suggestion(s) ready for review. Nothing was saved automatically."
+        message.value = if (container.guidance.handsOffMode.value) container.automation.status.value else trn(R.plurals.shared_suggestions_ready, count, count)
     }
     fun save(id: String, title: String, time: String, zoneId: String, activityStart: String = "", activityEnd: String = "",
         informational: Boolean? = null, placeName: String? = null, placeAddress: String? = null, onSaved: () -> Unit) {
@@ -161,26 +141,34 @@ class MemoryViewModel(application: Application) : AndroidViewModel(application) 
                 val start = if (activityStart.isBlank()) null else TimeResolver.parseEditor(activityStart, ZoneId.of(zoneId)).toEpochMilli()
                 val end = if (activityEnd.isBlank()) null else TimeResolver.parseEditor(activityEnd, ZoneId.of(zoneId)).toEpochMilli()
                 val target = container.temporary.updateTarget(id) ?: id
+                if (proposal?.sourceKey?.startsWith("review:cancel:") == true) {
+                    // Accepting another voice's cancellation cancels the saved plan (journaled, with Undo).
+                    val saved = dao.get(target)?.takeIf { it.state == "ACCEPTED" } ?: error(tr(R.string.plan_already_changed))
+                    container.reminders.changeEvent(saved, null, true)
+                    container.temporary.remove(id)
+                    onSaved()
+                    return@launch
+                }
                 val targetDraft = container.temporary.drafts.value.find { it.id == target && it.id != id }
                 val source = if (targetDraft != null) proposal?.copy(id = target) else proposal
                 container.reminders.save(target, title, due, zoneId, source, start, end, informational, placeName, placeAddress)
                 dao.get(target)?.let { container.temporary.approve(id, it) }
                 onSaved()
             } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { editError.value = e.message ?: "Could not save. Check the title and date/time." }
+            catch (e: Exception) { editError.value = e.message ?: tr(R.string.could_not_save_check_the_title) }
         }
     }
     fun dismiss(id: String) = mutate { container.temporary.dismiss(id); container.reminders.mark(id, "DISMISSED") }
     fun done(id: String) = mutate { container.reminders.mark(id, "DONE"); container.temporary.retire(id) }
     fun delete(id: String) = mutate { container.temporary.dismiss(id); container.reminders.delete(id); container.temporary.retire(id) }
-    fun deleteAll() = mutate { container.messageInbox.clear(); container.temporary.discard(); container.reminders.deleteAll() }
+    fun deleteAll() = mutate { container.messageInbox.clear(); container.temporary.discard(); container.reminders.deleteAll(); container.database.noticeRecords().deleteAll(); container.guidance.clearLearnedNames() }
     fun reopen() { editError.value = null }
     fun notificationPermissionChanged() { viewModelScope.launch { runCatching { container.reminders.restore() } } }
     private fun mutate(action: suspend () -> Unit) {
         viewModelScope.launch {
             try { action() }
             catch (e: CancellationException) { throw e }
-            catch (e: Exception) { message.value = "Could not update local memory. Try again." }
+            catch (e: Exception) { message.value = tr(R.string.could_not_update_local_memory_try) }
         }
     }
 }

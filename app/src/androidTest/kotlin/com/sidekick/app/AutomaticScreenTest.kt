@@ -18,10 +18,11 @@ class AutomaticScreenTest {
         assumeTrue(app.packageName.endsWith(".benchmark") || app.packageName.endsWith(".compacttest"))
         val previous = app.guidance.handsOffMode.value
         val sharing = app.guidance.sharedMessages.value
+        val simpleHome = app.guidance.oneScreenHome.value
         var savedId: String? = null
         var scenario: ActivityScenario<MainActivity>? = null
         try {
-            app.guidance.setSharedMessages(true); app.guidance.setHandsOff(true)
+            app.guidance.setSharedMessages(true); app.guidance.setHandsOff(true); app.guidance.setOneScreenHome(true)
             assertTrue(GuidanceSettings(app).handsOffMode.value)
             scenario = ActivityScenario.launch(Intent(app, MainActivity::class.java).setAction(Intent.ACTION_SEND).setType("text/plain")
                 .putExtra(Intent.EXTRA_TEXT, "There's a workshop tomorrow at 9pm at Automatic Share Test Hall."))
@@ -32,10 +33,10 @@ class AutomaticScreenTest {
             val saved = runBlocking { app.database.commitments().get(savedId!!)!! }
             assertTrue(saved.informational); assertNull(saved.dueAt)
             compose.onNodeWithText("Shared message").assertDoesNotExist()
-            compose.onNodeWithTag("automation-status").performScrollTo().assertTextContains("Hands-off mode", substring = true)
+            compose.onNodeWithTag("automation-status").performScrollTo().assertTextContains("Plans save automatically", substring = true)
         } finally {
             savedId?.let { runBlocking { app.reminders.delete(it) }; app.temporary.retire(it) }
-            app.guidance.setHandsOff(previous); app.guidance.setSharedMessages(sharing)
+            app.guidance.setHandsOff(previous); app.guidance.setSharedMessages(sharing); app.guidance.setOneScreenHome(simpleHome)
             scenario?.close()
         }
     }

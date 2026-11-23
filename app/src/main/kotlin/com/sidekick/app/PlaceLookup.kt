@@ -15,20 +15,20 @@ data class PlaceResults(val addresses: List<String> = emptyList(), val note: Str
 class PlaceLookup(private val context: Context) {
     suspend fun suggest(name: String, city: String, usePhone: Boolean): PlaceResults {
         if (name.isBlank()) return PlaceResults()
-        if (!Geocoder.isPresent()) return PlaceResults(note = "Address lookup is unavailable. Keep the spoken place name or check Maps.")
+        if (!Geocoder.isPresent()) return PlaceResults(note = tr(R.string.address_lookup_is_unavailable_keep_the))
         return try {
             withTimeout(15_000) {
                 val location = if (usePhone) currentLocation() else null
-                if (usePhone && location == null && city.isBlank()) return@withTimeout PlaceResults(note = "Phone location is unavailable. Set a city or keep the place unknown.")
-                if (!usePhone && city.isBlank()) return@withTimeout PlaceResults(note = "Set a city in Settings to help identify this place.")
+                if (usePhone && location == null && city.isBlank()) return@withTimeout PlaceResults(note = tr(R.string.phone_location_is_unavailable_set_a))
+                if (!usePhone && city.isBlank()) return@withTimeout PlaceResults(note = tr(R.string.set_a_city_in_settings_to))
                 val query = listOf(name.trim().take(200), if (location == null) city.trim() else "").filter { it.isNotBlank() }.joinToString(", ")
                 val addresses = geocode(query, location).mapNotNull { it.getAddressLine(0)?.take(500) }.distinct().take(3)
-                PlaceResults(addresses, if (addresses.isEmpty()) "No reliable address found. Keep the spoken name or check Maps."
-                    else "Possible addresses only. Check the result before using it.")
+                PlaceResults(addresses, if (addresses.isEmpty()) tr(R.string.no_reliable_address_found_keep_the)
+                    else tr(R.string.possible_addresses_only_check_the_result))
             }
-        } catch (_: TimeoutCancellationException) { PlaceResults(note = "Place lookup timed out. The spoken name is still available.") }
+        } catch (_: TimeoutCancellationException) { PlaceResults(note = tr(R.string.place_lookup_timed_out_the_spoken)) }
         catch (e: CancellationException) { throw e }
-        catch (_: Exception) { PlaceResults(note = "Place lookup is unavailable. The spoken name is still available.") }
+        catch (_: Exception) { PlaceResults(note = tr(R.string.place_lookup_is_unavailable_the_spoken)) }
     }
 
     @Suppress("MissingPermission", "DEPRECATION")

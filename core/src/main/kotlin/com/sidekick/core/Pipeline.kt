@@ -25,6 +25,16 @@ data class ProposedCommitment(
     val placeName: String? = null,
     val placeAddress: String? = null,
     val sourceKey: String? = null,
+    /** Midnight-to-midnight plan whose clock time was not said (see [PlanNotes.ALL_DAY]). */
+    val allDay: Boolean = false,
+    /** Visible hands-off assumptions, e.g. "all day (time assumed)". */
+    val assumptions: List<String> = emptyList(),
+    /** Visible extra facts such as an unsaved repeat or the reminder plan. */
+    val notes: List<String> = emptyList(),
+    /** First reminder chosen by the plan kind's documented default; null keeps the older start-time rule. */
+    val reminderAt: Instant? = null,
+    /** Set when what was said conflicts (two times, hedges): the item waits in Review instead of saving. */
+    val conflict: String? = null,
 )
 
 /** Implementations must not return invented transcripts when a model is absent. */
